@@ -28,10 +28,13 @@ jobs:
           const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
           await page.goto('http://127.0.0.1:8080', { waitUntil: 'networkidle' });
           await page.screenshot({ path: 'today.png', fullPage: true });
+          await page.locator('#headerAction').click(); await page.waitForTimeout(200); await page.screenshot({ path: 'checkin.png', fullPage: true }); await page.locator('#closeCheckin').click();
           for (const [target,name] of [['workout','train'],['week','week'],['trends','trends'],['program','program']]) {
             await page.locator('[data-target="'+target+'"]').click();
             await page.waitForTimeout(300);
             await page.screenshot({ path: name+'.png', fullPage: true });
+            if (target==='workout') { const ex=page.locator('.exercise-card').nth(1); if(await ex.count()){await ex.click();await page.waitForTimeout(200);await page.screenshot({path:'exercise-detail.png',fullPage:true});await page.locator('#modalDone').click();} }
+            if (target==='week') { const d=page.locator('.day-button').nth(1); if(await d.count()){await d.click();await page.waitForTimeout(200);await page.screenshot({path:'week-expanded.png',fullPage:true});} }
           }
           await browser.close();
           JS
@@ -45,3 +48,6 @@ jobs:
             week.png
             trends.png
             program.png
+            checkin.png
+            exercise-detail.png
+            week-expanded.png
