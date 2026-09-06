@@ -17,14 +17,14 @@ jobs:
         with:
           node-version: '20'
       - run: npm init -y && npm install playwright
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps webkit
       - name: Start local app
         run: python3 -m http.server 8080 >/tmp/server.log 2>&1 &
       - name: Capture iPhone viewport
         run: |
           cat > audit.mjs <<'JS'
-          import { chromium } from 'playwright';
-          const browser = await chromium.launch();
+          import { webkit } from 'playwright';
+          const browser = await webkit.launch();
           const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
           await page.goto('http://127.0.0.1:8080', { waitUntil: 'networkidle' });
           await page.screenshot({ path: 'today.png', fullPage: true });
