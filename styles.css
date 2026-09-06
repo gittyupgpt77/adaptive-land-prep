@@ -48,3 +48,13 @@
 .squat .head,.press .head{left:138px;top:35px}.squat .body,.press .body{width:65px;left:145px;top:65px;transform:rotate(90deg)}.squat .l1{width:60px;left:150px;top:123px;transform:rotate(45deg)}.squat .l2{width:58px;left:151px;top:124px;transform:rotate(135deg)}.squat .a1{width:45px;left:147px;top:77px;transform:rotate(20deg)}.squat .a2{width:45px;left:147px;top:77px;transform:rotate(160deg)}.squat .bar{width:110px;left:95px;top:72px}
 .hinge .head{left:112px;top:48px}.hinge .body{width:80px;left:128px;top:72px;transform:rotate(25deg)}.hinge .l1{width:72px;left:187px;top:105px;transform:rotate(78deg)}.hinge .l2{width:70px;left:181px;top:109px;transform:rotate(100deg)}.hinge .a1{width:63px;left:160px;top:83px;transform:rotate(72deg)}.hinge .a2{width:63px;left:169px;top:87px;transform:rotate(70deg)}.hinge .bar{width:90px;left:135px;top:137px}
 .press .a1{width:58px;left:150px;top:72px;transform:rotate(-75deg)}.press .a2{width:58px;left:147px;top:72px;transform:rotate(-105deg)}.press .l1{width:65px;left:150px;top:125px;transform:rotate(80deg)}.press .l2{width:65px;left:150px;top:125px;transform:rotate(100deg)}.press .bar{width:105px;left:98px;top:20px}.pullbar{width:150px;left:85px;top:22px}.pullup .head{left:140px;top:54px}.pullup .body{width:70px;left:152px;top:80px;transform:rotate(90deg)}.pullup .a1{width:66px;left:151px;top:80px;transform:rotate(-60deg)}.pullup .a2{width:66px;left:151px;top:80px;transform:rotate(-120deg)}.pullup .l1{width:62px;left:151px;top:145px;transform:rotate(76deg)}.pullup .l2{width:62px;left:151px;top:145px;transform:rotate(104deg)}
+
+.carry .head,.calf .head,.rowpose .head,.neckpose .head,.grippose .head,.stand .head{left:140px;top:42px}
+.carry .body,.calf .body,.rowpose .body,.neckpose .body,.grippose .body,.stand .body{width:70px;left:151px;top:68px;transform:rotate(90deg)}
+.carry .arm,.calf .arm,.rowpose .arm,.neckpose .arm,.grippose .arm,.stand .arm{width:55px;left:151px;top:82px}
+.carry .a1,.calf .a1,.rowpose .a1,.neckpose .a1,.grippose .a1,.stand .a1{transform:rotate(65deg)}
+.carry .a2,.calf .a2,.rowpose .a2,.neckpose .a2,.grippose .a2,.stand .a2{transform:rotate(115deg)}
+.carry .leg,.calf .leg,.rowpose .leg,.neckpose .leg,.grippose .leg,.stand .leg{width:68px;left:151px;top:133px}
+.carry .l1,.calf .l1,.rowpose .l1,.neckpose .l1,.grippose .l1,.stand .l1{transform:rotate(75deg)}
+.carry .l2,.calf .l2,.rowpose .l2,.neckpose .l2,.grippose .l2,.stand .l2{transform:rotate(105deg)}
+.carry .bar{width:35px;left:92px;top:135px}.calf .bar{width:70px;left:118px;top:157px}.rowpose .bar{width:80px;left:70px;top:104px}.grippose .bar{width:34px;left:94px;top:105px}.neckpose .bar,.stand .bar{display:none}
