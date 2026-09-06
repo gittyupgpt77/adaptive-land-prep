@@ -1,0 +1,47 @@
+name: UI Audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'styles.css'
+      - 'app.js'
+      - '.github/workflows/ui-audit.yml'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm init -y && npm install playwright
+      - run: npx playwright install --with-deps chromium
+      - name: Start local app
+        run: python3 -m http.server 8080 >/tmp/server.log 2>&1 &
+      - name: Capture iPhone viewport
+        run: |
+          cat > audit.mjs <<'JS'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch();
+          const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+          await page.goto('http://127.0.0.1:8080', { waitUntil: 'networkidle' });
+          await page.screenshot({ path: 'today.png', fullPage: true });
+          for (const [target,name] of [['workout','train'],['week','week'],['trends','trends'],['program','program']]) {
+            await page.locator('[data-target="'+target+'"]').click();
+            await page.waitForTimeout(300);
+            await page.screenshot({ path: name+'.png', fullPage: true });
+          }
+          await browser.close();
+          JS
+          node audit.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iphone-ui-audit
+          path: |
+            today.png
+            train.png
+            week.png
+            trends.png
+            program.png
