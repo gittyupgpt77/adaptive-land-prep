@@ -20,3 +20,9 @@
 .exercise-row span{font-size:11px;color:var(--accent2);font-weight:750}
 .exercise-row small{font-size:11px;line-height:1.42;color:var(--muted)}
 .rx-card .exercise-list{margin-top:16px;border-top:1px solid rgba(255,255,255,.06);padding-top:4px}
+
+.glossary-card{margin-top:18px;background:linear-gradient(145deg,#18304a,#14283f)}
+.term{padding:12px 0;border-top:1px solid rgba(255,255,255,.06)}
+.term:first-of-type{margin-top:10px}
+.term strong{font-size:13px;color:#e8f2ff}
+.term p{margin:4px 0 0!important;font-size:12px!important;line-height:1.45!important}
