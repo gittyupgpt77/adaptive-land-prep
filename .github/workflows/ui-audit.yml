@@ -28,7 +28,7 @@ jobs:
           const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
           await page.goto('http://127.0.0.1:8080', { waitUntil: 'networkidle' });
           await page.screenshot({ path: 'today.png', fullPage: true });
-          await page.locator('#headerAction').click(); await page.waitForTimeout(200); await page.screenshot({ path: 'checkin.png', fullPage: true }); await page.locator('#closeCheckin').click();
+          await page.locator('#taskCheckin').click(); await page.waitForTimeout(200); await page.screenshot({ path: 'checkin.png', fullPage: true }); await page.locator('#closeCheckin').click();
           for (const [target,name] of [['workout','train'],['week','week'],['trends','trends'],['program','program']]) {
             await page.locator('[data-target="'+target+'"]').click();
             await page.waitForTimeout(300);
