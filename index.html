@@ -13,13 +13,13 @@
 </head>
 <body>
 <div class="app-shell">
-<header class="topbar"><div><div class="eyebrow">56-WEEK LAND PREP</div><h1 id="pageTitle">Today</h1></div><div id="statusPill" class="status-pill neutral">—</div></header>
+<header class="topbar"><div><div class="eyebrow">56-WEEK LAND PREP</div><h1 id="pageTitle">Today</h1></div><div id="statusPill" class="status-pill neutral">Check in</div></header>
 <main>
 <section id="today" class="screen active">
 <div class="hero-card"><div class="hero-kicker" id="heroPhase">Week —</div><div class="hero-title">Morning Check-In</div><div class="hero-sub">Enter today’s data. The app adapts impact, intensity, and fueling.</div></div>
 <div class="insight-grid"><div class="metric-card"><span>Recovery</span><strong id="dashRecovery">—</strong><small>today</small></div><div class="metric-card"><span>Week</span><strong id="dashWeek">1</strong><small id="dashPhase">Re-entry</small></div><div class="metric-card wide"><span>Training focus</span><strong id="dashFocus">Recondition</strong><div class="progress-track"><i id="weekProgress"></i></div></div></div>
 <div id="calibrationCard" class="calibration-card"><div><strong id="calibrationTitle">Baseline calibration</strong><small id="calibrationText">Build 7+ check-ins so trends become more meaningful.</small></div><div class="cal-ring"><span id="calCount">0</span><small>/7</small></div></div>
-<div class="section-title">Readiness</div>
+<div id="checkinProgress" class="attention-banner"><span class="attention-icon">!</span><div><strong>Morning check-in needs attention</strong><small id="checkinProgressText">Complete the required fields below.</small></div></div><div class="section-title">Readiness</div>
 <div class="grid two">
 <label class="field"><span>Heart-rate variability (HRV)</span><input id="hrv" inputmode="decimal" type="number" placeholder="e.g. 72"></label><label class="field"><span>Your usual HRV <em>auto</em></span><input id="hrvBase" inputmode="decimal" type="number" placeholder="learned from history"></label>
 <label class="field"><span>Resting heart rate</span><input id="rhr" inputmode="decimal" type="number" placeholder="bpm"></label><label class="field"><span>Your usual resting HR <em>auto</em></span><input id="rhrBase" inputmode="decimal" type="number" placeholder="learned from history"></label>
@@ -40,6 +40,6 @@
 <section id="log" class="screen"><div id="logList"></div><button class="danger ghost" id="clearLog">Clear Local Log</button></section>
 </main>
 <nav class="tabbar"><button class="tab active" data-target="today"><span>●</span><small>Today</small></button><button class="tab" data-target="workout"><span>▶</span><small>Train</small></button><button class="tab" data-target="week"><span>▦</span><small>Week</small></button><button class="tab" data-target="trends"><span>⌁</span><small>Trends</small></button><button class="tab" data-target="program"><span>≡</span><small>Program</small></button></nav>
-</div>
+</div><div id="infoModal" class="modal-backdrop hidden"><div class="modal-card"><button class="modal-close" id="modalClose">×</button><div id="modalContent"></div></div></div>
 <script src="app.js"></script>
 </body></html>
