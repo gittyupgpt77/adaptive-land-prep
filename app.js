@@ -119,14 +119,51 @@ function saveCheckin(){
  resetHistorical();closeCheckin();renderAll()
 }
 function saveWorkout(c){const arr=workouts(),name=sessionName();arr.unshift({date:new Date().toISOString(),week:prescriptionWeek(),session:name,rpe:num("sessionRPE"),duration:num("sessionDuration"),postPain:num("postPain"),completed:c||"YES",note:val("sessionNote")});localStorage.workoutHistory=JSON.stringify(arr.slice(0,500));dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",true);$("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll()}
-const referenceExercisePhotos={
- "back squat":"./assets/back-squat.jpg",
- "romanian deadlift":"./assets/romanian-deadlift.jpg",
- "walking lunge":"./assets/walking-lunge.jpg",
- "rkc plank":"./assets/rkc-plank.jpg"
-};
-function photoForExercise(name){const n=name.toLowerCase();if(n.includes("back squat"))return referenceExercisePhotos["back squat"];if(n.includes("romanian deadlift"))return referenceExercisePhotos["romanian deadlift"];if(n.includes("walking lunge")||n.includes("reverse lunge")||n.includes("split squat"))return referenceExercisePhotos["walking lunge"];if(n.includes("rkc plank")||n==="plank"||n.includes("trunk work"))return referenceExercisePhotos["rkc plank"];return""}
-function exerciseMedia(name,detail=false){const p=photoForExercise(name);return p?'<img class="reference-exercise-photo '+(detail?"detail-photo":"")+'" src="'+p+'" alt="'+name+' demonstration">':svg(name)}
+const EXERCISE_DB_BASE="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
+function datasetExerciseId(name){
+ const n=name.toLowerCase();
+ const map=[
+  [/back squat|squat$/,"Barbell_Full_Squat"],
+  [/romanian deadlift|hip hinge|hinge$/,"Romanian_Deadlift"],
+  [/overhead press|military press|press$/,"Standing_Military_Press"],
+  [/pull-up|pullups|pull up/,"Pullups"],
+  [/push-up|pushups|push up/,"Pushups"],
+  [/split squat|reverse lunge|walking lunge|lunge/,"Split_Squat_with_Dumbbells"],
+  [/soleus|seated calf/,"Seated_Calf_Raise"],
+  [/calf/,"Standing_Calf_Raises"],
+  [/tibialis/,"Anterior_Tibialis-SMR"],
+  [/neck harness|neck resistance/,"Lying_Face_Down_Plate_Neck_Resistance"],
+  [/grip work|plate pinch|hand squeeze/,"Standing_Olympic_Plate_Hand_Squeeze"],
+  [/forearm roller|wrist/,"Palms-Up_Barbell_Wrist_Curl_Over_A_Bench"],
+  [/one-arm row|press \+ row|horizontal row/,"One-Arm_Dumbbell_Row"],
+  [/suitcase carry|farmer|loaded carries/,"Rickshaw_Carry"],
+  [/bear-hug sandbag|sandbag/,"Sandbag_Load"],
+  [/rkc plank|plank|trunk work/,"Plank"],
+  [/sit-up|sit up/,"Sit-Up"],
+  [/russian twist/,"Russian_Twist"],
+  [/ankle mobility|ankle circles/,"Ankle_Circles"],
+  [/hip mobility|full body stretch/,"Full_Body_Stretching"],
+  [/row|rowing/,"Rowing,_Stationary"],
+  [/run|running|jog/,"Running,_Treadmill"],
+  [/walk|weighted-pack|ruck/,"Trail_Running_Walking"],
+  [/jump rope|rope jumping/,"Rope_Jumping"],
+  [/step-up|step up/,"Step-up_with_Knee_Raise"],
+  [/deadlift/,"Barbell_Deadlift"],
+  [/core/,"Plank"],
+  [/mobility|stretch/,"Full_Body_Stretching"],
+  [/warm-up|warmup/,"Full_Body_Stretching"]
+ ];
+ for(const [re,id] of map)if(re.test(n))return id;
+ return"";
+}
+function exerciseDbUrl(id,index=0){return EXERCISE_DB_BASE+encodeURIComponent(id).replace(/%2C/g,",")+"/"+index+".jpg"}
+function exerciseMedia(name,detail=false){
+ const id=datasetExerciseId(name);
+ if(!id)return '<div class="exercise-photo-missing"><span>Visual guide pending</span><small>'+name+'</small></div>';
+ const first=exerciseDbUrl(id,0),second=exerciseDbUrl(id,1);
+ if(detail)return '<div class="exercise-photo-pair"><figure><img src="'+first+'" alt="'+name+' start position" onerror="this.closest(\'figure\').classList.add(\'image-failed\')"><figcaption>Start</figcaption></figure><figure><img src="'+second+'" alt="'+name+' finish position" onerror="this.closest(\'figure\').classList.add(\'image-failed\')"><figcaption>Finish</figcaption></figure></div>';
+ return '<div class="exercise-photo-frame"><img src="'+first+'" alt="'+name+' demonstration" loading="lazy" onerror="this.closest(\'.exercise-photo-frame\').classList.add(\'image-failed\')"></div>';
+}
 function exerciseSteps(e){const n=e.name.toLowerCase();
  if(n.includes("back squat"))return["Set the bar across the upper back, brace the trunk, and plant the whole foot.","Sit down between the hips while keeping the knees tracking with the toes.","Drive the floor away and finish tall without losing trunk position."];
  if(n.includes("romanian deadlift"))return["Stand tall with the load close to the thighs and soften the knees.","Push the hips backward while the load stays close to the legs and the spine remains neutral.","Stop when hamstring tension limits the hinge, then drive the hips forward to stand."];
