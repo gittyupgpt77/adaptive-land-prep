@@ -72,6 +72,28 @@ jobs:
           await shot('03-readiness-detail');
           await page.locator('#readinessClose').click();
 
+          // Saved readiness must be immutable until a new check-in is explicitly saved.
+          const savedReadinessLabel=(await page.locator('#readinessLabel').innerText()).trim();
+          const savedWorkoutTitle=(await page.locator('#todayWorkoutName').innerText()).trim();
+          await page.locator('.task-main[data-action="checkin"]').click();
+          await page.locator('#sleep').fill('5');
+          await page.locator('#closeCheckin').click();
+          check('Unsaved check-in edits do not change saved readiness',(await page.locator('#readinessLabel').innerText()).trim()===savedReadinessLabel);
+          check('Unsaved check-in edits do not change saved prescription',(await page.locator('#todayWorkoutName').innerText()).trim()===savedWorkoutTitle);
+
+          // A deliberately saved yellow state must transform the actual session.
+          await page.locator('.task-main[data-action="checkin"]').click();
+          await page.locator('#sleep').fill('6.5');
+          await page.locator('#sleepQ').selectOption('3');
+          await page.locator('#evaluateBtn').click();
+          await page.locator('#saveBtn').click();
+          await page.waitForTimeout(120);
+          check('Saved yellow state surfaces adaptation explanation',await visible('#adaptationBanner'));
+          await page.locator('[data-target="workout"]').click();
+          check('Saved yellow state changes session title',/Modified|Recovery/i.test((await page.locator('#workoutTitle').innerText())));
+          check('Saved yellow state changes actual prescription',(await page.locator('#workoutPrescription').innerText()).includes('70%')||(await page.locator('#workoutPrescription').innerText()).includes('Easy aerobic substitute'));
+          await page.locator('[data-target="today"]').click();
+
           // Today split interactions.
           const taskActions=['checkin','workout','nutrition','mobility'];
           for(const action of taskActions){
