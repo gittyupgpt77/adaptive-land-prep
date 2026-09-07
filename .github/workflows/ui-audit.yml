@@ -74,12 +74,12 @@ jobs:
 
           // Saved readiness must be immutable until a new check-in is explicitly saved.
           const savedReadinessLabel=(await page.locator('#readinessLabel').innerText()).trim();
-          const savedWorkoutTitle=(await page.locator('#todayWorkoutName').innerText()).trim();
+          const savedWorkoutTitle=(await page.locator('#taskWorkoutTitle').innerText()).trim();
           await page.locator('.task-main[data-action="checkin"]').click();
           await page.locator('#sleep').fill('5');
           await page.locator('#closeCheckin').click();
           check('Unsaved check-in edits do not change saved readiness',(await page.locator('#readinessLabel').innerText()).trim()===savedReadinessLabel);
-          check('Unsaved check-in edits do not change saved prescription',(await page.locator('#todayWorkoutName').innerText()).trim()===savedWorkoutTitle);
+          check('Unsaved check-in edits do not change saved prescription',(await page.locator('#taskWorkoutTitle').innerText()).trim()===savedWorkoutTitle);
 
           // A deliberately saved yellow state must transform the actual session.
           await page.locator('.task-main[data-action="checkin"]').click();
