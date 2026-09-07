@@ -280,6 +280,8 @@ jobs:
 
           // Nutrition: every meal has two independent interactions.
           await page.locator('[data-target="nutrition"]').click();
+          check('Hydration avoids forced fixed-volume prescription',!/\b(120|160|180)\s*oz\b/i.test(await page.locator('#hydrationCard').innerText()));
+          check('Hydration strategy is individualized',/thirst|sweat-rate|individualized/i.test(await page.locator('#hydrationCard').innerText()));
           const mealCount=await page.locator('.meal-card').count();report.counts.meals=mealCount;check('Nutrition shows actual meals',mealCount>=4);
           for(let i=0;i<mealCount;i++){
             const card=page.locator('.meal-card').nth(i);
