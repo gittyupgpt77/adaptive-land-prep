@@ -91,7 +91,14 @@ function migrateProductState(){
 function beginJourney(){
  if(localStorage.programStart)return;
  const base=todayCheckin()||logs().slice().sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
- if(base){localStorage.programStart=new Date(base.date).toISOString();localStorage.baselineDate=base.date;localStorage.failedDays="[]";viewedWeek=1;viewedMonth=new Date(base.date);renderAll();return}
+ if(base){
+   const start=new Date();
+   localStorage.programStart=start.toISOString();
+   localStorage.baselineDate=base.date;
+   localStorage.failedDays="[]";
+   viewedWeek=1;viewedMonth=new Date(start);
+   renderAll();return
+ }
  localStorage.journeyPending="1";openCheckin()
 }
 function renderJourneyStart(){
