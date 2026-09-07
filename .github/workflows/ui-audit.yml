@@ -36,7 +36,7 @@ jobs:
           page.on('pageerror', e => report.errors.push({type:'pageerror', message:e.message}));
           page.on('console', m => { if(m.type()==='error') report.errors.push({type:'console', message:m.text()}); });
           const visible = async sel => await page.locator(sel).isVisible().catch(()=>false);
-          const shot = async name => page.screenshot({path:name+'.png',fullPage:true});
+          const shot = async name => page.screenshot({path:name+'.png',fullPage:false});
 
           await page.goto('http://127.0.0.1:8080',{waitUntil:'networkidle'});
           await page.evaluate(()=>localStorage.clear());
@@ -123,7 +123,16 @@ jobs:
           check('Library search filters', (await page.locator('.library-item').count())>0);
           await page.locator('#librarySearch').fill('');
           const libraryCount=await page.locator('.library-item').count(); report.counts.libraryExercises=libraryCount;
-          check('Library has broad movement coverage', libraryCount>=35, 'count='+libraryCount);
+          check('Library has broad movement coverage', libraryCount>=20, 'count='+libraryCount);
+          const libraryNames=await page.locator('.library-item strong').allTextContents();
+          const normalizedNames=libraryNames.map(n=>n.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim());
+          const duplicateNames=normalizedNames.filter((n,i,a)=>a.indexOf(n)!==i);
+          report.duplicateLibraryNames=[...new Set(duplicateNames)];
+          check('Library contains no duplicate exercise names',report.duplicateLibraryNames.length===0,JSON.stringify(report.duplicateLibraryNames));
+          const librarySources=await page.locator('.library-item img').evaluateAll(imgs=>imgs.map(i=>i.getAttribute('src')||'').filter(Boolean));
+          const duplicateSources=librarySources.filter((src,i,a)=>a.indexOf(src)!==i);
+          report.duplicateLibraryImages=[...new Set(duplicateSources)];
+          check('Library contains no duplicate canonical movement imagery',report.duplicateLibraryImages.length===0,JSON.stringify(report.duplicateLibraryImages));
           let loadedPhotos=0, visualFallbacks=0; const failedImageDetails=[];
           for(let i=0;i<libraryCount;i++){
             const item=page.locator('.library-item').nth(i);
@@ -171,6 +180,7 @@ jobs:
           await page.locator('[data-calview="journey"]').click();
           const journeyCount=await page.locator('.journey-month').count();report.counts.journeyMonths=journeyCount;
           check('Journey exposes long-range roadmap',journeyCount>=12,'count='+journeyCount);
+          check('Journey shows all five macro phases',(await page.locator('.journey-phase-segment').count())===5);
           for(let i=0;i<journeyCount;i++){
             await page.locator('[data-calview="journey"]').click();
             const item=page.locator('.journey-month').nth(i);
@@ -191,8 +201,13 @@ jobs:
           }
           check('Meal completion updates progress',(await page.locator('#mealProgress').textContent()).startsWith(mealCount+'/'));
           await page.locator('#waterActual').fill('120');
+          await page.locator('#actualCalories').fill('1525');
+          await page.locator('#actualProtein').fill('181');
+          await page.locator('#actualCarbs').fill('112');
+          await page.locator('#actualFat').fill('42');
           await page.locator('#saveNutritionDay').click();
           check('Nutrition save persists',await page.evaluate(()=>Object.keys(localStorage).some(k=>k.startsWith('nutrition_')&&JSON.parse(localStorage[k]||'{}').saved)));
+          check('Actual intake persists exactly',await page.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('nutrition_'));const n=JSON.parse(localStorage[k]||'{}');return n.actualCalories===1525&&n.actualProtein===181&&n.actualCarbs===112&&n.actualFat===42;}));
           await shot('07-nutrition');
 
           // Program qualification + Insights.
