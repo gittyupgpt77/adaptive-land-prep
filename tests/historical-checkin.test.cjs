@@ -6,7 +6,7 @@ function harness(){
  const context=vm.createContext({$,localStorage:{setItem:(k,v)=>values[k]=v},historicalDate:null,historicalInputs:null,
   logs:()=>rows,workouts:()=>sessions,requiredFields:()=>{},dayKey:d=>new Date(d).toDateString(),
   getNutritionLog:d=>({saved:true,actualCalories:d.getDate()===9?500:1500,targetCalories:2000}),
-  dateSession:()=>({w:1,name:'row'}),nutritionForWeek:()=>({cal:2000}),mealPlanForWeek:()=>[1,2]
+  dateSession:()=>({w:1,name:'row'}),nutritionForWeek:()=>({cal:2000}),mealPlanForWeek:()=>[1,2],mealPlanForTarget:()=>[1,2]
  });
  for(const name of ['avg','applyBaselines','persistInputs','openHistoricalCheckin','resetHistorical','previousWorkoutSignal','previousNutritionSignal']){
   const start=source.indexOf('function '+name+'('),end=source.indexOf('\nfunction ',start+1);
