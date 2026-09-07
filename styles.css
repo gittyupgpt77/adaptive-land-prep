@@ -354,3 +354,6 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .complete-session:disabled{opacity:.7}
 
 .success-banner.attention{background:rgba(243,184,75,.12);border-color:rgba(243,184,75,.28);color:#d08a10}
+
+/* Explicit CTA contrast inside dark training/check-in surfaces. */
+.complete-session,.secondary-action,.sheet-primary,.sheet-secondary{color:#fff}

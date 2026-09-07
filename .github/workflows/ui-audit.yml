@@ -189,6 +189,7 @@ jobs:
           await page.locator('#completeWorkout').click();
           check('Empty completion response is rejected',await page.evaluate(()=>JSON.parse(localStorage.workoutHistory||'[]').length===0));
           check('Missing response explains what is needed',(await page.locator('#completionBanner').innerText()).includes('effort'));
+          check('Session CTAs retain readable contrast',await page.evaluate(()=>['completeWorkoutQuick','completeWorkout'].every(id=>getComputedStyle(document.getElementById(id)).color==='rgb(255, 255, 255)')));
           await shot('03b-session-response',false);
           await page.locator('#sessionRPE').selectOption('9');
           await page.locator('#postPain').selectOption('4');
