@@ -94,6 +94,26 @@ jobs:
           check('Saved yellow state changes actual prescription',(await page.locator('#workoutPrescription').innerText()).includes('70%')||(await page.locator('#workoutPrescription').innerText()).includes('Easy aerobic substitute'));
           await page.locator('[data-target="today"]').click();
 
+          // Nutrition causality: under-fueling yesterday must affect today's saved prescription.
+          await page.evaluate(()=>{
+            const y=new Date();y.setDate(y.getDate()-1);
+            localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:650,targetCalories:1450,meals:['m1'],savedAt:y.toISOString()}));
+          });
+          await page.locator('.task-main[data-action="checkin"]').click();
+          await page.locator('#sleep').fill('8');
+          await page.locator('#sleepQ').selectOption('5');
+          await page.locator('#fatigue').selectOption('1');
+          await page.locator('#pain').selectOption('0');
+          await page.locator('#load').selectOption('6');
+          await page.locator('#evaluateBtn').click();
+          await page.locator('#saveBtn').click();
+          await page.waitForTimeout(120);
+          check('Under-fueling changes saved fueling state',await page.evaluate(()=>{const l=JSON.parse(localStorage.trainingLogs||'[]');return l[0]?.decision?.c==='YELLOW'||l[0]?.decision?.c==='RED';}));
+          check('Under-fueling is explained on Today',(await page.locator('#adaptationBanner').innerText()).toLowerCase().includes('fuel'));
+          await page.locator('[data-target="workout"]').click();
+          check('Under-fueling modifies actual training prescription',/Modified|Recovery/i.test(await page.locator('#workoutTitle').innerText()));
+          await page.locator('[data-target="today"]').click();
+
           // Today split interactions.
           const taskActions=['checkin','workout','nutrition','mobility'];
           for(const action of taskActions){
@@ -305,6 +325,7 @@ jobs:
           const failed=report.assertions.filter(x=>!x.pass);
           report.summary={total:report.assertions.length,passed:report.assertions.length-failed.length,failed:failed.length,runtimeErrors:report.errors.length};
           fs.writeFileSync('consumer-report.json',JSON.stringify(report,null,2));
+          console.log('CONSUMER_AUDIT_SUMMARY '+JSON.stringify(report.summary));
           await browser.close();
           if(failed.length||report.errors.length){console.error(JSON.stringify({failed,errors:report.errors},null,2));process.exitCode=1;}
           JS
