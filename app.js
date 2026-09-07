@@ -256,14 +256,22 @@ function renderNutrition(){
  $("nutritionMeals").querySelectorAll(".meal-check").forEach(b=>b.onclick=()=>{const cur=getNutritionLog(),set=new Set(cur.meals||[]);set.has(b.dataset.meal)?set.delete(b.dataset.meal):set.add(b.dataset.meal);cur.meals=[...set];localStorage.setItem(nutritionLogKey(),JSON.stringify(cur));renderNutrition();renderToday()});
  $("nutritionMeals").querySelectorAll(".meal-main").forEach(b=>b.onclick=()=>{const m=meals.find(x=>x.id===b.dataset.mealopen);$("modalTitle").textContent=m.name;$("modalContent").innerHTML='<div class="meal-detail"><small>'+m.kcal+' KCAL TARGET</small>'+m.foods.map((f,i)=>'<div><b>'+(i+1)+'</b><span>'+f+'</span></div>').join("")+'</div>';$("infoModal").classList.remove("hidden")});
  $("hydrationTarget").textContent=typeof hydr.oz==="number"?hydr.oz+" oz":hydr.oz;$("hydrationCard").innerHTML='<strong>'+hydr.oz+(typeof hydr.oz==="number"?" oz":"")+'</strong><p>'+hydr.note+'</p><label><span>Fluid consumed</span><input id="waterActual" type="number" inputmode="decimal" placeholder="oz" value="'+(log.waterOz||"")+'"></label>';
+ $("actualCalories").value=log.actualCalories??"";$("actualProtein").value=log.actualProtein??"";$("actualCarbs").value=log.actualCarbs??"";$("actualFat").value=log.actualFat??"";
  const prev=previousNutritionSignal();$("nutritionInfluence").innerHTML=prev?'<strong>Yesterday’s fueling signal</strong><p>'+Math.round(prev.ratio*100)+'% of planned intake was recorded. '+(prev.ratio<.8?"Today’s readiness engine will treat this as a fueling caution when training load is high.":"No fueling penalty is currently indicated.")+'</p>':'<strong>How nutrition changes training</strong><p>Saved intake carries into tomorrow’s fueling status. Substantial under-fueling on a high-load day can downgrade the next prescription even when HRV looks favorable.</p>';
  $("saveNutritionDay").textContent=log.saved?"✓ Intake saved":"Save Today’s Intake";
 }
 function saveNutrition(){
  if(!localStorage.programStart){beginJourney();return}
- const log=getNutritionLog(),meals=mealPlanForWeek(prescriptionWeek()),target=nutritionForWeek(prescriptionWeek(),sessionName());
- log.waterOz=Number($("waterActual")?.value)||0;log.saved=true;log.savedAt=new Date().toISOString();log.actualCalories=(log.meals||[]).reduce((sum,id)=>sum+(meals.find(m=>m.id===id)?.kcal||0),0);log.targetCalories=target.cal;
- localStorage.setItem(nutritionLogKey(),JSON.stringify(log));setTask("nutrition",true);renderNutrition();renderToday();
+ const log=getNutritionLog(),meals=mealPlanForWeek(prescriptionWeek()),target=nutritionForWeek(prescriptionWeek(),sessionName()),checkedCalories=(log.meals||[]).reduce((sum,id)=>sum+(meals.find(m=>m.id===id)?.kcal||0),0);
+ log.waterOz=Number($("waterActual")?.value)||0;
+ log.saved=true;log.savedAt=new Date().toISOString();
+ const enteredCalories=Number($("actualCalories")?.value),enteredProtein=Number($("actualProtein")?.value),enteredCarbs=Number($("actualCarbs")?.value),enteredFat=Number($("actualFat")?.value);
+ log.actualCalories=Number.isFinite(enteredCalories)&&enteredCalories>0?enteredCalories:checkedCalories;
+ log.actualProtein=Number.isFinite(enteredProtein)&&enteredProtein>=0?enteredProtein:null;
+ log.actualCarbs=Number.isFinite(enteredCarbs)&&enteredCarbs>=0?enteredCarbs:null;
+ log.actualFat=Number.isFinite(enteredFat)&&enteredFat>=0?enteredFat:null;
+ log.targetCalories=target.cal;log.targetProtein=target.protein;log.targetCarbs=target.carbs;log.targetFat=target.fat;
+ localStorage.setItem(nutritionLogKey(),JSON.stringify(log));setTask("nutrition",true);renderNutrition();renderToday()
 }
 function programWeekForDate(d){const a=new Date(programStart()),b=new Date(d);a.setHours(12,0,0,0);b.setHours(12,0,0,0);return Math.max(1,Math.min(56,Math.floor((b-a)/604800000)+1))}
 function programDayIndex(d){const a=new Date(programStart()),b=new Date(d);a.setHours(12,0,0,0);b.setHours(12,0,0,0);const days=Math.floor((b-a)/86400000);return((days%7)+7)%7}
@@ -275,6 +283,7 @@ function renderJourney(){
  const start=new Date(programStart()),months=[];start.setHours(12,0,0,0);
  for(let w=1;w<=56;w++){const d=new Date(start);d.setDate(d.getDate()+(w-1)*7);const key=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");let m=months.find(x=>x.key===key);if(!m){m={key,date:new Date(d.getFullYear(),d.getMonth(),1),weeks:[],phases:new Set()};months.push(m)}m.weeks.push(w);m.phases.add(macroForWeek(w).name)}
  $("journeySummary").textContent=localStorage.programStart?"From "+start.toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})+" through 56 weeks of progressive training.":"Preview only — Day 1 has not been set.";
+ $("journeyPhaseMap").innerHTML=macroPhases.map((p,i)=>{const weeks=p[2]-p[1]+1,active=currentWeek()>=p[1]&&currentWeek()<=p[2];return '<div class="journey-phase-segment '+(active?"active":"")+'" style="--grow:'+weeks+'"><span style="background:'+phasePalette[p[0]]+'"></span><div><small>PHASE '+(i+1)+'</small><strong>'+p[0]+'</strong><em>W'+p[1]+'–'+p[2]+'</em></div></div>'}).join("");
  $("journeyTimeline").innerHTML=months.map((m,i)=>{const first=m.weeks[0],last=m.weeks.at(-1),phase=[...m.phases],done=workouts().filter(x=>x.week>=first&&x.week<=last&&x.completed==="YES").length,total=(last-first+1)*7,pct=Math.min(100,Math.round(done/total*100));return'<button class="journey-month" data-week="'+first+'"><div class="journey-month-num">'+String(i+1).padStart(2,"0")+'</div><div class="journey-month-copy"><small>'+m.date.toLocaleDateString(undefined,{month:"long",year:"numeric"}).toUpperCase()+'</small><strong>Weeks '+first+'–'+last+'</strong><span>'+phase.join(" → ")+'</span><div class="journey-phase-bars">'+phase.map(p=>'<i style="background:'+phasePalette[p]+'"></i>').join("")+'</div></div><div class="journey-month-progress"><b>'+pct+'%</b><span>complete</span></div></button>'}).join("");
  $("journeyTimeline").querySelectorAll(".journey-month").forEach(b=>b.onclick=()=>{viewedWeek=+b.dataset.week;document.querySelector('[data-calview="week"]').click();renderWeek()});
 }
