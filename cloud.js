@@ -1,32 +1,39 @@
-/* Only the publishable key belongs in this public client. RLS enforces ownership. */
+/* Legacy backup stays available until Firebase acknowledges this device's first copy. */
 (()=>{
  'use strict';
  const el=id=>document.getElementById(id),panel=el('cloudPanel');
  const status=text=>{el('cloudStatus').textContent=text};
- if(!window.SupabaseSDK){status('Cloud backup is unavailable. On-device storage and file backups still work.');return}
- const client=SupabaseSDK.createClient('https://pfpfttgfzmpexlbezmcs.supabase.co','sb_publishable_K4UzvlOQXTgRbEUJWq7qpA_9p54dG8o',{
+ const requested=new URLSearchParams(location.search).get('backup');
+ const firebase=requested==='firebase'||(requested!=='legacy'&&localStorage.getItem('alp-backup-provider')==='firebase');
+ if((firebase&&!window.FirebaseSDK)||(!firebase&&!window.SupabaseSDK)){status('Cloud setup is unavailable. Your entries remain on this device.');return}
+ const client=firebase?FirebaseSDK.createClient():SupabaseSDK.createClient('https://pfpfttgfzmpexlbezmcs.supabase.co','sb_publishable_K4UzvlOQXTgRbEUJWq7qpA_9p54dG8o',{
   auth:{storageKey:'alp-cloud-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},
   global:{fetch:(url,options)=>fetch(url,{...options,cache:'no-store',signal:options?.signal||AbortSignal.timeout(20000)})}
  });
  let owner=null,busy=false,offset=0,generation=0,lastSaved=null;
- const bindingKey='alp-cloud-device-owner';
+ const bindingKey=firebase?'alp-firestore-device-owner':'alp-cloud-device-owner';
+ const receiptKey=firebase?'alp-firestore-receipt':'alp-cloud-receipt';
+ const assertCurrent=id=>{if(owner!==id)throw Error('Your account changed. Please try again.')};
+ const store=firebase?client.makeStore(assertCurrent):null;
+ el('cloudLegacy').classList.toggle('hidden',!firebase);
  const boundOwner=()=>localStorage.getItem(bindingKey);
  async function saveAutomatic(data,id){
   const serialized=JSON.stringify(Object.keys(data).sort().map(key=>[key,data[key]]));
   const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(serialized))),n=>n.toString(16).padStart(2,'0')).join('');
-  let receipt;try{receipt=JSON.parse(localStorage.getItem('alp-cloud-receipt')||'null')}catch{}
-  if(receipt?.owner===id&&receipt.hash===hash){lastSaved=new Date(receipt.at);return}
+  let receipt;try{receipt=JSON.parse(localStorage.getItem(receiptKey)||'null')}catch{}
+  if(!firebase&&receipt?.owner===id&&receipt.hash===hash){lastSaved=new Date(receipt.at);return}
   const row=await core.save(data,id);lastSaved=new Date(row.created_at);
-  try{localStorage.setItem('alp-cloud-receipt',JSON.stringify({owner:id,hash,at:row.created_at}))}catch{}
+  if(firebase)localStorage.setItem('alp-backup-provider','firebase');
+  try{localStorage.setItem(receiptKey,JSON.stringify({owner:id,hash,at:row.created_at}))}catch{}
  }
  const automatic=createAutomaticBackup({collect:collectBackupData,save:saveAutomatic,notify:(state,error)=>{
   if(busy)return;
   const messages={empty:'Automatic backup is ready. Your first saved entry will back up automatically.',pending:'Saved on this device. Cloud backup pending…',offline:'Saved on this device. Cloud backup will retry when you’re online.',saving:'Saving private backup…',saved:'Automatic backup is up to date'+(lastSaved?' · '+lastSaved.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):'')+'.',error:'Saved on this device. Cloud backup could not connect and will retry automatically.'};
   if(state==='saved'&&!lastSaved)lastSaved=new Date();
-  status(messages[state]);
+  status(state==='error'&&error?.code?.startsWith('backup/')?error.message:state==='error'&&error?.code==='permission-denied'?'Private backup setup needs to be completed. Your entries remain on this device.':messages[state]);
  }});
  async function checkBackup(flush=false){try{automatic.configure(owner,boundOwner());await automatic.tick(navigator.onLine!==false,flush)}catch(error){status('Saved on this device. Automatic cloud backup is unavailable; check device storage.')}}
- const core=createCloudBackup({client,collect:collectBackupData,validate:validateBackup,restore:importBackup,confirm:window.confirm.bind(window),getCurrentId:()=>owner,assertCurrent:id=>{if(owner!==id)throw Error('Your account changed. Please try again.')}});
+ const core=createCloudBackup({client,store,collect:collectBackupData,validate:validateBackup,restore:async file=>{if(firebase)localStorage.setItem('alp-backup-provider','firebase');return importBackup(file)},confirm:window.confirm.bind(window),getCurrentId:()=>owner,assertCurrent});
  function render(){
   el('cloudAuth').classList.toggle('hidden',!!owner);
   el('cloudSignedIn').classList.toggle('hidden',!owner);

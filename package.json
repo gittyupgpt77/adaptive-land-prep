@@ -9,7 +9,10 @@
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "build:cloud": "esbuild src/supabase.js --bundle --format=iife --global-name=SupabaseSDK --minify --outfile=vendor/supabase.js",
-    "build:native": "node scripts/build-native.cjs"
+    "build:native": "node scripts/build-native.cjs",
+    "build:firebase": "esbuild src/firebase.js --bundle --format=iife --global-name=FirebaseSDK --minify --outfile=vendor/firebase.js",
+    "test:firebase": "firebase emulators:exec --only firestore --project demo-adaptive-land-prep \"node --test tests/firestore-emulator.mjs\"",
+    "test:firebase-browser": "firebase emulators:exec --only firestore,auth --project demo-adaptive-land-prep \"node tests/firebase-browser.mjs\""
   },
   "repository": {
     "type": "git",
@@ -26,11 +29,14 @@
   "dependencies": {
     "@capacitor/core": "8.5.1",
     "@capacitor/ios": "8.5.1",
-    "@supabase/supabase-js": "2.115.0"
+    "@supabase/supabase-js": "2.115.0",
+    "firebase": "12.18.0"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.1",
-    "esbuild": "0.25.9"
+    "@firebase/rules-unit-testing": "5.0.0",
+    "esbuild": "0.25.9",
+    "firebase-tools": "14.17.0"
   },
   "private": true
 }

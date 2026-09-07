@@ -1,7 +1,7 @@
 /* Transport-independent backup operations. Never mutate device state on sign-in. */
 (function(root){
  'use strict';
- function createCloudBackup({client,collect,validate,restore,confirm,assertCurrent,getCurrentId}){
+ function createCloudBackup({client,store,collect,validate,restore,confirm,assertCurrent,getCurrentId}){
   const table='athlete_backups';
   async function user(){
    const expected=getCurrentId();
@@ -19,7 +19,7 @@
   }
   async function insert(owner,payload,kind){
    assertCurrent(owner.id);
-   const {data,error}=await client.from(table).insert({user_id:owner.id,payload,kind}).select('id,created_at,kind').single();
+   const {data,error}=store?{data:await store.insert(owner.id,payload,kind)}:await client.from(table).insert({user_id:owner.id,payload,kind}).select('id,created_at,kind').single();
    if(error)throw error;
    assertCurrent(owner.id);
    return data;
@@ -28,18 +28,19 @@
    async save(data,expectedId){const owner=await user();if(expectedId&&owner.id!==expectedId)throw Error('Your account changed. Please try again.');return insert(owner,snapshot(data),'manual')},
    async list(offset=0){
     const owner=await user();
-    const {data,error}=await client.from(table).select('id,created_at,kind').eq('user_id',owner.id).order('created_at',{ascending:false}).order('id',{ascending:false}).range(offset,offset+19);
+    const {data,error}=store?{data:await store.list(owner.id,offset)}:await client.from(table).select('id,created_at,kind').eq('user_id',owner.id).order('created_at',{ascending:false}).order('id',{ascending:false}).range(offset,offset+19);
     if(error)throw error;assertCurrent(owner.id);return data;
    },
    async recover(id){
     const owner=await user();
-    const {data,error}=await client.from(table).select('payload,created_at').eq('user_id',owner.id).eq('id',id).single();
+    const {data,error}=store?{data:await store.read(owner.id,id)}:await client.from(table).select('payload,created_at').eq('user_id',owner.id).eq('id',id).single();
     if(error)throw error;
     validate(data.payload);assertCurrent(owner.id);
     if(!confirm('Restore the backup from '+new Date(data.created_at).toLocaleString()+'? This replaces this device’s training data. Its current data will be saved as a separate recovery backup first.'))return false;
     // Capture after confirmation; retain an immutable cloud copy before any local mutation.
     const previous=collect();
     if(Object.keys(previous).length)await insert(owner,snapshot(),'before-restore');
+    if(store?.prepareRecovery)await store.prepareRecovery(owner.id,data);
     assertCurrent(owner.id);
     if(JSON.stringify(collect())!==JSON.stringify(previous))throw Error('Device data changed during recovery. Please try again.');
     await restore({text:async()=>JSON.stringify(data.payload)});

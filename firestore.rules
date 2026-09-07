@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owns(uid) {
+      // One-time setup: replace this with the UID from Authentication > Users.
+      // Until replaced this template deliberately grants no real account access.
+      return request.auth != null
+        && request.auth.uid == 'REPLACE_WITH_YOUR_USER_UID'
+        && request.auth.uid == uid
+        && request.auth.token.email_verified == true
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+    match /athletes/{uid}/state/head {
+      allow read: if owns(uid);
+      allow create, update: if owns(uid)
+        && request.resource.data.keys().hasOnly(['normal', 'safety', 'updatedAt'])
+        && request.resource.data.normal is int && request.resource.data.normal >= 0
+        && request.resource.data.safety is int && request.resource.data.safety >= 0
+        && request.resource.data.updatedAt is timestamp;
+    }
+    match /athletes/{uid}/snapshots/{slot} {
+      allow read: if owns(uid);
+      allow create, update: if owns(uid)
+        && slot.matches('normal-([0-9]|1[0-5])|safety-[0-3]')
+        && request.resource.data.keys().hasOnly(['revision', 'count', 'bytes', 'originalBytes', 'encoding', 'hash', 'createdAt', 'kind'])
+        && request.resource.data.revision is int && request.resource.data.revision > 0
+        && request.resource.data.count is int && request.resource.data.count >= 1 && request.resource.data.count <= 8
+        && request.resource.data.bytes is int && request.resource.data.bytes > 0 && request.resource.data.bytes <= 2097152
+        && request.resource.data.originalBytes is int && request.resource.data.originalBytes > 0 && request.resource.data.originalBytes <= 6291456
+        && request.resource.data.encoding == 'gzip'
+        && request.resource.data.hash is string && request.resource.data.hash.matches('[a-f0-9]{64}')
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.kind in ['automatic', 'before-restore'];
+    }
+    match /athletes/{uid}/chunks/{chunk} {
+      allow read: if owns(uid);
+      allow create, update: if owns(uid)
+        && chunk.matches('(normal-([0-9]|1[0-5])|safety-[0-3])-[0-7]')
+        && request.resource.data.keys().hasOnly(['data', 'revision'])
+        && request.resource.data.data is string && request.resource.data.data.size() <= 349528
+        && request.resource.data.revision is int && request.resource.data.revision > 0;
+    }
+    // No client deletes and no other readable/writable paths.
+  }
+}

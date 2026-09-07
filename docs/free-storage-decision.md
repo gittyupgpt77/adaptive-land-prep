@@ -4,7 +4,7 @@
 
 Keep the existing Home Screen app. Entries persist automatically on the device and copy automatically to private off-device storage when connected. A replacement phone must recover the whole journey. No subscription, billing account, manual daily backup, keepalive jobs, recurring app reinstallation, or routine backend administration.
 
-This is an implementation plan, not a claim that the replacement is live.
+The original decision below is preserved as context. Implementation has since been prepared with the owner's public Firebase configuration; see [Firebase setup](firebase-setup.md) for the implemented format, migration behavior, tests, and outstanding production setup. The replacement is not yet verified against the owner's live database.
 
 ## Verified starting point
 
@@ -42,7 +42,7 @@ Firebase project-management access is not exposed in the current workspace. The 
 
 The owner must initially create a Firebase project on Spark, without connecting billing. Registering a Web app provides its public configuration. Firestore, Authentication, authorized domains, and reviewed security rules must then be configured through an authenticated administrative channel (or one-time console instructions if no supported connection exists). Do not ask the owner to paste service-account keys or passwords into chat.
 
-No Firebase project, migration, rules deployment, or replacement authentication flow has been implemented by this decision-only change. The app continues using its existing storage while provisioning is unresolved.
+At the time of this decision-only change, no Firebase project, migration, rules deployment, or replacement authentication flow had been implemented. Subsequent implementation status is recorded in [Firebase setup](firebase-setup.md).
 
 ## Sources checked
 

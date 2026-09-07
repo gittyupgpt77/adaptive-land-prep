@@ -7,7 +7,7 @@ Training data stays on-device until the athlete enables automatic private backup
 ## iPhone installation
 Open https://gittyupgpt77.github.io/adaptive-land-prep/ in Safari and choose **Share → Add to Home Screen**.
 
-The no-cost, no-routine-maintenance storage requirements and proposed Firebase migration are tracked in [the storage decision](docs/free-storage-decision.md). That migration is not live. The Capacitor prototype is paused because free personal iPhone provisioning requires recurring reinstallation. The deployed backup behavior below still uses Supabase.
+The no-cost, no-routine-maintenance storage requirements are tracked in [the storage decision](docs/free-storage-decision.md). Firebase support is implemented with a guarded opt-in migration; [one-time Firebase setup](docs/firebase-setup.md) and production verification remain outstanding. Ordinary launches keep the existing provider until a successful Firebase backup. The Capacitor prototype is paused because free personal iPhone provisioning requires recurring reinstallation. The legacy backup behavior below describes Supabase.
 
 ## Private backup and recovery
 Open **Program → View Recovery & Weight Trends → Private cloud backup**.
