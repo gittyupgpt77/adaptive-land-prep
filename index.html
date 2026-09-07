@@ -47,7 +47,11 @@
     <div class="check-task" id="taskMobility"><button class="task-toggle" data-task="mobility" aria-label="Mark mobility complete"><span class="task-circle">○</span></button><button class="task-main" data-action="mobility"><div><strong>Mobility / prehab</strong><small>Durability work for today</small></div><b>›</b></button></div>
   </div>
 
-  <div class="quote-card">“Small, consistent actions compound into durable performance.”</div>
+  <button id="todayProgressCard" class="today-progress-card">
+    <div class="today-progress-head"><small>JOURNEY</small><span id="todayJourneyWeek">Week 1 of 56</span></div>
+    <div class="today-progress-body"><div><strong id="todayJourneyPhase">Foundation</strong><small id="todayJourneyNext">Next qualification loading…</small></div><b>›</b></div>
+    <div class="today-progress-track"><i id="todayJourneyBar"></i></div>
+  </button>
 </section>
 
 <section id="workout" class="screen">
