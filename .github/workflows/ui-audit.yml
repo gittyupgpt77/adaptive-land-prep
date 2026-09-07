@@ -192,12 +192,34 @@ jobs:
           check('Nutrition save persists',await page.evaluate(()=>Object.keys(localStorage).some(k=>k.startsWith('nutrition_')&&JSON.parse(localStorage[k]||'{}').saved)));
           await shot('07-nutrition');
 
-          // Program + Insights.
+          // Program qualification + Insights.
           await page.locator('[data-target="program"]').click();
           check('Program objectives visible',(await page.locator('.quest').count())===4);
+          await page.locator('#openBenchmarks').click();
+          check('Benchmark sheet opens',await visible('#benchmarkSheet'));
+          await page.locator('#benchPushups').fill('60');
+          await page.locator('#benchPullups').fill('12');
+          await page.locator('#benchBodyFat').fill('17.5');
+          await page.locator('#saveBenchmarks').click();
+          check('Benchmarks persist',await page.evaluate(()=>JSON.parse(localStorage.benchmarks||'{}').pushups===60));
+          check('Qualification objectives refresh',(await page.locator('.quest').count())===4);
+          await shot('08-program');
+
+          // A calendar-advanced athlete without earned standards should be prescription-locked.
+          await page.evaluate(()=>{
+            const d=new Date();d.setDate(d.getDate()-18*7);
+            localStorage.programStart=d.toISOString();
+            localStorage.trainingLogs=JSON.stringify([{date:d.toISOString(),week:1,weight:170,hrv:62,rhr:54,grip:52,sleep:8,overall:'GREEN',score:92}]);
+            localStorage.workoutHistory='[]';
+            localStorage.failedDays='[]';
+            localStorage.benchmarks='{}';
+          });
+          await page.reload({waitUntil:'networkidle'});
+          await page.locator('[data-target="program"]').click();
+          check('Unqualified phase advancement is locked',(await page.locator('#currentPhaseCard').innerText()).includes('Phase promotion locked'));
           await page.locator('#openTrends').click();
           check('Insights opens trends',await visible('#trends'));
-          await shot('08-insights');
+          await shot('09-insights');
 
           // Missed-day recovery state.
           await page.evaluate(()=>{
@@ -247,5 +269,6 @@ jobs:
             05-month.png
             06-journey.png
             07-nutrition.png
-            08-insights.png
+            08-program.png
+            09-insights.png
             09-missed-day.png
