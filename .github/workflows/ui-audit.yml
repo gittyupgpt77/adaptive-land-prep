@@ -550,6 +550,13 @@ jobs:
           report.undersizedCriticalControls=undersized;
           check('Critical touch targets are finger-friendly',undersized.length===0,JSON.stringify(undersized));
 
+          await page.evaluate(()=>{
+            for(const key of Object.keys(localStorage))if(key.startsWith('input_session_'))localStorage.removeItem(key);
+            localStorage.workoutHistory=JSON.stringify([{date:new Date().toISOString(),week:1,session:'Easy row',rpe:7,postPain:0,duration:35,completed:'PARTIAL',note:'Stopped early'}]);
+          });
+          await page.reload({waitUntil:'networkidle'});
+          check('Recovered partial session restores feedback',await page.locator('#sessionRPE').inputValue()==='7'&&await page.locator('#postPain').inputValue()==='0'&&await page.locator('#completed').inputValue()==='PARTIAL');
+          check('Recovered session restores duration and note',await page.locator('#sessionDuration').inputValue()==='35'&&await page.locator('#sessionNote').inputValue()==='Stopped early');
           check('No runtime errors',report.errors.length===0,JSON.stringify(report.errors));
           const failed=report.assertions.filter(x=>!x.pass);
           report.summary={total:report.assertions.length,passed:report.assertions.length-failed.length,failed:failed.length,runtimeErrors:report.errors.length};

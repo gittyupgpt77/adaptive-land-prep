@@ -522,9 +522,17 @@ $("openBenchmarks").onclick=()=>{loadBenchmarkForm();$("benchmarkSheet").classLi
  const field=$(id),remember=()=>{if(!historicalDate)localStorage.setItem("input_"+id,field.type==="checkbox"?(field.checked?"1":"0"):field.value)};
  field.addEventListener("input",remember);field.addEventListener("change",remember);
 });
+function restoreSessionFeedback(){
+ const saved=workouts().find(x=>dayKey(x.date)===todayKey());
+ const fields={sessionRPE:"rpe",sessionDuration:"duration",postPain:"postPain",completed:"completed",sessionNote:"note"};
+ for(const [id,property] of Object.entries(fields)){
+  const draft=localStorage.getItem("input_session_"+todayKey()+"_"+id);
+  $(id).value=draft!==null?draft:String(saved?.[property]??"");
+ }
+}
+restoreSessionFeedback();
 ["sessionRPE","sessionDuration","postPain","completed","sessionNote"].forEach(id=>{
- const field=$(id),key=()=>"input_session_"+todayKey()+"_"+id,cached=localStorage.getItem(key());
- if(cached!==null)field.value=cached;
+ const field=$(id),key=()=>"input_session_"+todayKey()+"_"+id;
  const remember=()=>localStorage.setItem(key(),field.value);
  field.addEventListener("input",remember);field.addEventListener("change",remember);
 });
