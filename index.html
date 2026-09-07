@@ -64,8 +64,12 @@
     <div class="why-card"><strong>Why this session?</strong><p id="workoutWhy"></p></div>
     <div class="section-row"><h2>Exercises</h2><span id="exerciseCount"></span></div>
     <div id="workoutPrescription" class="exercise-stack"></div>
-    <button class="complete-session" id="completeWorkoutQuick">✓ Mark Session Complete</button>
-    <details class="session-feedback">
+    <div id="postSessionPrompt" class="post-session-prompt">
+      <strong>After the session</strong>
+      <p>Record effort and pain so tomorrow’s prescription can respond to how this session actually landed.</p>
+    </div>
+    <button class="complete-session" id="completeWorkoutQuick">Review & Complete Session</button>
+    <details class="session-feedback" id="sessionFeedback">
       <summary>Session details & feedback</summary>
       <div class="feedback-grid">
         <label><span>Effort 1–10 <button class="info-dot tiny" data-term="session effort">i</button></span><select id="sessionRPE"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>

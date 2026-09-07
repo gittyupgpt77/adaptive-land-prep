@@ -139,6 +139,15 @@ jobs:
           check('Under-fueling is explained on Today',(await page.locator('#adaptationBanner').innerText()).toLowerCase().includes('fuel'));
           await page.locator('[data-target="workout"]').click();
           check('Under-fueling modifies actual training prescription',/Modified|Recovery/i.test(await page.locator('#workoutTitle').innerText()));
+          // Completion must capture athlete response; yesterday's response must affect tomorrow's mechanical state.
+          await page.locator('#completeWorkoutQuick').click();
+          check('Completion opens response capture',await page.locator('#sessionFeedback').evaluate(n=>n.open));
+          await page.locator('#sessionRPE').selectOption('9');
+          await page.locator('#postPain').selectOption('4');
+          await page.locator('#completed').selectOption('YES');
+          await page.locator('#completeWorkout').click();
+          check('Workout response persists',await page.evaluate(()=>{const w=JSON.parse(localStorage.workoutHistory||'[]')[0];return w?.rpe===9&&w?.postPain===4&&w?.completed==='YES';}));
+          check('Workout task completes only from saved session',await page.locator('#taskWorkout').evaluate(n=>n.classList.contains('done')));
           await page.locator('[data-target="nutrition"]').click();
           check('Red fueling signal raises today nutrition target',(await page.locator('#nutritionToday').innerText()).includes('1,650'));
           check('Red fueling signal adds explicit recovery carbohydrate food',(await page.locator('#nutritionMeals').innerText()).includes('Recovery Carbohydrate Add-On'));
@@ -159,7 +168,7 @@ jobs:
           await page.locator('.task-toggle[data-task="checkin"]').click();
           check('Completed check-in circle remains complete', await page.locator('#taskCheckin').evaluate(n=>n.classList.contains('done')));
           await page.locator('.task-toggle[data-task="workout"]').click();
-          check('Workout circle can certify completion', await page.locator('#taskWorkout').evaluate(n=>n.classList.contains('done')));
+          check('Workout circle cannot bypass response capture', await page.locator('#sessionFeedback').evaluate(n=>n.open));
           await page.locator('.task-toggle[data-task="nutrition"]').click();
           check('Nutrition circle independently toggles review', await page.locator('#taskNutrition').evaluate(n=>n.classList.contains('done')));
           await page.locator('.task-toggle[data-task="nutrition"]').click();

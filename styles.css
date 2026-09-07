@@ -347,3 +347,8 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .library-thumb{height:72px;border-radius:12px}
 .library-item strong{font-size:13px;line-height:1.25}
 .library-item small{font-size:10px;line-height:1.35;margin-top:4px}
+
+.post-session-prompt{margin-top:14px;padding:13px 14px;border-radius:14px;background:#f7fafc;border:1px solid #dce5ed;color:#20303c}
+.post-session-prompt strong{font-size:12px}.post-session-prompt p{margin:4px 0 0;font-size:10px;line-height:1.45;color:#708394}
+.post-session-prompt.done{background:#f2fbf5;border-color:#ccebd6}
+.complete-session:disabled{opacity:.7}
