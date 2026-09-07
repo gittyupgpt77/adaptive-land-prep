@@ -136,6 +136,7 @@
   <div class="section-row"><h2>Phase Objectives</h2><span id="milestoneCount"></span></div>
   <div id="objectiveMeta" class="objective-meta"></div>
   <div id="phaseMilestones" class="milestone-list"></div>
+  <button id="openBenchmarks" class="benchmark-entry"><span>＋</span><div><strong>Update Qualification Benchmarks</strong><small>Push-ups, pull-ups, sit-ups, run, weighted-pack work and body composition</small></div><b>›</b></button>
   <div class="section-row"><h2>All Phases</h2></div>
   <div id="programBlocks" class="phase-list"></div>
   <button id="openTrends" class="program-insights">View Recovery & Weight Trends</button>
@@ -151,6 +152,16 @@
 </nav>
 </div>
 
+<div id="benchmarkSheet" class="sheet-backdrop hidden"><div class="sheet benchmark-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small>QUALIFICATION</small><h2>Benchmarks</h2></div><button id="benchmarkClose">×</button></div><p class="benchmark-intro">Enter tested results only. These standards help determine whether the athlete has earned progression; they do not replace recovery or injury safeguards.</p><div class="benchmark-grid">
+<label><span>Push-ups</span><input id="benchPushups" type="number" inputmode="numeric" placeholder="max strict"></label>
+<label><span>Pull-ups</span><input id="benchPullups" type="number" inputmode="numeric" placeholder="max strict"></label>
+<label><span>Sit-ups</span><input id="benchSitups" type="number" inputmode="numeric" placeholder="test reps"></label>
+<label><span>4-mile run</span><input id="benchRun4" type="text" inputmode="decimal" placeholder="mm:ss"></label>
+<label><span>Weighted-pack distance</span><input id="benchRuckMiles" type="number" inputmode="decimal" step=".1" placeholder="miles"></label>
+<label><span>Pack weight</span><input id="benchRuckWeight" type="number" inputmode="decimal" placeholder="lb"></label>
+<label><span>Body fat</span><input id="benchBodyFat" type="number" inputmode="decimal" step=".1" placeholder="%"></label>
+<label><span>Peak durability</span><select id="benchPeakPainFree"><option value="">Not tested</option><option value="YES">Completed pain-free</option><option value="NO">Not yet</option></select></label>
+</div><button id="saveBenchmarks" class="sheet-primary">Save Benchmarks</button></div></div>
 <div id="readinessSheet" class="sheet-backdrop hidden"><div class="sheet readiness-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small>ADAPTIVE STATUS</small><h2>Readiness</h2></div><button id="readinessClose">×</button></div><div id="readinessDetail"></div></div></div>
 <div id="checkinSheet" class="sheet-backdrop hidden">
   <div class="sheet">
