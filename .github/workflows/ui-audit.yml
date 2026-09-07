@@ -36,7 +36,7 @@ jobs:
           page.on('pageerror', e => report.errors.push({type:'pageerror', message:e.message}));
           page.on('console', m => { if(m.type()==='error') report.errors.push({type:'console', message:m.text()}); });
           const visible = async sel => await page.locator(sel).isVisible().catch(()=>false);
-          const shot = async name => page.screenshot({path:name+'.png',fullPage:false});
+          const shot = async name => { await page.evaluate(()=>window.scrollTo(0,0)); await page.waitForTimeout(60); return page.screenshot({path:name+'.png',fullPage:false}); };
 
           await page.goto('http://127.0.0.1:8080',{waitUntil:'networkidle'});
           await page.evaluate(()=>localStorage.clear());
