@@ -23,7 +23,7 @@ test('developer shorthand is removed from athlete-facing workout doses',()=>{
  for(const phrase of ['Use current phase target','Use weekly allocation','Use this week’s mileage allocation','Use current weekly target','Follow current block target','Phase-specific intervals or tempo','Use quality-run structure']){
    assert.equal(s.includes(phrase),false,phrase);
  }
- assert.match(s,/If none is current, replace the quality segment with 20–40 min easy rowing/);
+ assert.match(s,/If none is current, do not guess at intensity; replace the quality segment with easy Concept2 work within this week’s C2 target/);
 });
 
 test('weekly actual work counts completed and partial work but not skipped work',()=>{
