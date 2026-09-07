@@ -214,6 +214,7 @@ jobs:
           const coverage=libraryCount?loadedPhotos/libraryCount:0;report.counts.realImageCoverage=Math.round(coverage*100);
           check('Real exercise image coverage is high',coverage>=.85,'coverage='+Math.round(coverage*100)+'%, fallbacks='+visualFallbacks);
           await shot('04-library');
+          check('Library visual capture starts at search/filter controls',await page.locator('#librarySearch').isInViewport()&&await page.locator('#libraryFilters').isInViewport());
 
           // Calendar Week: every day; both day tabs.
           await page.locator('[data-target="week"]').click();
@@ -253,6 +254,7 @@ jobs:
           }
           await page.locator('[data-calview="journey"]').click();
           await shot('06-journey');
+          check('Journey visual capture starts at roadmap summary',await page.locator('.journey-overview-head').isInViewport()&&await page.locator('#journeyPhaseMap').isInViewport());
 
           // Nutrition: every meal has two independent interactions.
           await page.locator('[data-target="nutrition"]').click();
@@ -274,6 +276,7 @@ jobs:
           check('Nutrition save persists',await page.evaluate(()=>Object.keys(localStorage).some(k=>k.startsWith('nutrition_')&&JSON.parse(localStorage[k]||'{}').saved)));
           check('Actual intake persists exactly',await page.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('nutrition_'));const n=JSON.parse(localStorage[k]||'{}');return n.actualCalories===1525&&n.actualProtein===181&&n.actualCarbs===112&&n.actualFat===42;}));
           await shot('07-nutrition');
+          check('Nutrition visual capture starts at daily target',await page.locator('#nutritionToday').isInViewport());
 
           // Program qualification + Insights.
           await page.locator('[data-target="program"]').click();
@@ -287,6 +290,7 @@ jobs:
           check('Benchmarks persist',await page.evaluate(()=>JSON.parse(localStorage.benchmarks||'{}').pushups===60));
           check('Qualification objectives refresh',(await page.locator('.quest').count())===4);
           await shot('08-program');
+          check('Program visual capture starts at current phase',await page.locator('#currentPhaseCard').isInViewport());
 
           // A calendar-advanced athlete without earned standards should be prescription-locked.
           await page.evaluate(()=>{
