@@ -287,3 +287,6 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .library-filters::-webkit-scrollbar{display:none}
 .library-filter{flex:0 0 auto;border:1px solid #dce5ed;background:white;color:#6f8190;border-radius:999px;padding:7px 10px;font-size:9px;font-weight:650}
 .library-filter.active{background:#147be8;border-color:#147be8;color:white;box-shadow:0 3px 9px rgba(20,123,232,.16)}
+
+.adaptation-banner{width:100%;border:1px solid #f1d59e;background:#fff8eb;color:#6d511f;border-radius:15px;padding:11px 12px;margin-top:10px;display:grid;grid-template-columns:1fr 18px;gap:9px;align-items:center;text-align:left;box-shadow:0 4px 14px rgba(118,82,20,.05)}
+.adaptation-banner.red{background:#fff1f1;border-color:#efc3c3;color:#8f3838}.adaptation-banner>div{display:flex;flex-direction:column;gap:2px}.adaptation-banner small{font-size:8px;font-weight:750;letter-spacing:.08em;opacity:.75}.adaptation-banner strong{font-size:11px}.adaptation-banner span{font-size:9px;line-height:1.4;opacity:.78}.adaptation-banner>b{font-size:20px;font-weight:400;opacity:.6}
