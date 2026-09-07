@@ -137,6 +137,12 @@ jobs:
           await page.locator('.task-toggle[data-task="mobility"]').click();
           check('Mobility circle independently checks task', await page.locator('#taskMobility').evaluate(n=>n.classList.contains('done')));
 
+          check('Today shows current Journey position',(await page.locator('#todayJourneyWeek').innerText()).includes('of 56'));
+          check('Today surfaces next qualification',(await page.locator('#todayJourneyNext').innerText()).length>8);
+          await page.locator('#todayProgressCard').click();
+          check('Journey progress card opens Program',await visible('#program'));
+          await page.locator('[data-target="today"]').click();
+
           // Header calendar icon is a real navigation control.
           await page.locator('#headerAction').click();
           check('Header calendar opens Calendar',await visible('#week'));
