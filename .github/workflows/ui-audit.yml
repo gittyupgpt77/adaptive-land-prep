@@ -81,8 +81,21 @@ jobs:
           await page.locator('.task-main[data-action="mobility"]').click();
           check('Mobility row opens guidance', await visible('#infoModal'));
           await page.locator('#modalClose').click();
+          await page.locator('.task-toggle[data-task="checkin"]').click();
+          check('Completed check-in circle remains complete', await page.locator('#taskCheckin').evaluate(n=>n.classList.contains('done')));
+          await page.locator('.task-toggle[data-task="workout"]').click();
+          check('Workout circle can certify completion', await page.locator('#taskWorkout').evaluate(n=>n.classList.contains('done')));
+          await page.locator('.task-toggle[data-task="nutrition"]').click();
+          check('Nutrition circle independently toggles review', await page.locator('#taskNutrition').evaluate(n=>n.classList.contains('done')));
+          await page.locator('.task-toggle[data-task="nutrition"]').click();
+          check('Nutrition circle toggles back independently', !(await page.locator('#taskNutrition').evaluate(n=>n.classList.contains('done'))));
           await page.locator('.task-toggle[data-task="mobility"]').click();
           check('Mobility circle independently checks task', await page.locator('#taskMobility').evaluate(n=>n.classList.contains('done')));
+
+          // Header calendar icon is a real navigation control.
+          await page.locator('#headerAction').click();
+          check('Header calendar opens Calendar',await visible('#week'));
+          await page.locator('[data-target="today"]').click();
 
           // Primary navigation.
           const tabs=['today','workout','week','nutrition','program'];
@@ -108,11 +121,23 @@ jobs:
           await page.locator('#librarySearch').fill('');
           const libraryCount=await page.locator('.library-item').count(); report.counts.libraryExercises=libraryCount;
           check('Library has broad movement coverage', libraryCount>=35, 'count='+libraryCount);
+          let loadedPhotos=0, visualFallbacks=0;
           for(let i=0;i<libraryCount;i++){
-            await page.locator('.library-item').nth(i).click();
+            const item=page.locator('.library-item').nth(i);
+            await item.scrollIntoViewIfNeeded();
+            await page.waitForTimeout(35);
+            const img=item.locator('img');
+            if(await img.count()){
+              const loaded=await img.evaluate(n=>n.complete&&n.naturalWidth>0);
+              if(loaded)loadedPhotos++;
+            } else if(await item.locator('.exercise-photo-missing').count()) visualFallbacks++;
+            await item.click();
             check('Library exercise '+(i+1)+' opens detail', await visible('#infoModal'));
             await page.locator('#modalDone').click();
           }
+          report.counts.loadedExercisePhotos=loadedPhotos;report.counts.visualFallbacks=visualFallbacks;
+          const coverage=libraryCount?loadedPhotos/libraryCount:0;report.counts.realImageCoverage=Math.round(coverage*100);
+          check('Real exercise image coverage is high',coverage>=.85,'coverage='+Math.round(coverage*100)+'%, fallbacks='+visualFallbacks);
           await shot('04-library');
 
           // Calendar Week: every day; both day tabs.
