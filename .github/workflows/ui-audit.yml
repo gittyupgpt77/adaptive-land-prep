@@ -1,4 +1,4 @@
-name: UI Audit
+name: Consumer Audit
 on:
   workflow_dispatch:
   push:
@@ -20,99 +20,202 @@ jobs:
       - run: npx playwright install --with-deps webkit
       - name: Start local app
         run: python3 -m http.server 8080 >/tmp/server.log 2>&1 &
-      - name: Capture iPhone viewport
+      - name: Run consumer simulation
         run: |
           cat > audit.mjs <<'JS'
           import { webkit } from 'playwright';
+          import fs from 'fs';
+
           const browser = await webkit.launch();
           const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
-          await page.goto('http://127.0.0.1:8080', { waitUntil: 'networkidle' });
+          const report = { assertions: [], errors: [], counts: {}, notes: [] };
+          const check = (name, value, detail='') => { report.assertions.push({name, pass:!!value, detail}); if(!value) throw new Error('ASSERT: '+name+' '+detail); };
+          page.on('pageerror', e => report.errors.push({type:'pageerror', message:e.message}));
+          page.on('console', m => { if(m.type()==='error') report.errors.push({type:'console', message:m.text()}); });
+          const visible = async sel => await page.locator(sel).isVisible().catch(()=>false);
+          const shot = async name => page.screenshot({path:name+'.png',fullPage:true});
 
-          await page.screenshot({ path: 'today.png', fullPage: true });
-
-          await page.evaluate(() => {
-            const d=new Date(); d.setDate(d.getDate()-2);
-            localStorage.programStart=d.toISOString();
-            localStorage.trainingLogs='[]';
-            localStorage.workoutHistory='[]';
-            localStorage.failedDays='[]';
-          });
-          await page.reload({waitUntil:'networkidle'});
-          await page.waitForTimeout(120);
-          await page.screenshot({ path: 'missed-day.png', fullPage: true });
-
-          await page.evaluate(() => {
-            localStorage.clear();
-          });
+          await page.goto('http://127.0.0.1:8080',{waitUntil:'networkidle'});
+          await page.evaluate(()=>localStorage.clear());
           await page.reload({waitUntil:'networkidle'});
 
-          await page.locator('#taskCheckin').click();
+          // Fresh-install semantics.
+          check('Fresh install has no program start', await page.evaluate(()=>!localStorage.programStart));
+          check('Begin Journey card visible', await visible('#journeyStartCard'));
+          check('No curriculum debt before Day 1', !(await visible('#missedDayBanner')));
+          await shot('01-fresh-today');
+
+          // Begin Journey -> actual baseline -> Day 1.
+          await page.locator('#beginJourneyBtn').click();
+          check('Begin Journey opens check-in', await visible('#checkinSheet'));
+          const fields = {hrv:'62',rhr:'54',sleep:'8',sleepQ:'5',fatigue:'1',grip:'52',load:'2',pain:'0',performance:'YES',weight:'170'};
+          for(const [id,v] of Object.entries(fields)){
+            const el=page.locator('#'+id);
+            if(await el.evaluate(n=>n.tagName)==='SELECT') await el.selectOption(v); else await el.fill(v);
+          }
+          await page.locator('#evaluateBtn').click();
+          check('Evaluate reveals adaptive results', await visible('#results'));
+          await page.locator('#saveBtn').click();
           await page.waitForTimeout(150);
-          await page.screenshot({ path: 'checkin.png', fullPage: true });
-          await page.locator('#closeCheckin').click();
+          check('Program start created from real check-in', await page.evaluate(()=>!!localStorage.programStart));
+          check('Journey onboarding disappears', !(await visible('#journeyStartCard')));
+          check('Readiness score exists', (await page.locator('#readinessScore').textContent())!=='—');
+          await shot('02-started-today');
 
-          await page.evaluate(() => { const d=new Date(); d.setDate(d.getDate()-1); localStorage.programStart=d.toISOString(); localStorage.failedDays='[]'; });
-          await page.reload({waitUntil:'networkidle'});
+          // Readiness is actually interactive.
+          await page.locator('#readinessCard').click();
+          check('Readiness opens detail sheet', await visible('#readinessSheet'));
+          check('Readiness detail has adaptive prescription', (await page.locator('#readinessDetail').innerText()).includes('Adaptive prescription'));
+          await shot('03-readiness-detail');
+          await page.locator('#readinessClose').click();
+
+          // Today split interactions.
+          const taskActions=['checkin','workout','nutrition','mobility'];
+          for(const action of taskActions){
+            check('Task main exists: '+action, await visible('.task-main[data-action="'+action+'"]'));
+            check('Task toggle exists: '+action, await visible('.task-toggle[data-task="'+action+'"]'));
+          }
+          await page.locator('.task-main[data-action="nutrition"]').click();
+          check('Nutrition row navigates to Nutrition', await visible('#nutrition'));
+          await page.locator('[data-target="today"]').click();
+          await page.locator('.task-main[data-action="mobility"]').click();
+          check('Mobility row opens guidance', await visible('#infoModal'));
+          await page.locator('#modalClose').click();
+          await page.locator('.task-toggle[data-task="mobility"]').click();
+          check('Mobility circle independently checks task', await page.locator('#taskMobility').evaluate(n=>n.classList.contains('done')));
+
+          // Primary navigation.
+          const tabs=['today','workout','week','nutrition','program'];
+          for(const t of tabs){
+            await page.locator('[data-target="'+t+'"]').click();
+            check('Tab opens '+t, await visible('#'+t));
+            check('Tab '+t+' resets scroll', (await page.evaluate(()=>window.scrollY))===0);
+          }
+
+          // Train: every current-session exercise.
           await page.locator('[data-target="workout"]').click();
-          await page.waitForTimeout(200);
-          await page.screenshot({ path: 'train.png', fullPage: true });
-
-          await page.locator('[data-trainview="library"]').click();
-          await page.locator('#librarySearch').fill('plank');
-          await page.waitForTimeout(120);
-          await page.screenshot({ path: 'library-search.png', fullPage: true });
-          const plank = page.locator('.library-item').first();
-          if (await plank.count()) {
-            await plank.click();
-            await page.waitForTimeout(120);
-            await page.screenshot({ path: 'exercise-detail.png', fullPage: true });
+          const sessionCount=await page.locator('.exercise-card').count(); report.counts.sessionExercises=sessionCount;
+          for(let i=0;i<sessionCount;i++){
+            await page.locator('.exercise-card').nth(i).click();
+            check('Session exercise '+(i+1)+' opens detail', await visible('#infoModal'));
             await page.locator('#modalDone').click();
           }
-          await page.locator('[data-trainview="session"]').click();
 
+          // Library search + every library exercise.
+          await page.locator('[data-trainview="library"]').click();
+          await page.locator('#librarySearch').fill('plank');
+          check('Library search filters', (await page.locator('.library-item').count())>0);
+          await page.locator('#librarySearch').fill('');
+          const libraryCount=await page.locator('.library-item').count(); report.counts.libraryExercises=libraryCount;
+          check('Library has broad movement coverage', libraryCount>=35, 'count='+libraryCount);
+          for(let i=0;i<libraryCount;i++){
+            await page.locator('.library-item').nth(i).click();
+            check('Library exercise '+(i+1)+' opens detail', await visible('#infoModal'));
+            await page.locator('#modalDone').click();
+          }
+          await shot('04-library');
+
+          // Calendar Week: every day; both day tabs.
           await page.locator('[data-target="week"]').click();
-          await page.waitForTimeout(200);
-          await page.screenshot({ path: 'week.png', fullPage: true });
-
-          const d = page.locator('.day-button').nth(1);
-          if (await d.count()) {
-            await d.click();
-            await page.waitForTimeout(120);
-            await page.screenshot({ path: 'day-training.png', fullPage: true });
+          const days=await page.locator('.day-button').count(); report.counts.weekDays=days; check('Week exposes seven days',days===7);
+          for(let i=0;i<days;i++){
+            await page.locator('.day-button').nth(i).click();
+            check('Day '+(i+1)+' opens',await visible('#daySheet'));
             await page.locator('[data-daytab="nutrition"]').click();
-            await page.waitForTimeout(120);
-            await page.screenshot({ path: 'day-nutrition.png', fullPage: true });
+            check('Day nutrition tab renders macros',(await page.locator('#daySheetBody').innerText()).includes('Protein'));
+            await page.locator('[data-daytab="training"]').click();
+            check('Day training tab renders session',(await page.locator('#daySheetBody').innerText()).length>40);
             await page.locator('#daySheetClose').click();
           }
 
+          // Calendar Month: click every enabled date.
           await page.locator('[data-calview="month"]').click();
-          await page.waitForTimeout(150);
-          await page.screenshot({ path: 'month.png', fullPage: true });
+          const monthDates=page.locator('.month-cell[data-date]:not([disabled])');
+          const monthCount=await monthDates.count();report.counts.monthDates=monthCount;check('Month has interactive dates',monthCount>0);
+          for(let i=0;i<monthCount;i++){
+            await monthDates.nth(i).click();
+            check('Month date '+(i+1)+' opens day',await visible('#daySheet'));
+            await page.locator('#daySheetClose').click();
+          }
+          await shot('05-month');
 
-          await page.locator('[data-target="trends"]').click();
-          await page.waitForTimeout(150);
-          await page.screenshot({ path: 'trends.png', fullPage: true });
+          // Journey: click every month-level segment.
+          await page.locator('[data-calview="journey"]').click();
+          const journeyCount=await page.locator('.journey-month').count();report.counts.journeyMonths=journeyCount;
+          check('Journey exposes long-range roadmap',journeyCount>=12,'count='+journeyCount);
+          for(let i=0;i<journeyCount;i++){
+            await page.locator('[data-calview="journey"]').click();
+            const item=page.locator('.journey-month').nth(i);
+            if(await item.count()){await item.click();check('Journey month '+(i+1)+' returns to Week',await visible('#weekView'));}
+          }
+          await page.locator('[data-calview="journey"]').click();
+          await shot('06-journey');
 
+          // Nutrition: every meal has two independent interactions.
+          await page.locator('[data-target="nutrition"]').click();
+          const mealCount=await page.locator('.meal-card').count();report.counts.meals=mealCount;check('Nutrition shows actual meals',mealCount>=4);
+          for(let i=0;i<mealCount;i++){
+            const card=page.locator('.meal-card').nth(i);
+            await card.locator('.meal-main').click();
+            check('Meal '+(i+1)+' opens food detail',await visible('#infoModal'));
+            await page.locator('#modalClose').click();
+            await card.locator('.meal-check').click();
+          }
+          check('Meal completion updates progress',(await page.locator('#mealProgress').textContent()).startsWith(mealCount+'/'));
+          await page.locator('#waterActual').fill('120');
+          await page.locator('#saveNutritionDay').click();
+          check('Nutrition save persists',await page.evaluate(()=>Object.keys(localStorage).some(k=>k.startsWith('nutrition_')&&JSON.parse(localStorage[k]||'{}').saved)));
+          await shot('07-nutrition');
+
+          // Program + Insights.
           await page.locator('[data-target="program"]').click();
-          await page.waitForTimeout(150);
-          await page.screenshot({ path: 'program.png', fullPage: true });
+          check('Program objectives visible',(await page.locator('.quest').count())===4);
+          await page.locator('#openTrends').click();
+          check('Insights opens trends',await visible('#trends'));
+          await shot('08-insights');
 
+          // Missed-day recovery state.
+          await page.evaluate(()=>{
+            const start=new Date();start.setDate(start.getDate()-3);
+            localStorage.programStart=start.toISOString();
+            localStorage.trainingLogs='[]';localStorage.workoutHistory='[]';localStorage.failedDays='[]';
+          });
+          await page.reload({waitUntil:'networkidle'});
+          check('Missed-day debt appears only after a started journey',await visible('#missedDayBanner'));
+          check('Missed-day offers reconstruction',await visible('#resolveMissed'));
+          check('Missed-day offers explicit failure',await visible('#failMissed'));
+          await page.locator('#resolveMissed').click();
+          check('Retrospective check-in opens',await visible('#checkinSheet'));
+          check('Retrospective sheet is labeled',(await page.locator('#checkinSheet').innerText()).includes('RETROSPECTIVE'));
+          await page.locator('#closeCheckin').click();
+          await shot('09-missed-day');
+
+          // Inventory all currently visible button-like controls on major states.
+          await page.evaluate(()=>localStorage.clear());await page.reload({waitUntil:'networkidle'});
+          const inventory={};
+          for(const t of tabs){
+            await page.locator('[data-target="'+t+'"]').click();
+            inventory[t]=await page.locator('button:visible,[role="button"]:visible,summary:visible').evaluateAll(els=>els.map((e,i)=>({i,text:(e.innerText||e.getAttribute('aria-label')||'').trim().slice(0,80),id:e.id||'',cls:e.className||''})));
+          }
+          report.inventory=inventory;
+          report.counts.totalVisibleControls=Object.values(inventory).reduce((n,a)=>n+a.length,0);
+
+          check('No runtime errors',report.errors.length===0,JSON.stringify(report.errors));
+          fs.writeFileSync('consumer-report.json',JSON.stringify(report,null,2));
           await browser.close();
           JS
           node audit.mjs
       - uses: actions/upload-artifact@v4
         with:
-          name: iphone-ui-audit
+          name: consumer-audit
           path: |
-            today.png
-            missed-day.png
-            checkin.png
-            train.png
-            library-search.png
-            exercise-detail.png
-            week.png
-            day-training.png
-            day-nutrition.png
-            month.png
-            trends.png
-            program.png
+            consumer-report.json
+            01-fresh-today.png
+            02-started-today.png
+            03-readiness-detail.png
+            04-library.png
+            05-month.png
+            06-journey.png
+            07-nutrition.png
+            08-insights.png
+            09-missed-day.png
