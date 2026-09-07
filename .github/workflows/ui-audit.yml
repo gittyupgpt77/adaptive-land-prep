@@ -27,26 +27,59 @@ jobs:
           const browser = await webkit.launch();
           const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
           await page.goto('http://127.0.0.1:8080', { waitUntil: 'networkidle' });
+
           await page.screenshot({ path: 'today.png', fullPage: true });
-          await page.locator('#taskCheckin').click(); await page.waitForTimeout(200); await page.screenshot({ path: 'checkin.png', fullPage: true }); await page.locator('#closeCheckin').click();
-          for (const [target,name] of [['workout','train'],['week','week'],['trends','trends'],['program','program']]) {
-            await page.locator('[data-target="'+target+'"]').click();
-            await page.waitForTimeout(300);
-            await page.screenshot({ path: name+'.png', fullPage: true });
-            if (target==='workout') {
-              const lib=page.locator('[data-trainview="library"]'); await lib.click(); await page.locator('#librarySearch').fill('plank'); await page.waitForTimeout(150); await page.screenshot({path:'library-search.png',fullPage:true}); await page.locator('[data-trainview="session"]').click();
-              const ex=page.locator('.exercise-card').nth(1); if(await ex.count()){await ex.click();await page.waitForTimeout(150);await page.screenshot({path:'exercise-detail.png',fullPage:true});await page.locator('#modalDone').click();}
-            }
-            if (target==='week') {
-              const d=page.locator('.day-button').nth(1); if(await d.count()){await d.click();await page.waitForTimeout(150);await page.screenshot({path:'day-training.png',fullPage:true});await page.locator('[data-daytab="nutrition"]').click();await page.waitForTimeout(120);await page.screenshot({path:'day-nutrition.png',fullPage:true});await page.locator('#daySheetClose').click();}
-              await page.locator('[data-calview="month"]').click();await page.waitForTimeout(180);await page.screenshot({path:'month.png',fullPage:true});
-            }
-            if (target==='workout') { const ex=page.locator('.exercise-card').nth(1); if(await ex.count()){await ex.click();await page.waitForTimeout(200);await page.screenshot({path:'exercise-detail.png',fullPage:true});await page.locator('#modalDone').click();} }
-            if (target==='week') { const d=page.locator('.day-button').nth(1); if(await d.count()){await d.click();await page.waitForTimeout(200);await page.screenshot({path:'day-training.png
-            day-nutrition.png
-            month.png
-            library-search.png',fullPage:true});} }
+
+          await page.locator('#taskCheckin').click();
+          await page.waitForTimeout(150);
+          await page.screenshot({ path: 'checkin.png', fullPage: true });
+          await page.locator('#closeCheckin').click();
+
+          await page.locator('[data-target="workout"]').click();
+          await page.waitForTimeout(200);
+          await page.screenshot({ path: 'train.png', fullPage: true });
+
+          await page.locator('[data-trainview="library"]').click();
+          await page.locator('#librarySearch').fill('plank');
+          await page.waitForTimeout(120);
+          await page.screenshot({ path: 'library-search.png', fullPage: true });
+          await page.locator('[data-trainview="session"]').click();
+
+          const ex = page.locator('.exercise-card').nth(1);
+          if (await ex.count()) {
+            await ex.click();
+            await page.waitForTimeout(120);
+            await page.screenshot({ path: 'exercise-detail.png', fullPage: true });
+            await page.locator('#modalDone').click();
           }
+
+          await page.locator('[data-target="week"]').click();
+          await page.waitForTimeout(200);
+          await page.screenshot({ path: 'week.png', fullPage: true });
+
+          const d = page.locator('.day-button').nth(1);
+          if (await d.count()) {
+            await d.click();
+            await page.waitForTimeout(120);
+            await page.screenshot({ path: 'day-training.png', fullPage: true });
+            await page.locator('[data-daytab="nutrition"]').click();
+            await page.waitForTimeout(120);
+            await page.screenshot({ path: 'day-nutrition.png', fullPage: true });
+            await page.locator('#daySheetClose').click();
+          }
+
+          await page.locator('[data-calview="month"]').click();
+          await page.waitForTimeout(150);
+          await page.screenshot({ path: 'month.png', fullPage: true });
+
+          await page.locator('[data-target="trends"]').click();
+          await page.waitForTimeout(150);
+          await page.screenshot({ path: 'trends.png', fullPage: true });
+
+          await page.locator('[data-target="program"]').click();
+          await page.waitForTimeout(150);
+          await page.screenshot({ path: 'program.png', fullPage: true });
+
           await browser.close();
           JS
           node audit.mjs
@@ -55,10 +88,13 @@ jobs:
           name: iphone-ui-audit
           path: |
             today.png
+            checkin.png
             train.png
+            library-search.png
+            exercise-detail.png
             week.png
+            day-training.png
+            day-nutrition.png
+            month.png
             trends.png
             program.png
-            checkin.png
-            exercise-detail.png
-            week-expanded.png
