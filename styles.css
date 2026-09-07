@@ -173,3 +173,9 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .quest{grid-template-columns:24px 1fr auto}.quest>b{font-size:9px;color:#61b9ff}.quest-progress{height:4px;border-radius:99px;background:#1d384f;margin-top:6px;overflow:hidden}.quest-progress i{display:block;height:100%;background:linear-gradient(90deg,#1794ff,#4ee382);border-radius:99px}
 .sheet-backdrop{background:rgba(33,48,61,.52)}
 @media(max-width:360px){.month-grid,.month-weekdays{gap:3px}.month-cell{border-radius:8px}}
+
+.screen.active{animation:screenSlide .14s ease}
+@keyframes screenSlide{from{transform:translateY(3px)}to{transform:none}}
+.sheet,.sheet h2,.sheet h3,.sheet summary{color:#f7fbff}
+.sheet-head h2{color:#f7fbff!important}
+.day-sheet .sheet-head h2,.exercise-sheet .sheet-head h2{color:#f7fbff!important}
