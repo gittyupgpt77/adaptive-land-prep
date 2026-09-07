@@ -137,11 +137,32 @@ jobs:
           await page.waitForTimeout(120);
           check('Under-fueling changes saved fueling state',await page.evaluate(()=>{const l=JSON.parse(localStorage.trainingLogs||'[]');return l[0]?.decision?.c==='YELLOW'||l[0]?.decision?.c==='RED';}));
           check('Under-fueling is explained on Today',(await page.locator('#adaptationBanner').innerText()).toLowerCase().includes('fuel'));
+          await page.evaluate(()=>{
+            const y=new Date();y.setDate(y.getDate()-1);
+            localStorage.removeItem('nutrition_'+y.toDateString());
+            localStorage.workoutHistory=JSON.stringify([{date:y.toISOString(),week:1,session:'Easy aerobic row',rpe:8,postPain:4,completed:'YES'}]);
+          });
+          await page.locator('.task-main[data-action="checkin"]').click();
+          await page.locator('#sleep').fill('8');
+          await page.locator('#sleepQ').selectOption('5');
+          await page.locator('#fatigue').selectOption('1');
+          await page.locator('#pain').selectOption('0');
+          await page.locator('#load').selectOption('2');
+          await page.locator('#evaluateBtn').click();
+          await page.locator('#saveBtn').click();
+          await page.waitForTimeout(80);
+          check('Yesterday session response changes saved mechanical state',await page.evaluate(()=>JSON.parse(localStorage.trainingLogs||'[]')[0]?.decision?.b==='YELLOW'));
+          check('Yesterday session response is preserved in readiness snapshot',await page.evaluate(()=>JSON.parse(localStorage.trainingLogs||'[]')[0]?.priorWorkoutSignal?.level==='YELLOW'));
+          check('Today explains prior-session pain',(await page.locator('#adaptationBanner').innerText()).includes('Yesterday'));
           await page.locator('[data-target="workout"]').click();
           check('Under-fueling modifies actual training prescription',/Modified|Recovery/i.test(await page.locator('#workoutTitle').innerText()));
           // Completion must capture athlete response; yesterday's response must affect tomorrow's mechanical state.
           await page.locator('#completeWorkoutQuick').click();
           check('Completion opens response capture',await page.locator('#sessionFeedback').evaluate(n=>n.open));
+          await page.locator('#completeWorkout').click();
+          check('Empty completion response is rejected',await page.evaluate(()=>JSON.parse(localStorage.workoutHistory||'[]').length===0));
+          check('Missing response explains what is needed',(await page.locator('#completionBanner').innerText()).includes('effort'));
+          await shot('03b-session-response');
           await page.locator('#sessionRPE').selectOption('9');
           await page.locator('#postPain').selectOption('4');
           await page.locator('#completed').selectOption('YES');
