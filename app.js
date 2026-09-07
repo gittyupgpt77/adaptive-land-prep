@@ -223,8 +223,8 @@ function adaptationExplanation(d){
  if(!d)return null;const dec=d.decision||decision(),reasons=[];
  if(dec.a==="RED")reasons.push("recovery markers are substantially outside your normal range");
  else if(dec.a==="YELLOW")reasons.push("recovery markers are mildly suppressed");
- if(dec.b==="RED")reasons.push(d.priorWorkoutSignal?.level==="RED"?d.priorWorkoutSignal.reason.replace(/\.$/,"").toLowerCase():"pain or movement quality triggered a mechanical stop rule");
- else if(dec.b==="YELLOW")reasons.push(d.priorWorkoutSignal?.level==="YELLOW"?d.priorWorkoutSignal.reason.replace(/\.$/,"").toLowerCase():"mechanical symptoms warrant reduced loading");
+ if(dec.b==="RED")reasons.push(d.priorWorkoutSignal?.level==="RED"?d.priorWorkoutSignal.reason.replace(/\.$/,""):"pain or movement quality triggered a mechanical stop rule");
+ else if(dec.b==="YELLOW")reasons.push(d.priorWorkoutSignal?.level==="YELLOW"?d.priorWorkoutSignal.reason.replace(/\.$/,""):"mechanical symptoms warrant reduced loading");
  if(dec.c==="RED")reasons.push("recent fueling and body-weight trend suggest meaningful under-fueling");
  else if(dec.c==="YELLOW")reasons.push("recent fueling is below the preferred range for the current workload");
  if(!reasons.length)return null;
