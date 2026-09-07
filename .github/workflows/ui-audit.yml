@@ -154,6 +154,22 @@ jobs:
           check('Yesterday session response changes saved mechanical state',await page.evaluate(()=>JSON.parse(localStorage.trainingLogs||'[]')[0]?.decision?.b==='YELLOW'));
           check('Yesterday session response is preserved in readiness snapshot',await page.evaluate(()=>JSON.parse(localStorage.trainingLogs||'[]')[0]?.priorWorkoutSignal?.level==='YELLOW'));
           check('Today explains prior-session pain',(await page.locator('#adaptationBanner').innerText()).includes('Yesterday'));
+          // Restore the under-fueling scenario before testing its downstream prescription/nutrition outputs.
+          await page.evaluate(()=>{
+            const y=new Date();y.setDate(y.getDate()-1);
+            localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:650,targetCalories:1450,meals:['m1'],savedAt:y.toISOString()}));
+            localStorage.workoutHistory='[]';
+          });
+          await page.locator('.task-main[data-action="checkin"]').click();
+          await page.locator('#sleep').fill('8');
+          await page.locator('#sleepQ').selectOption('5');
+          await page.locator('#fatigue').selectOption('1');
+          await page.locator('#pain').selectOption('0');
+          await page.locator('#load').selectOption('6');
+          await page.locator('#evaluateBtn').click();
+          await page.locator('#saveBtn').click();
+          await page.waitForTimeout(80);
+          check('Under-fueling scenario is restored',await page.evaluate(()=>['YELLOW','RED'].includes(JSON.parse(localStorage.trainingLogs||'[]')[0]?.decision?.c)));
           await page.locator('[data-target="workout"]').click();
           check('Under-fueling modifies actual training prescription',/Modified|Recovery/i.test(await page.locator('#workoutTitle').innerText()));
           // Completion must capture athlete response; yesterday's response must affect tomorrow's mechanical state.
@@ -197,9 +213,9 @@ jobs:
           check('Workout circle does not fabricate completion',await page.evaluate(()=>JSON.parse(localStorage.workoutHistory||'[]').length===0));
           await page.locator('[data-target="today"]').click();
           await page.locator('.task-toggle[data-task="nutrition"]').click();
-          check('Nutrition circle independently toggles review', await page.locator('#taskNutrition').evaluate(n=>n.classList.contains('done')));
-          await page.locator('.task-toggle[data-task="nutrition"]').click();
-          check('Nutrition circle toggles back independently', !(await page.locator('#taskNutrition').evaluate(n=>n.classList.contains('done'))));
+          check('Nutrition circle routes to nutrition log',await visible('#nutrition'));
+          check('Nutrition circle cannot fabricate saved intake',await page.evaluate(()=>!JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}').saved));
+          await page.locator('[data-target="today"]').click();
           await page.locator('.task-toggle[data-task="mobility"]').click();
           check('Mobility circle independently checks task', await page.locator('#taskMobility').evaluate(n=>n.classList.contains('done')));
 
