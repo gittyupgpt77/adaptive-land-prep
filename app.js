@@ -350,22 +350,38 @@ function previousNutritionSignal(){
  const savedTarget=Number(log.targetCalories)>0?Number(log.targetCalories):target.cal;
  return{ratio:actual!==null?actual/savedTarget:mealRatio,target:savedTarget,actual,mealRatio};
 }
+// Raw entries are distinct from computed totals: meal estimates must never become overrides.
+function nutritionDraft(log=getNutritionLog()){
+ const fields=["actualCalories","actualProtein","actualCarbs","actualFat"],draft={};
+ for(const id of fields)draft[id]=String(log.draft?.[id]??(log.intakeSource==="prescribed-meals"?"":log[id]??""));
+ draft.waterActual=String(log.draft?.waterActual??log.waterOz??"");
+ return draft;
+}
+function captureNutritionDraft(log=getNutritionLog()){
+ const draft=nutritionDraft(log);
+ for(const id of Object.keys(draft)){const el=$(id);if(el)draft[id]=el.value.trim()}
+ log.draft=draft;log.saved=false;delete log.savedAt;
+ localStorage.setItem(nutritionLogKey(),JSON.stringify(log));setTask("nutrition",false);
+ $("saveNutritionDay").textContent="Save Today’s Intake";
+ return log;
+}
 function renderNutrition(){
  const w=prescriptionWeek(),name=sessionName(),target=todayNutritionPrescription(w,name),meals=todayMealPlan(w),log=getNutritionLog(),done=new Set(log.meals||[]),hydr=hydrationForDay(w,name);
  $("nutritionToday").innerHTML='<div class="nutrition-dashboard"><small>'+target.phase.toUpperCase()+'</small><div class="nutrition-dashboard-top"><div><strong>'+target.cal.toLocaleString()+'</strong><span>kcal target</span></div><div class="nutrition-ring" style="--p:'+Math.round(done.size/meals.length*100)+'"><b>'+Math.round(done.size/meals.length*100)+'%</b></div></div><div class="macro-grid page-macros"><div><span>Protein</span><strong>'+target.protein+' g</strong></div><div><span>Carbs</span><strong>'+target.carbs+' g</strong></div><div><span>Fat</span><strong>'+target.fat+' g</strong></div></div><p>'+target.why+'</p>'+(target.adjustment?'<div class="nutrition-adjustment '+target.adjustment.level+'"><strong>'+target.adjustment.title+'</strong><span>'+target.adjustment.copy+'</span></div>':'')+'</div>';
  $("mealProgress").textContent=done.size+"/"+meals.length;
  $("nutritionMeals").innerHTML=meals.map(m=>'<div class="meal-card '+(done.has(m.id)?"done":"")+'"><button class="meal-check" data-meal="'+m.id+'">'+(done.has(m.id)?"✓":"○")+'</button><button class="meal-main" data-mealopen="'+m.id+'"><div><small>'+m.kcal+' KCAL</small><strong>'+m.name+'</strong>'+m.foods.map(f=>'<span>'+f+'</span>').join("")+'</div><b>›</b></button></div>').join("");
- $("nutritionMeals").querySelectorAll(".meal-check").forEach(b=>b.onclick=()=>{const cur=getNutritionLog(),set=new Set(cur.meals||[]);set.has(b.dataset.meal)?set.delete(b.dataset.meal):set.add(b.dataset.meal);cur.meals=[...set];cur.saved=false;delete cur.savedAt;localStorage.setItem(nutritionLogKey(),JSON.stringify(cur));setTask("nutrition",false);renderNutrition();renderToday()});
+ $("nutritionMeals").querySelectorAll(".meal-check").forEach(b=>b.onclick=()=>{const cur=captureNutritionDraft(),set=new Set(cur.meals||[]);set.has(b.dataset.meal)?set.delete(b.dataset.meal):set.add(b.dataset.meal);cur.meals=[...set];cur.saved=false;delete cur.savedAt;localStorage.setItem(nutritionLogKey(),JSON.stringify(cur));setTask("nutrition",false);renderNutrition();renderToday()});
  $("nutritionMeals").querySelectorAll(".meal-main").forEach(b=>b.onclick=()=>{const m=meals.find(x=>x.id===b.dataset.mealopen);$("modalTitle").textContent=m.name;$("modalContent").innerHTML='<div class="meal-detail"><small>'+m.kcal+' KCAL TARGET</small>'+m.foods.map((f,i)=>'<div><b>'+(i+1)+'</b><span>'+f+'</span></div>').join("")+'</div>';$("infoModal").classList.remove("hidden")});
- $("hydrationTarget").textContent=hydr.label;$("hydrationCard").innerHTML='<strong>'+hydr.label+'</strong><p>'+hydr.note+'</p><label><span>Fluid consumed today</span><input id="waterActual" type="number" inputmode="decimal" placeholder="oz" value="'+(log.waterOz||"")+'"></label>';
- $("actualCalories").value=log.actualCalories??"";$("actualProtein").value=log.actualProtein??"";$("actualCarbs").value=log.actualCarbs??"";$("actualFat").value=log.actualFat??"";
+ const draft=nutritionDraft(log);
+ $("hydrationTarget").textContent=hydr.label;$("hydrationCard").innerHTML='<strong>'+hydr.label+'</strong><p>'+hydr.note+'</p><label><span>Fluid consumed today</span><input id="waterActual" type="number" inputmode="decimal" placeholder="oz" value=""></label>';
+ Object.entries(draft).forEach(([id,value])=>{$(id).value=value});
  const prev=previousNutritionSignal();$("nutritionInfluence").innerHTML=prev?'<strong>Yesterday’s fueling signal</strong><p>'+Math.round(prev.ratio*100)+'% of planned intake was recorded. '+(prev.ratio<.8?"Today’s readiness engine will treat this as a fueling caution when training load is high.":"No fueling penalty is currently indicated.")+'</p>':'<strong>How nutrition changes training</strong><p>Saved intake carries into tomorrow’s fueling status. Substantial under-fueling on a high-load day can downgrade the next prescription even when HRV looks favorable.</p>';
  $("saveNutritionDay").textContent=log.saved?"✓ Intake saved":"Save Today’s Intake";
- ["actualCalories","actualProtein","actualCarbs","actualFat","waterActual"].forEach(id=>{const el=$(id);if(el)el.oninput=()=>{const cur=getNutritionLog();if(cur.saved){cur.saved=false;delete cur.savedAt;localStorage.setItem(nutritionLogKey(),JSON.stringify(cur));setTask("nutrition",false)}}});
+ ["actualCalories","actualProtein","actualCarbs","actualFat","waterActual"].forEach(id=>{const el=$(id);if(el)el.oninput=()=>{captureNutritionDraft();renderToday()}});
 }
 function saveNutrition(){
  if(!localStorage.programStart){beginJourney();return}
- const log=getNutritionLog(),meals=todayMealPlan(prescriptionWeek()),target=todayNutritionPrescription(prescriptionWeek(),sessionName()),checkedCalories=(log.meals||[]).reduce((sum,id)=>sum+(meals.find(m=>m.id===id)?.kcal||0),0),prescribedCalories=meals.reduce((sum,m)=>sum+m.kcal,0),mealRatio=prescribedCalories?Math.min(1,checkedCalories/prescribedCalories):0;
+ const log=captureNutritionDraft(),meals=todayMealPlan(prescriptionWeek()),target=todayNutritionPrescription(prescriptionWeek(),sessionName()),checkedCalories=(log.meals||[]).reduce((sum,id)=>sum+(meals.find(m=>m.id===id)?.kcal||0),0),prescribedCalories=meals.reduce((sum,m)=>sum+m.kcal,0),mealRatio=prescribedCalories?Math.min(1,checkedCalories/prescribedCalories):0;
  log.waterOz=Number($("waterActual")?.value)||0;
  log.saved=true;log.savedAt=new Date().toISOString();
  const rawCalories=val("actualCalories").trim(),rawProtein=val("actualProtein").trim(),rawCarbs=val("actualCarbs").trim(),rawFat=val("actualFat").trim(),enteredCalories=rawCalories===""?null:Number(rawCalories),enteredProtein=rawProtein===""?null:Number(rawProtein),enteredCarbs=rawCarbs===""?null:Number(rawCarbs),enteredFat=rawFat===""?null:Number(rawFat),hasManualDeviation=[rawCalories,rawProtein,rawCarbs,rawFat].some(Boolean);

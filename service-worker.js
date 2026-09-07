@@ -22,7 +22,10 @@ self.addEventListener('fetch',event=>{
   const cache=await caches.open(CACHE);
   try{
    const response=await fetch(request);
-   if(response.ok){await cache.put(request,response.clone());return response;}
+   if(response.ok){
+    try{await cache.put(request,response.clone())}catch(error){/* A full cache must not block a live response. */}
+    return response;
+   }
    return await cache.match(request)||response;
   }catch(error){
    const cached=await cache.match(request);

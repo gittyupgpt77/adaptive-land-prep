@@ -96,6 +96,9 @@ jobs:
           check('Started Journey reveals command center', await visible('#readinessCard') && await visible('#todayPlanHeader'));
           check('Readiness score exists', (await page.locator('#readinessScore').textContent())!=='—');
           await shot('02-started-today');
+          const taskTargets=await page.locator('.task-toggle:visible,.task-main:visible').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return{w:r.width,h:r.height}}));
+          check('Started Today actually audits task touch targets',taskTargets.length>=6&&taskTargets.every(r=>r.w>=40&&r.h>=40));
+
 
           // Readiness is actually interactive.
           await page.locator('#readinessCard').click();
@@ -381,14 +384,30 @@ jobs:
           await page.locator('#actualProtein').fill('181');
           await page.locator('#actualCarbs').fill('112');
           await page.locator('#actualFat').fill('42');
+          await page.locator('.meal-check').first().click();
+          check('Meal changes preserve unsaved intake and hydration',(await page.locator('#actualCalories').inputValue())==='1525'&&(await page.locator('#actualProtein').inputValue())==='181'&&(await page.locator('#waterActual').inputValue())==='120');
+          await page.locator('.meal-check').first().click();
+          await page.locator('[data-target="today"]').click();
+          await page.locator('[data-target="nutrition"]').click();
+          check('Nutrition drafts survive navigation',(await page.locator('#actualCarbs').inputValue())==='112'&&(await page.locator('#actualFat').inputValue())==='42'&&(await page.locator('#waterActual').inputValue())==='120');
           await page.locator('#saveNutritionDay').click();
           check('Nutrition save persists',await page.evaluate(()=>Object.keys(localStorage).some(k=>k.startsWith('nutrition_')&&JSON.parse(localStorage[k]||'{}').saved)));
           check('Actual intake persists exactly',await page.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('nutrition_'));const n=JSON.parse(localStorage[k]||'{}');return n.actualCalories===1525&&n.actualProtein===181&&n.actualCarbs===112&&n.actualFat===42;}));
+          await page.locator('#waterActual').fill('121');
+          check('Editing saved intake immediately clears its saved label',!(await page.locator('#saveNutritionDay').innerText()).includes('✓'));
+          check('Editing saved intake immediately clears Today completion',await page.locator('#taskNutrition').evaluate(n=>!n.classList.contains('done')));
+          check('Edited intake remains a draft',await page.evaluate(()=>!getNutritionLog().saved&&getNutritionLog().draft.waterActual==='121'));
           await page.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('nutrition_'));localStorage.removeItem(k)});
           await page.locator('[data-target="nutrition"]').click();
           const mealsForAuto=page.locator('.meal-check');for(let i=0;i<await mealsForAuto.count();i++)await mealsForAuto.nth(i).click();
           await page.locator('#saveNutritionDay').click();
           check('Full prescribed plan inherits prescribed macros without manual duplication',await page.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('nutrition_'));const n=JSON.parse(localStorage[k]||'{}');return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein===n.targetProtein&&n.actualCarbs===n.targetCarbs&&n.actualFat===n.targetFat;}));
+          check('Inferred totals never populate deviation fields',(await page.locator('#actualCalories').inputValue())===''&&(await page.locator('#actualProtein').inputValue())==='');
+          await page.locator('.meal-check').first().click();
+          await page.locator('#saveNutritionDay').click();
+          check('Partial meals recompute intake without stale full-plan overrides',await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();return n.intakeSource==='prescribed-meals'&&n.actualCalories===meals.filter(m=>n.meals.includes(m.id)).reduce((sum,m)=>sum+m.kcal,0)&&n.actualProtein===null;}));
+          await page.locator('.meal-check').first().click();
+          await page.locator('#saveNutritionDay').click();
           await page.locator('[data-target="today"]').click();
           check('Nutrition Today task requires saved intake',await page.locator('#taskNutrition').evaluate(n=>n.classList.contains('done')));
           await page.locator('[data-target="nutrition"]').click();
