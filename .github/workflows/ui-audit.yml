@@ -425,6 +425,9 @@ jobs:
           await page.locator('[data-target="program"]').click();
           check('Later benchmark success cannot skip earlier qualification set',(await page.locator('#currentPhaseCard').innerText()).includes('Phase promotion locked'));
           check('Program progress count describes visible qualification set',(await page.locator('#milestoneCount').innerText()).match(/^\d\/4$/));
+          await page.locator('[data-target="today"]').click();
+          check('Today distinguishes held prescription from calendar time',(await page.locator('#todayJourneyWeek').innerText()).includes('Held at Week'));
+          await page.locator('[data-target="program"]').click();
           await page.locator('#openTrends').click();
           check('Insights opens trends',await visible('#trends'));
           await shot('09-insights');

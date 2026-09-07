@@ -231,8 +231,8 @@ function adaptationExplanation(d){
 }
 function formatDelta(value,baseline,suffix=""){if(value==null||!baseline)return"baseline";const delta=value-baseline;if(Math.abs(delta)<0.05)return"at baseline";return(delta>0?"+":"")+delta.toFixed(Math.abs(delta)<1?1:0)+suffix}
 function renderTodayJourney(){
- const w=prescriptionWeek(),phase=macroForWeek(w),stats=macroStats(phase),sets=objectiveSetsForPhase(phase,stats,getBenchmarks()),all=sets.flat(),next=all.find(o=>!o.done),progress=Math.round(((w-1)/55)*100);
- $("todayJourneyWeek").textContent="Week "+w+" of 56";
+ const w=prescriptionWeek(),calendar=currentWeek(),phase=macroForWeek(w),stats=macroStats(phase),sets=objectiveSetsForPhase(phase,stats,getBenchmarks()),all=sets.flat(),next=all.find(o=>!o.done),progress=Math.round(((w-1)/55)*100);
+ $("todayJourneyWeek").textContent=w<calendar?"Held at Week "+w+" · calendar Week "+calendar:"Week "+w+" of 56";
  $("todayJourneyPhase").textContent=phase.name;
  $("todayJourneyNext").textContent=next?"Next: "+next.name+" · "+next.label:"Phase qualification complete";
  $("todayJourneyBar").style.width=progress+"%";
