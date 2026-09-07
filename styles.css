@@ -296,12 +296,6 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .task-thumb .exercise-photo-frame,.task-thumb img{width:100%;height:100%}.task-thumb img{object-fit:contain}
 .workout-task .task-main>div:nth-child(2){min-width:0}.workout-task .task-main strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Journey phase map: legible at a glance */
-.journey-phase-map{display:grid;grid-template-columns:1fr;gap:6px;margin:8px 0 14px}
-.journey-phase-segment{display:grid;grid-template-columns:4px 1fr auto;align-items:center;gap:9px;min-height:44px;padding:8px 10px;overflow:visible}
-.journey-phase-segment>span{position:static;width:4px;height:100%;min-height:28px;border-radius:99px}
-.journey-phase-segment>div{display:grid;grid-template-columns:62px 1fr auto;align-items:center;gap:8px}
-.journey-phase-segment small{font-size:7px}.journey-phase-segment strong{font-size:10px;white-space:normal;overflow:visible;text-overflow:clip}.journey-phase-segment em{font-size:8px;white-space:nowrap}
 .actual-intake input[type=number],.nutrition-page-card input[type=number]{-webkit-appearance:none;appearance:textfield;-moz-appearance:textfield}
 .actual-intake input[type=number]::-webkit-inner-spin-button,.actual-intake input[type=number]::-webkit-outer-spin-button,.nutrition-page-card input[type=number]::-webkit-inner-spin-button,.nutrition-page-card input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
