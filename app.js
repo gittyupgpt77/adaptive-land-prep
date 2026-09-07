@@ -316,6 +316,21 @@ function mealPlanForWeek(w){
   {id:"m5",name:"Nightly Tissue Recovery",kcal:1000,foods:["8 oz top sirloin","2 cups white rice or 2 large sweet potatoes","Pepper jack cheese","½ avocado","2 cups greens"]}
  ];
 }
+function todayNutritionPrescription(w=prescriptionWeek(),name=sessionName()){
+ const base={...nutritionForWeek(w,name)},dec=savedDecision(),out={...base,adjustment:null};
+ if(dec?.c==="RED"){
+   out.cal+=200;out.carbs+=50;
+   out.adjustment={level:"red",title:"Recovery fueling override",copy:"Yesterday’s intake was materially below target. Add about 200 kcal of carbohydrate today and reassess the deficit before returning to aggressive restriction."};
+ }else if(dec?.c==="YELLOW"){
+   out.adjustment={level:"yellow",title:"Carbohydrate timing emphasis",copy:"Fueling is somewhat below the preferred range. Keep daily intake near target, but place more of today’s carbohydrate before and after training."};
+ }
+ return out
+}
+function todayMealPlan(w=prescriptionWeek()){
+ const meals=mealPlanForWeek(w).map(m=>({...m,foods:[...m.foods]})),dec=savedDecision();
+ if(dec?.c==="RED")meals.push({id:"recovery-carb",name:"Recovery Carbohydrate Add-On",kcal:200,foods:["Add ~200 kcal carbohydrate: for example about 1 cup cooked white rice, or an equivalent easy-to-digest starch/fruit portion"]});
+ return meals
+}
 function hydrationForDay(w,name){
  const n=name.toLowerCase();
  const prolonged=/long|peak specific|medium aerobic|weighted-pack|ruck|specific hard/.test(n);
@@ -332,8 +347,8 @@ function previousNutritionSignal(){
  return{ratio:actual?actual/target.cal:mealRatio,target:target.cal,actual,mealRatio};
 }
 function renderNutrition(){
- const w=prescriptionWeek(),name=sessionName(),target=nutritionForWeek(w,name),meals=mealPlanForWeek(w),log=getNutritionLog(),done=new Set(log.meals||[]),hydr=hydrationForDay(w,name);
- $("nutritionToday").innerHTML='<div class="nutrition-dashboard"><small>'+target.phase.toUpperCase()+'</small><div class="nutrition-dashboard-top"><div><strong>'+target.cal.toLocaleString()+'</strong><span>kcal target</span></div><div class="nutrition-ring" style="--p:'+Math.round(done.size/meals.length*100)+'"><b>'+Math.round(done.size/meals.length*100)+'%</b></div></div><div class="macro-grid page-macros"><div><span>Protein</span><strong>'+target.protein+' g</strong></div><div><span>Carbs</span><strong>'+target.carbs+' g</strong></div><div><span>Fat</span><strong>'+target.fat+' g</strong></div></div><p>'+target.why+'</p></div>';
+ const w=prescriptionWeek(),name=sessionName(),target=todayNutritionPrescription(w,name),meals=todayMealPlan(w),log=getNutritionLog(),done=new Set(log.meals||[]),hydr=hydrationForDay(w,name);
+ $("nutritionToday").innerHTML='<div class="nutrition-dashboard"><small>'+target.phase.toUpperCase()+'</small><div class="nutrition-dashboard-top"><div><strong>'+target.cal.toLocaleString()+'</strong><span>kcal target</span></div><div class="nutrition-ring" style="--p:'+Math.round(done.size/meals.length*100)+'"><b>'+Math.round(done.size/meals.length*100)+'%</b></div></div><div class="macro-grid page-macros"><div><span>Protein</span><strong>'+target.protein+' g</strong></div><div><span>Carbs</span><strong>'+target.carbs+' g</strong></div><div><span>Fat</span><strong>'+target.fat+' g</strong></div></div><p>'+target.why+'</p>'+(target.adjustment?'<div class="nutrition-adjustment '+target.adjustment.level+'"><strong>'+target.adjustment.title+'</strong><span>'+target.adjustment.copy+'</span></div>':'')+'</div>';
  $("mealProgress").textContent=done.size+"/"+meals.length;
  $("nutritionMeals").innerHTML=meals.map(m=>'<div class="meal-card '+(done.has(m.id)?"done":"")+'"><button class="meal-check" data-meal="'+m.id+'">'+(done.has(m.id)?"✓":"○")+'</button><button class="meal-main" data-mealopen="'+m.id+'"><div><small>'+m.kcal+' KCAL</small><strong>'+m.name+'</strong>'+m.foods.map(f=>'<span>'+f+'</span>').join("")+'</div><b>›</b></button></div>').join("");
  $("nutritionMeals").querySelectorAll(".meal-check").forEach(b=>b.onclick=()=>{const cur=getNutritionLog(),set=new Set(cur.meals||[]);set.has(b.dataset.meal)?set.delete(b.dataset.meal):set.add(b.dataset.meal);cur.meals=[...set];localStorage.setItem(nutritionLogKey(),JSON.stringify(cur));renderNutrition();renderToday()});
@@ -345,7 +360,7 @@ function renderNutrition(){
 }
 function saveNutrition(){
  if(!localStorage.programStart){beginJourney();return}
- const log=getNutritionLog(),meals=mealPlanForWeek(prescriptionWeek()),target=nutritionForWeek(prescriptionWeek(),sessionName()),checkedCalories=(log.meals||[]).reduce((sum,id)=>sum+(meals.find(m=>m.id===id)?.kcal||0),0);
+ const log=getNutritionLog(),meals=todayMealPlan(prescriptionWeek()),target=todayNutritionPrescription(prescriptionWeek(),sessionName()),checkedCalories=(log.meals||[]).reduce((sum,id)=>sum+(meals.find(m=>m.id===id)?.kcal||0),0);
  log.waterOz=Number($("waterActual")?.value)||0;
  log.saved=true;log.savedAt=new Date().toISOString();
  const enteredCalories=Number($("actualCalories")?.value),enteredProtein=Number($("actualProtein")?.value),enteredCarbs=Number($("actualCarbs")?.value),enteredFat=Number($("actualFat")?.value);
