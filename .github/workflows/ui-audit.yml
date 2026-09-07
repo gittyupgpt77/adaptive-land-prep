@@ -30,6 +30,22 @@ jobs:
 
           await page.screenshot({ path: 'today.png', fullPage: true });
 
+          await page.evaluate(() => {
+            const d=new Date(); d.setDate(d.getDate()-2);
+            localStorage.programStart=d.toISOString();
+            localStorage.trainingLogs='[]';
+            localStorage.workoutHistory='[]';
+            localStorage.failedDays='[]';
+          });
+          await page.reload({waitUntil:'networkidle'});
+          await page.waitForTimeout(120);
+          await page.screenshot({ path: 'missed-day.png', fullPage: true });
+
+          await page.evaluate(() => {
+            localStorage.clear();
+          });
+          await page.reload({waitUntil:'networkidle'});
+
           await page.locator('#taskCheckin').click();
           await page.waitForTimeout(150);
           await page.screenshot({ path: 'checkin.png', fullPage: true });
@@ -88,6 +104,7 @@ jobs:
           name: iphone-ui-audit
           path: |
             today.png
+            missed-day.png
             checkin.png
             train.png
             library-search.png
