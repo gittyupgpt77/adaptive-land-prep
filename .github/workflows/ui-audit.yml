@@ -133,6 +133,19 @@ jobs:
           const duplicateSources=librarySources.filter((src,i,a)=>a.indexOf(src)!==i);
           report.duplicateLibraryImages=[...new Set(duplicateSources)];
           check('Library contains no duplicate canonical movement imagery',report.duplicateLibraryImages.length===0,JSON.stringify(report.duplicateLibraryImages));
+          check('Library contains no scheduler-only labels',!libraryNames.some(n=>/main session|main run|quality work|warm-up|cool-down|long session|threshold work/i.test(n)),JSON.stringify(libraryNames));
+          const filterButtons=page.locator('.library-filter');const filterCount=await filterButtons.count();report.counts.libraryFilters=filterCount;check('Library exposes useful category filters',filterCount>=6,'count='+filterCount);
+          for(let fi=0;fi<filterCount;fi++){
+            const filter=filterButtons.nth(fi),label=(await filter.innerText()).trim();
+            await filter.click();await page.waitForTimeout(40);
+            check('Library filter '+label+' produces results',(await page.locator('.library-item').count())>0);
+          }
+          await page.locator('.library-filter[data-libfilter="All"]').click();
+          await page.locator('#librarySearch').fill('barbell');
+          check('Equipment search finds relevant movements',(await page.locator('.library-item').count())>0);
+          await page.locator('#librarySearch').fill('ankle');
+          check('Purpose/body-region search finds relevant movements',(await page.locator('.library-item').count())>0);
+          await page.locator('#librarySearch').fill('');
           let loadedPhotos=0, visualFallbacks=0; const failedImageDetails=[];
           for(let i=0;i<libraryCount;i++){
             const item=page.locator('.library-item').nth(i);
