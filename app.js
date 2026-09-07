@@ -578,7 +578,7 @@ function renderAll(){applyBaselines();renderMissedBanner();renderToday();renderT
 function handleTaskToggle(key){
  if(key!=="checkin"&&!localStorage.programStart){beginJourney();return}
  if(key==="checkin"){if(todayCheckin())return;openCheckin();return}
- if(key==="workout"){switchTab("workout");if(!todayWorkout()){requestAnimationFrame(()=>{ $("sessionFeedback").open=true;$("sessionFeedback").scrollIntoView({behavior:"smooth",block:"center"});$("completed").value="YES" })}return}
+ if(key==="workout"){switchTab("workout");if(!todayWorkout()){$("sessionFeedback").open=true;$("completed").value="YES";requestAnimationFrame(()=>$("sessionFeedback").scrollIntoView({behavior:"smooth",block:"center"}))}return}
  if(key==="nutrition"){switchTab("nutrition");return}
  if(key==="mobility"){setTask("mobility",!taskDone("mobility"));renderToday();return}
 }
