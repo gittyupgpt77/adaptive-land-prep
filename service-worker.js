@@ -1,5 +1,33 @@
-const CACHE='land-prep-v47';
+const CACHE='land-prep-v48';
 const ASSETS=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest'];
-self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
-self.addEventListener('activate',e=>e.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))])));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request)))});
+const scope=new URL(self.registration.scope);
+const shell=new Set(ASSETS.map(path=>new URL(path,scope).href));
+const exerciseImages='https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+self.addEventListener('install',event=>event.waitUntil((async()=>{
+ const cache=await caches.open(CACHE);
+ await cache.addAll(ASSETS);
+ await self.skipWaiting();
+})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{
+ const keys=await caches.keys();
+ await Promise.all(keys.filter(key=>key.startsWith('land-prep-v')&&key!==CACHE).map(key=>caches.delete(key)));
+ await self.clients.claim();
+})()));
+self.addEventListener('fetch',event=>{
+ const request=event.request;
+ if(request.method!=='GET'||request.headers.has('authorization'))return;
+ // Never cache authentication, athlete data, or unrelated applications on this origin.
+ if(!shell.has(request.url)&&!request.url.startsWith(exerciseImages))return;
+ event.respondWith((async()=>{
+  const cache=await caches.open(CACHE);
+  try{
+   const response=await fetch(request);
+   if(response.ok){await cache.put(request,response.clone());return response;}
+   return await cache.match(request)||response;
+  }catch(error){
+   const cached=await cache.match(request);
+   if(cached)return cached;
+   throw error;
+  }
+ })());
+});
