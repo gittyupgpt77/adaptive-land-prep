@@ -1,0 +1,32 @@
+{
+  "name": "adaptive-land-prep",
+  "version": "1.0.0",
+  "description": "Mobile-first 56-week adaptive land-preparation PWA.",
+  "main": "app.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "build:cloud": "esbuild src/supabase.js --bundle --format=iife --global-name=SupabaseSDK --minify --outfile=vendor/supabase.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gittyupgpt77/adaptive-land-prep.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/gittyupgpt77/adaptive-land-prep/issues"
+  },
+  "homepage": "https://github.com/gittyupgpt77/adaptive-land-prep#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "2.115.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.9"
+  },
+  "private": true
+}

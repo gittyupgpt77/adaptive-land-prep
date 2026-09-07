@@ -10,6 +10,9 @@ on:
       - 'index.html'
       - 'styles.css'
       - 'app.js'
+      - 'cloud*.js'
+      - 'vendor/**'
+      - 'package*.json'
       - 'service-worker.js'
       - 'manifest.webmanifest'
       - 'tests/**'
@@ -24,7 +27,7 @@ jobs:
         with:
           node-version: '24'
       - name: Syntax check
-        run: node --check app.js && node --check service-worker.js
+        run: node --check app.js && node --check service-worker.js && node --check cloud.js && node --check cloud-core.js
       - name: Persistence regression tests
         run: node --test tests/*.test.cjs
       - run: npm init -y && npm install playwright
@@ -435,7 +438,7 @@ jobs:
           });
           const backupDownload=page.waitForEvent('download');
           await page.locator('#openTrends').click();
-          await page.locator('.data-details summary').click();
+          await page.locator('.data-details:not(.cloud-panel) summary').click();
           await page.locator('#exportBackup').click();
           const downloaded=await backupDownload;
           const backupPath=await downloaded.path();
@@ -449,6 +452,17 @@ jobs:
           await page.locator('[data-target="program"]').click();
           await shot('08-program');
           check('Program visual capture starts at current phase',await inViewport('#currentPhaseCard'));
+
+          // Cloud is opt-in: opening auth never uploads or replaces athlete data.
+          await page.locator('[data-target="program"]').click();
+          await page.locator('#openTrends').click();
+          const beforeCloud=await page.evaluate(()=>JSON.stringify(collectBackupData()));
+          await page.locator('#cloudPanel summary').click();
+          check('Private cloud account controls are visible',await visible('#cloudAuth'));
+          check('Cloud actions require sign-in',!(await visible('#cloudSave')));
+          check('Opening cloud preserves all local data',beforeCloud===await page.evaluate(()=>JSON.stringify(collectBackupData())));
+          check('Auth tokens are excluded from backup',await page.evaluate(()=>{localStorage.setItem('alp-cloud-auth','test-token');const safe=!Object.hasOwn(collectBackupData(),'alp-cloud-auth');localStorage.removeItem('alp-cloud-auth');return safe}));
+          check('Cloud has no horizontal overflow',await page.locator('#cloudPanel').evaluate(n=>n.scrollWidth<=n.clientWidth+1));
 
           // A calendar-advanced athlete without earned standards should be prescription-locked.
           await page.evaluate(()=>{

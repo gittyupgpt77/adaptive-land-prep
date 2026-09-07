@@ -144,6 +144,23 @@
     <div class="data-row"><div><strong>Last backup</strong><small id="lastBackup">Never</small></div><span id="recordCount">0 records</span></div>
     <div class="backup-grid"><button id="exportBackup">Export Backup</button><label>Restore Backup<input id="importBackup" type="file" accept="application/json,.json"></label></div>
   </details>
+  <details class="data-details cloud-panel" id="cloudPanel">
+    <summary>Private cloud backup</summary>
+    <p id="cloudStatus" role="status" aria-live="polite">Sign in to save private backups. Your on-device data stays on this device.</p>
+    <form id="cloudAuth">
+      <label>Email<input id="cloudEmail" type="email" autocomplete="username" required></label>
+      <label>Password<input id="cloudPassword" type="password" autocomplete="current-password" minlength="8" required></label>
+      <button type="submit">Sign In</button><button type="button" id="cloudSignup">Create Account</button>
+      <button type="button" id="cloudForgot">Forgot Password</button>
+    </form>
+    <form id="cloudNewPassword" class="hidden"><label>New password<input id="cloudReplacement" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Update Password</button></form>
+    <div id="cloudSignedIn" class="hidden">
+      <p id="cloudAccount"></p>
+      <p>Backups are saved when you tap Back Up Now. Each version is kept separately. Signing out keeps training data on this device.</p>
+      <button id="cloudSave" type="button">Back Up Now</button><button id="cloudRefresh" type="button">Browse & Recover</button><button id="cloudSignout" type="button">Sign Out</button>
+      <div id="cloudVersions" aria-label="Saved cloud backups"></div><button id="cloudMore" type="button" class="hidden">Older Backups</button>
+    </div>
+  </details>
 </section>
 
 <section id="program" class="screen">
@@ -217,4 +234,7 @@
 <div id="daySheet" class="sheet-backdrop hidden"><div class="sheet day-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small id="daySheetKicker">DAY</small><h2 id="daySheetTitle">Day</h2></div><button id="daySheetClose">×</button></div><div class="day-tabs"><button class="day-tab active" data-daytab="training">Training</button><button class="day-tab" data-daytab="nutrition">Nutrition</button></div><div id="daySheetBody"></div></div></div>
 <div id="infoModal" class="sheet-backdrop hidden"><div class="sheet exercise-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small>GUIDANCE</small><h2 id="modalTitle">Exercise</h2></div><button id="modalClose">×</button></div><div id="modalContent"></div><button class="sheet-primary" id="modalDone">Got it</button></div></div>
 <script src="app.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="cloud-core.js"></script>
+<script src="cloud.js"></script>
 </body></html>

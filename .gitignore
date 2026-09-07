@@ -1,0 +1,8 @@
+node_modules/
+.env
+.env.*
+*.log
+consumer-report.json
+0*.png
+audit.mjs
+adaptive-land-prep-backup*.json

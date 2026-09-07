@@ -362,3 +362,5 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .log-card>div{display:flex;flex-direction:column;gap:4px;min-width:0}
 .log-card>div strong{overflow-wrap:anywhere}
 .log-card>small{flex:0 0 auto;margin-left:10px}
+
+.cloud-panel{color:#f7fbff}.cloud-panel p{font-size:12px;line-height:1.5;overflow-wrap:anywhere;color:#b8cad9}.cloud-panel label{display:flex;flex-direction:column;gap:7px;font-size:12px;margin:12px 0}.cloud-panel input{width:100%;min-height:44px;border:1px solid #567089;border-radius:10px;padding:10px;background:#10273a;color:white;font-size:16px}.cloud-panel button{min-height:44px;border:1px solid #567089;border-radius:10px;background:#10273a;color:#fff;padding:10px 12px;margin:4px 4px 4px 0;font-size:12px}.cloud-panel button:disabled{opacity:.5}.cloud-panel #cloudSave,.cloud-panel button[type=submit]{background:#147be8;border-color:#147be8}#cloudVersions{display:flex;flex-direction:column;margin-top:12px}#cloudVersions button{text-align:left;width:100%}
