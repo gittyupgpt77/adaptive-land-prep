@@ -86,7 +86,7 @@ function renderMissedBanner(){const m=missedDays(),b=$("missedDayBanner");if(!b)
 function migrateProductState(){
  const l=logs(),w=workouts();
  if(!l.length&&!w.length){localStorage.removeItem("programStart");localStorage.removeItem("baselineDate");localStorage.failedDays="[]";localStorage.removeItem("journeyPending");return}
- if(l.length&&localStorage.programStart){const earliest=new Date(Math.min(...l.map(x=>new Date(x.date).getTime()))),start=new Date(localStorage.programStart);if(Math.abs(start-earliest)>36*3600000)localStorage.programStart=earliest.toISOString()}
+ if(l.length&&!localStorage.baselineDate){const earliest=l.slice().sort((a,b)=>new Date(a.date)-new Date(b.date))[0];localStorage.baselineDate=earliest.date}
 }
 function beginJourney(){
  if(localStorage.programStart)return;
@@ -96,6 +96,9 @@ function beginJourney(){
    localStorage.programStart=start.toISOString();
    localStorage.baselineDate=base.date;
    localStorage.failedDays="[]";
+   if(dayKey(base.date)===dayKey(start)){
+     const l=logs(),hit=l.find(x=>x===base||x.date===base.date);if(hit){hit.preJourney=false;hit.week=1;localStorage.trainingLogs=JSON.stringify(l);dbSet("trainingLogs",localStorage.trainingLogs)}
+   }
    viewedWeek=1;viewedMonth=new Date(start);
    renderAll();return
  }
@@ -120,7 +123,7 @@ function saveCheckin(){
  evaluate();const d=decision();if(!d.o)return;
  const l=logs(),saveDate=historicalDate?new Date(historicalDate):new Date();
  const saveWeek=historicalDate?programWeekForDate(saveDate):(localStorage.programStart?prescriptionWeek():1);
- l.unshift({date:saveDate.toISOString(),week:saveWeek,weight:num("weight"),weightAvg:num("weightAvg"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),load:num("load"),pain:num("pain"),performance:val("performance"),focal:$("focal").checked,gait:$("gait").checked,overall:d.o,score:d.score,decision:d});
+ l.unshift({date:saveDate.toISOString(),week:saveWeek,preJourney:!localStorage.programStart&&localStorage.journeyPending!=="1",weight:num("weight"),weightAvg:num("weightAvg"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),load:num("load"),pain:num("pain"),performance:val("performance"),focal:$("focal").checked,gait:$("gait").checked,overall:d.o,score:d.score,decision:d});
  localStorage.trainingLogs=JSON.stringify(l.slice(0,365));dbSet("trainingLogs",localStorage.trainingLogs);
  if(!historicalDate){setTask("checkin",true);if(!localStorage.programStart){localStorage.baselineDate=saveDate.toISOString();if(localStorage.journeyPending==="1"){localStorage.programStart=saveDate.toISOString();localStorage.removeItem("journeyPending");localStorage.failedDays="[]";viewedWeek=1;viewedMonth=new Date(saveDate)}}}
  resetHistorical();closeCheckin();renderAll()
@@ -373,7 +376,7 @@ function saveBenchmarkData(){
 }
 function loadBenchmarkForm(){const b=getBenchmarks();const pairs={benchPushups:b.pushups,benchPullups:b.pullups,benchSitups:b.situps,benchRun4:b.run4,benchRuckMiles:b.ruckMiles,benchRuckWeight:b.ruckWeight,benchRuckComfortable:b.ruckComfortable,benchBodyFat:b.bodyFat,benchPeakPainFree:b.peakPainFree};Object.entries(pairs).forEach(([id,v])=>{if($(id))$(id).value=v??""})}
 function macroForWeek(w){const x=macroPhases.find(p=>w>=p[1]&&w<=p[2])||macroPhases[0];return{name:x[0],start:x[1],end:x[2],focus:x[3]}}
-function macroStats(p){const ls=logs().filter(x=>x.week>=p.start&&x.week<=p.end),ws=workouts().filter(x=>x.week>=p.start&&x.week<=p.end&&x.completed==="YES"),failed=JSON.parse(localStorage.failedDays||"[]").filter(k=>{const w=programWeekForDate(new Date(k));return w>=p.start&&w<=p.end}).length,checkKeys=new Set(ls.map(x=>dayKey(x.date))),completeKeys=new Set(ws.filter(w=>checkKeys.has(dayKey(w.date))).map(x=>dayKey(x.date))),total=(p.end-p.start+1)*7;return{checkins:checkKeys.size,strength:ws.filter(x=>/strength|carry/i.test(x.session||"")).length,aerobic:ws.filter(x=>/run|row|aerobic|recovery|quality|medium/i.test(x.session||"")).length,loaded:ws.filter(x=>/weighted-pack|ruck|carry|long/i.test(x.session||"")).length,completeDays:completeKeys.size,failed,total,mastery:Math.max(0,(completeKeys.size-failed*.5)/total)}}
+function macroStats(p){const start=localStorage.programStart?new Date(localStorage.programStart):null,ls=logs().filter(x=>x.week>=p.start&&x.week<=p.end&&!x.preJourney&&(!start||new Date(x.date)>=start||dayKey(x.date)===dayKey(start))),ws=workouts().filter(x=>x.week>=p.start&&x.week<=p.end&&x.completed==="YES"),failed=JSON.parse(localStorage.failedDays||"[]").filter(k=>{const w=programWeekForDate(new Date(k));return w>=p.start&&w<=p.end}).length,checkKeys=new Set(ls.map(x=>dayKey(x.date))),completeKeys=new Set(ws.filter(w=>checkKeys.has(dayKey(w.date))).map(x=>dayKey(x.date))),total=(p.end-p.start+1)*7;return{checkins:checkKeys.size,strength:ws.filter(x=>/strength|carry/i.test(x.session||"")).length,aerobic:ws.filter(x=>/run|row|aerobic|recovery|quality|medium/i.test(x.session||"")).length,loaded:ws.filter(x=>/weighted-pack|ruck|carry|long/i.test(x.session||"")).length,completeDays:completeKeys.size,failed,total,mastery:Math.max(0,(completeKeys.size-failed*.5)/total)}}
 function unresolvedInPhase(p){return missedDays().filter(d=>{const w=programWeekForDate(d);return w>=p.start&&w<=p.end}).length}
 function objectiveSetsForPhase(p,stats,b){
  const runSec=parseClock(b.run4);
