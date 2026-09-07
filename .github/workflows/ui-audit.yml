@@ -61,6 +61,9 @@ jobs:
           await page.locator('#beginJourneyBtn').click();
           check('Begin Journey uses today as Day 1 even with older baseline',await page.evaluate(()=>{const s=new Date(localStorage.programStart);const n=new Date();return s.toDateString()===n.toDateString();}));
           check('Older baseline does not create immediate curriculum debt',!(await visible('#missedDayBanner')));
+          await page.locator('[data-target="program"]').click();
+          check('Pre-Journey baseline does not count toward qualification',(await page.locator('#phaseMilestones').innerText()).includes('0/7 check-ins'));
+          await page.locator('[data-target="today"]').click();
           await page.evaluate(()=>localStorage.clear());
           await page.reload({waitUntil:'networkidle'});
 
