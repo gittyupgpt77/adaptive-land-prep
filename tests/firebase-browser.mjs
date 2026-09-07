@@ -31,7 +31,12 @@ try{
  const {context,page}=await device();
  await page.goto('http://127.0.0.1:8080/');
  await page.evaluate(()=>{localStorage.trainingLogs=JSON.stringify([{date:'2026-09-07',weight:170}]);localStorage.baselineDate='2026-09-07';localStorage.setItem('alp-cloud-device-owner','previous-supabase-owner')});
- await openPanel(page);await page.locator('#cloudSetup').click();await page.waitForURL('**/?backup=firebase');await login(page);
+ await openPanel(page);await page.locator('#cloudSetup').click();await page.waitForURL('**/?backup=firebase');
+ // A Home Screen relaunch must retain Firebase before any login or successful backup.
+ await page.goto('http://127.0.0.1:8080/');await openPanel(page);
+ assert.equal(await page.locator('#cloudSignup').textContent(),'Create Firebase Account');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('alp-backup-provider')),null);
+ await login(page);
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.trainingLogs)[0].weight),170,'In-app setup preserves the original storage origin');
  assert.equal(await page.evaluate(()=>localStorage.getItem('alp-backup-provider')),null,'No migration before cloud acknowledgement');
  await page.locator('#cloudEnable').click();await page.clock.fastForward(7000);await saved(page);

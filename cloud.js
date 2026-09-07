@@ -4,7 +4,8 @@
  const el=id=>document.getElementById(id),panel=el('cloudPanel');
  const status=text=>{el('cloudStatus').textContent=text};
  const requested=new URLSearchParams(location.search).get('backup');
- const firebase=requested==='firebase'||(requested!=='legacy'&&localStorage.getItem('alp-backup-provider')==='firebase');
+ if(requested==='firebase')localStorage.setItem('alp-backup-setup','firebase');
+ const firebase=requested==='firebase'||(requested!=='legacy'&&(localStorage.getItem('alp-backup-provider')==='firebase'||localStorage.getItem('alp-backup-setup')==='firebase'));
  if((firebase&&!window.FirebaseSDK)||(!firebase&&!window.SupabaseSDK)){status('Cloud setup is unavailable. Your entries remain on this device.');return}
  const client=firebase?FirebaseSDK.createClient():SupabaseSDK.createClient('https://pfpfttgfzmpexlbezmcs.supabase.co','sb_publishable_K4UzvlOQXTgRbEUJWq7qpA_9p54dG8o',{
   auth:{storageKey:'alp-cloud-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},
@@ -17,7 +18,10 @@
  const store=firebase?client.makeStore(assertCurrent):null;
  el('cloudLegacy').classList.toggle('hidden',!firebase);
  el('cloudSetup').classList.toggle('hidden',firebase);
- el('cloudSetup').onclick=()=>{location.search='?backup=firebase'};
+ const startFirebaseSetup=()=>{localStorage.setItem('alp-backup-setup','firebase');location.search='?backup=firebase'};
+ el('cloudSetup').onclick=startFirebaseSetup;
+ el('cloudAuth').querySelector('[type="submit"]').textContent=firebase?'Sign In to Firebase':'Sign In to Older Backup';
+ el('cloudSignup').textContent=firebase?'Create Firebase Account':'Set Up Firebase Account';
  function selectFirebase(){
   if(!firebase)return;
   localStorage.setItem('alp-backup-provider','firebase');
@@ -77,10 +81,11 @@
   const {error}=await client.auth.signInWithPassword({email:el('cloudEmail').value.trim(),password:el('cloudPassword').value});el('cloudPassword').value='';if(error)throw error;
  })};
  el('cloudSignup').onclick=()=>run(async()=>{
+  if(!firebase){startFirebaseSetup();return}
   if(!el('cloudAuth').reportValidity())return;
   const {error}=await client.auth.signUp({email:el('cloudEmail').value.trim(),password:el('cloudPassword').value,options:{emailRedirectTo:'https://gittyupgpt77.github.io/adaptive-land-prep/'}});
   el('cloudPassword').value='';if(error)throw error;
-  status('Check your email to confirm your account, then return here and sign in. Your training data is unchanged.');
+  status('Check your email for the Firebase confirmation, then return here and sign in. Your training data is unchanged.');
  });
  el('cloudForgot').onclick=()=>run(async()=>{
   if(!el('cloudEmail').reportValidity())return;
