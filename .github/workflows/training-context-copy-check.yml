@@ -1,0 +1,33 @@
+name: Training Context Copy Check
+
+on:
+  push:
+    branches: [fix/executable-week-targets]
+    paths:
+      - '.github/workflows/training-context-copy-check.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/executable-week-targets
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python3 scripts/remove-invented-fallback.py
+      - run: |
+          node --check app.js
+          node --test tests/*.test.cjs
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js tests/weekly-targets.test.cjs
+          git diff --cached --quiet && exit 1
+          git commit -m "Align training fallback copy with weekly targets"
+          git push origin HEAD:fix/executable-week-targets
