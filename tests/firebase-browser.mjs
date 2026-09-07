@@ -52,7 +52,7 @@ try{
 
  const fresh=await device();await fresh.page.goto('http://127.0.0.1:8080/?backup=firebase');await openPanel(fresh.page);await login(fresh.page);
  await fresh.page.locator('#cloudRefresh').click();await fresh.page.locator('#cloudVersions button').first().waitFor();
- await fresh.page.locator('#cloudVersions button').first().click();
+ await Promise.all([fresh.page.waitForEvent('load'),fresh.page.locator('#cloudVersions button').first().click()]);
  await fresh.page.waitForFunction(()=>localStorage.input_weight==='168',null,{timeout:25000});
  assert.equal(await fresh.page.evaluate(()=>JSON.parse(localStorage.trainingLogs)[0].weight),170,'Clean device recovers complete saved history');
  assert.deepEqual(errors,[]);
