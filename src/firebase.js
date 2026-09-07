@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
  sendEmailVerification, sendPasswordResetEmail, signOut, updatePassword } from 'firebase/auth';
-import { getFirestore, doc, collection, getDocsFromServer as getDocs, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 
 // Public application configuration. Authorization is enforced by firestore.rules.
 export function createClient(){
@@ -48,7 +48,7 @@ export function createClient(){
    signOut:wrap(async()=>signOut(auth))
   },
   makeStore(assertCurrent){return window.FirestoreBackup.createFirestoreStore({
-   sdk:{doc,collection,getDocs,runTransaction,serverTimestamp},db,storage:localStorage,
+   sdk:{doc,runTransaction,serverTimestamp},db,storage:localStorage,
    assertOwner:id=>{if(user()?.id!==id)throw Error('Your account changed. Please sign in again.');assertCurrent(id)}
   })}
  };

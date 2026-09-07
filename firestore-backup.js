@@ -40,7 +40,7 @@
   return payload;
  }
  function createFirestoreStore({sdk,db,storage,assertOwner,now=()=>Date.now()}){
-  const {doc,collection,getDocs,runTransaction,serverTimestamp}=sdk;
+  const {doc,runTransaction,serverTimestamp}=sdk;
   const ref=(uid,...path)=>doc(db,'athletes',uid,...path);
   const cursorKey=uid=>'alp-firestore-revision-'+uid;
   const cursor=uid=>{const value=storage.getItem(cursorKey(uid));return value===null?null:Number(value)};
@@ -78,8 +78,19 @@
     return {...result,created_at:date(saved.createdAt)};
    },
    async list(uid,offset=0){
-    assertOwner(uid);const rows=await getDocs(collection(db,'athletes',uid,'snapshots'));assertOwner(uid);
-    return rows.docs.map(row=>{const d=row.data();return {id:row.id+':'+d.revision,created_at:date(d.createdAt),kind:d.kind}})
+    assertOwner(uid);
+    // The fixed slot set needs only unary transaction reads, not a streaming query.
+    // This also guarantees listing cannot grow with the age of the journey.
+    const rows=await runTransaction(db,async tx=>{
+     const result=[];
+     for(const [lane,count] of [['normal',NORMAL_SLOTS],['safety',SAFETY_SLOTS]])for(let i=0;i<count;i++){
+      const slot=lane+'-'+i,d=(await tx.get(ref(uid,'snapshots',slot))).data();
+      if(d)result.push({id:slot+':'+d.revision,created_at:date(d.createdAt),kind:d.kind});
+     }
+     return result;
+    });
+    assertOwner(uid);
+    return rows
      .sort((a,b)=>b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id)).slice(offset,offset+20);
    },
    async read(uid,id){
