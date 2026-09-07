@@ -32,7 +32,7 @@ function mealPlanForTarget(w,target){
 if old not in source: raise SystemExit('nutrition add-on block not found')
 source=source.replace(old,new,1)
 oldtest=""" assert.equal(meals.reduce((s,m)=>s+m.kcal,0),4200);\n assert.equal(meals.at(-1).name,'Recovery Fuel Add-On');\n assert.equal(meals.at(-1).kcal,800);"""
-newtest=""" assert.equal(meals.reduce((s,m)=>s+m.kcal,0),4200);\n const addons=meals.filter(m=>m.id.startsWith('fuel-addon-'));\n assert.deepEqual(addons.map(m=>m.kcal),[400,400]);\n assert.deepEqual(addons.map(m=>m.name),['Pre-Training Fuel Add-On','Post-Training Fuel Add-On']);"""
+newtest=""" assert.equal(meals.reduce((s,m)=>s+m.kcal,0),4200);\n const addons=meals.filter(m=>m.id.startsWith('fuel-addon-'));\n assert.equal(addons.length,2);\n assert.equal(addons[0].kcal,400);\n assert.equal(addons[1].kcal,400);\n assert.equal(addons[0].name,'Pre-Training Fuel Add-On');\n assert.equal(addons[1].name,'Post-Training Fuel Add-On');"""
 if oldtest not in tests: raise SystemExit('recovery add-on test target not found')
 tests=tests.replace(oldtest,newtest,1)
 app.write_text(source)
