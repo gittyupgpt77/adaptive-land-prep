@@ -517,6 +517,17 @@ document.querySelectorAll(".segment").forEach(b=>b.onclick=()=>{document.querySe
 $("saveNutritionDay").onclick=saveNutrition;
 $("openBenchmarks").onclick=()=>{loadBenchmarkForm();$("benchmarkSheet").classList.remove("hidden")};$("benchmarkClose").onclick=()=>$("benchmarkSheet").classList.add("hidden");$("benchmarkSheet").onclick=e=>{if(e.target===$("benchmarkSheet"))$("benchmarkSheet").classList.add("hidden")};$("saveBenchmarks").onclick=saveBenchmarkData;$("openTrends").onclick=()=>switchTab("trends");
 ["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>{const v=localStorage.getItem("input_"+id);if(v!==null)$(id).value=v;$(id).addEventListener("input",requiredFields);$(id).addEventListener("change",requiredFields)});$("focal").checked=localStorage.input_focal==="1";$("gait").checked=localStorage.input_gait==="1";
+// Remember unfinished entries without changing a confirmed readiness/session decision.
+["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight","focal","gait"].forEach(id=>{
+ const field=$(id),remember=()=>{if(!historicalDate)localStorage.setItem("input_"+id,field.type==="checkbox"?(field.checked?"1":"0"):field.value)};
+ field.addEventListener("input",remember);field.addEventListener("change",remember);
+});
+["sessionRPE","sessionDuration","postPain","completed","sessionNote"].forEach(id=>{
+ const field=$(id),key=()=>"input_session_"+todayKey()+"_"+id,cached=localStorage.getItem(key());
+ if(cached!==null)field.value=cached;
+ const remember=()=>localStorage.setItem(key(),field.value);
+ field.addEventListener("input",remember);field.addEventListener("change",remember);
+});
 const DB_NAME="AdaptiveLandPrepDB",STORE="kv";function openDB(){return new Promise((r,j)=>{const q=indexedDB.open(DB_NAME,1);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains(STORE))q.result.createObjectStore(STORE)};q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}async function dbSet(k,v){try{const d=await openDB();d.transaction(STORE,"readwrite").objectStore(STORE).put(v,k)}catch(e){}}async function requestPersistence(){let p=false;try{p=await navigator.storage?.persisted?.()||await navigator.storage?.persist?.()}catch(e){}$("persistBadge").textContent=p?"Persistent":"On device";$("dbStatus").textContent=p?"Persistent storage granted":"Local database active; keep periodic backups"}function countRecords(){$("recordCount").textContent=(logs().length+workouts().length)+" records";$("lastBackup").textContent=localStorage.lastBackupAt?new Date(localStorage.lastBackupAt).toLocaleString():"Never"}const APP_STORAGE_KEYS=new Set(["trainingLogs","workoutHistory","programStart","baselineDate","failedDays","benchmarks","input_focal","input_gait"]);
 function isAppStorageKey(k){return APP_STORAGE_KEYS.has(k)||k.startsWith("input_")||k.startsWith("task_")||k.startsWith("nutrition_")}
 function collectBackupData(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&isAppStorageKey(k))data[k]=localStorage.getItem(k)}return data}

@@ -39,7 +39,14 @@ try{
  await page.evaluate(()=>{window.__switchAccount('B');localStorage.input_weight='167'});await page.waitForTimeout(7000);
  assert.equal(await count(),3,'Account switching cannot upload previous athlete data');
  await page.evaluate(()=>window.__switchAccount('A'));await saved(4);
+ const confirmed=await page.evaluate(()=>localStorage.trainingLogs);
+ await page.evaluate(()=>{for(const [id,value] of [['sleep','6.5'],['sessionNote','Draft remembered']]){const field=document.getElementById(id);field.value=value;field.dispatchEvent(new Event('input',{bubbles:true}))}});
+ await page.reload({waitUntil:'networkidle'});
+ assert.equal(await page.locator('#sleep').inputValue(),'6.5','Unconfirmed check-in draft survives restart');
+ assert.equal(await page.locator('#sessionNote').inputValue(),'Draft remembered','Unfinished session response survives restart');
+ assert.equal(await page.evaluate(()=>localStorage.trainingLogs),confirmed,'Draft autosave cannot alter confirmed physiology');
  await page.locator('[data-target="program"]').click();await page.locator('#openTrends').click();await page.locator('#cloudPanel summary').click();
+ await page.waitForTimeout(8000);
  await page.locator('#cloudPanel').scrollIntoViewIfNeeded();
  fs.mkdirSync('audit-cloud',{recursive:true});await page.screenshot({path:'audit-cloud/automatic-backup-iphone.png'});
  assert.deepEqual(errors,[],'No browser runtime errors');
