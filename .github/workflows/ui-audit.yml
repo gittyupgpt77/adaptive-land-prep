@@ -135,6 +135,9 @@ jobs:
           check('Under-fueling is explained on Today',(await page.locator('#adaptationBanner').innerText()).toLowerCase().includes('fuel'));
           await page.locator('[data-target="workout"]').click();
           check('Under-fueling modifies actual training prescription',/Modified|Recovery/i.test(await page.locator('#workoutTitle').innerText()));
+          await page.locator('[data-target="nutrition"]').click();
+          check('Red fueling signal raises today nutrition target',(await page.locator('#nutritionToday').innerText()).includes('1,650'));
+          check('Red fueling signal adds explicit recovery carbohydrate food',(await page.locator('#nutritionMeals').innerText()).includes('Recovery Carbohydrate Add-On'));
           await page.locator('[data-target="today"]').click();
 
           // Today split interactions.
