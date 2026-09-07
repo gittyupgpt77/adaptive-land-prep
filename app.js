@@ -81,16 +81,16 @@ function makeSession(name,w=prescriptionWeek()){
 function logs(){return JSON.parse(localStorage.trainingLogs||"[]")}function workouts(){return JSON.parse(localStorage.workoutHistory||"[]")}
 function todayKey(){return new Date().toDateString()}function todayCheckin(){return logs().find(x=>new Date(x.date).toDateString()===todayKey())}function todayWorkoutRecord(){return workouts().find(x=>new Date(x.date).toDateString()===todayKey())}function todayWorkout(){const x=todayWorkoutRecord();return x?.completed==="YES"?x:null}
 function weekMetrics(w){
- const out={runMiles:0,ruckMiles:0,rowMeters:0};
+ const out={runMiles:0,ruckMiles:0,rowMinutes:0};
  for(const x of workouts().filter(x=>x.week===w&&x.completed!=="NO")){
    if(Number.isFinite(x.runMiles))out.runMiles+=x.runMiles;
    if(Number.isFinite(x.ruckMiles))out.ruckMiles+=x.ruckMiles;
-   if(Number.isFinite(x.rowMeters))out.rowMeters+=x.rowMeters;
+   if(Number.isFinite(x.rowMinutes))out.rowMinutes+=x.rowMinutes;
  }
  return out
 }
 function sessionModalities(det){
- const text=((det?.title||"")+" "+(det?.type||"")+" "+(det?.steps||[]).map(e=>(e.name||"")+" "+(e.type||"")).join(" ")).toLowerCase();
+ const text=((det?.title||"")+" "+(det?.type||"")+" "+(det?.steps||[]).map(e=>(e.name||"")+" "+(e.type||"")+" "+(e.dose||"")+" "+(e.cue||"")).join(" ")).toLowerCase();
  return{run:/\brun|running|jog/.test(text),ruck:/ruck|weighted-pack/.test(text),row:/\brow|rowing|concept2/.test(text)}
 }
 function renderSessionMetricFields(det){
@@ -102,11 +102,11 @@ function actualWorkSummary(work){
  if(Number.isFinite(work.runMiles))bits.push("Run "+work.runMiles+" mi");
  if(Number.isFinite(work.ruckMiles))bits.push("Ruck "+work.ruckMiles+" mi");
  if(Number.isFinite(work.packWeight))bits.push("Pack "+work.packWeight+" lb");
- if(Number.isFinite(work.rowMeters))bits.push("Row "+Math.round(work.rowMeters).toLocaleString()+" m");
+ if(Number.isFinite(work.rowMinutes))bits.push("Row "+work.rowMinutes+" min");
  return bits.length?'<div class="nutrition-note"><strong>Actual work</strong><p>'+bits.join(" · ")+'</p></div>':""
 }
 function renderWeekTargetCard(w,det){
- const t=weekTarget(w),m=weekMetrics(w),runLogged=m.runMiles?m.runMiles.toFixed(1)+" mi logged · ":"",ruckLogged=m.ruckMiles?m.ruckMiles.toFixed(1)+" mi logged · ":"",rowLogged=m.rowMeters?Math.round(m.rowMeters).toLocaleString()+" m logged · ":"";
+ const t=weekTarget(w),m=weekMetrics(w),runLogged=m.runMiles?m.runMiles.toFixed(1)+" mi logged · ":"",ruckLogged=m.ruckMiles?m.ruckMiles.toFixed(1)+" mi logged · ":"",rowLogged=m.rowMinutes?m.rowMinutes.toFixed(0)+" min logged · ":"";
  $("weekTargetCard").innerHTML='<strong>Week '+w+' · '+t.weekType+'</strong><p><b>Running:</b> '+runLogged+t.run+'<br><b>Concept2:</b> '+rowLogged+t.row+'<br><b>Ruck:</b> '+ruckLogged+(t.ruck||"None scheduled")+'</p><small>Weekly ceilings are limits, not quotas. Do not force remaining mileage into today.</small>';
  renderSessionMetricFields(det)
 }
@@ -177,7 +177,7 @@ function saveWorkout(c){
    $("completionBanner").classList.add("attention");$("completionBanner").classList.remove("hidden");
    setTimeout(()=>$("completionBanner").classList.add("hidden"),2200);return
  }
- const arr=workouts(),prescription=adaptiveSession(),entry={date:new Date().toISOString(),week:prescriptionWeek(),session:prescription.title,prescription,rpe,duration:num("sessionDuration"),postPain,runMiles:num("sessionRunMiles"),ruckMiles:num("sessionRuckMiles"),rowMeters:num("sessionRowMeters"),packWeight:num("sessionPackWeight"),completed:status,note:val("sessionNote")};
+ const arr=workouts(),prescription=adaptiveSession(),entry={date:new Date().toISOString(),week:prescriptionWeek(),session:prescription.title,prescription,rpe,duration:num("sessionDuration"),postPain,runMiles:num("sessionRunMiles"),ruckMiles:num("sessionRuckMiles"),rowMinutes:num("sessionRowMeters"),packWeight:num("sessionPackWeight"),completed:status,note:val("sessionNote")};
  const existing=arr.findIndex(x=>dayKey(x.date)===todayKey());if(existing>=0)arr.splice(existing,1);arr.unshift(entry);
  localStorage.workoutHistory=JSON.stringify(arr);dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",entry.completed==="YES");
  $("sessionFeedback").open=false;$("completionBanner").classList.remove("attention");
@@ -601,7 +601,7 @@ $("openBenchmarks").onclick=()=>{loadBenchmarkForm();$("benchmarkSheet").classLi
 });
 function restoreSessionFeedback(){
  const saved=workouts().find(x=>dayKey(x.date)===todayKey());
- const fields={sessionRPE:"rpe",sessionDuration:"duration",postPain:"postPain",sessionRunMiles:"runMiles",sessionRuckMiles:"ruckMiles",sessionRowMeters:"rowMeters",sessionPackWeight:"packWeight",completed:"completed",sessionNote:"note"};
+ const fields={sessionRPE:"rpe",sessionDuration:"duration",postPain:"postPain",sessionRunMiles:"runMiles",sessionRuckMiles:"ruckMiles",sessionRowMeters:"rowMinutes",sessionPackWeight:"packWeight",completed:"completed",sessionNote:"note"};
  for(const [id,property] of Object.entries(fields)){
   const draft=localStorage.getItem("input_session_"+todayKey()+"_"+id);
   $(id).value=draft!==null?draft:String(saved?.[property]??"");
@@ -631,7 +631,7 @@ function validateBackup(o){
    for(const r of rows){
     if(!object(r)||!date(r.date))fail();
     if(r.week!==undefined&&(!Number.isInteger(r.week)||r.week<1||r.week>56))fail();
-    for(const field of ["weight","weightAvg","hrv","hrvBase","rhr","rhrBase","grip","gripBase","sleep","sleepQ","fatigue","load","pain","score","rpe","duration","postPain","runMiles","ruckMiles","rowMeters","packWeight"]){if(r[field]!=null&&(typeof r[field]!=="number"||!Number.isFinite(r[field])))fail()}
+    for(const field of ["weight","weightAvg","hrv","hrvBase","rhr","rhrBase","grip","gripBase","sleep","sleepQ","fatigue","load","pain","score","rpe","duration","postPain","runMiles","ruckMiles","rowMinutes","packWeight"]){if(r[field]!=null&&(typeof r[field]!=="number"||!Number.isFinite(r[field])))fail()}
     if(k==="workoutHistory"&&(typeof r.session!=="string"||!["YES","NO","PARTIAL"].includes(r.completed)))fail();
     if(r.overall!==undefined&&!["GREEN","YELLOW","RED"].includes(r.overall))fail();
     if(r.decision!=null){if(!object(r.decision)||!["GREEN","YELLOW","RED"].includes(r.decision.o))fail();for(const field of ["a","b","c"]){if(r.decision[field]!=null&&!["","GREEN","YELLOW","RED"].includes(r.decision[field]))fail()}}

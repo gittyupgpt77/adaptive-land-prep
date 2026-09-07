@@ -29,9 +29,9 @@ test('developer shorthand is removed from athlete-facing workout doses',()=>{
 test('weekly actual work counts completed and partial work but not skipped work',()=>{
  const s=source(),start=s.indexOf('function weekMetrics('),end=s.indexOf('\nfunction sessionModalities',start);
  const rows=[
-  {week:13,completed:'YES',runMiles:3.25,rowMeters:5000},
-  {week:13,completed:'PARTIAL',runMiles:1.5,ruckMiles:2,rowMeters:2500},
-  {week:13,completed:'NO',runMiles:9,ruckMiles:9,rowMeters:9000},
+  {week:13,completed:'YES',runMiles:3.25,rowMinutes:40},
+  {week:13,completed:'PARTIAL',runMiles:1.5,ruckMiles:2,rowMinutes:20},
+  {week:13,completed:'NO',runMiles:9,ruckMiles:9,rowMinutes:90},
   {week:14,completed:'YES',runMiles:7}
  ];
  const context=vm.createContext({workouts:()=>rows});
@@ -39,14 +39,14 @@ test('weekly actual work counts completed and partial work but not skipped work'
  const metrics=vm.runInContext('weekMetrics(13)',context);
  assert.equal(metrics.runMiles,4.75);
  assert.equal(metrics.ruckMiles,2);
- assert.equal(metrics.rowMeters,7500);
+ assert.equal(metrics.rowMinutes,60);
 });
 
 test('saved sessions retain actual run ruck row and pack work',()=>{
  const s=source(),start=s.indexOf('function saveWorkout(c){'),end=s.indexOf('\nconst EXERCISE_DB_BASE=',start);
  const localStorage={programStart:'2026-09-01'};
  const nodes={sessionFeedback:{open:false},completionBanner:{textContent:'',classList:{add(){},remove(){}}}};
- const values={sessionRPE:6,postPain:0,sessionDuration:52,sessionRunMiles:4.2,sessionRuckMiles:null,sessionRowMeters:6200,sessionPackWeight:null};
+ const values={sessionRPE:6,postPain:0,sessionDuration:52,sessionRunMiles:4.2,sessionRuckMiles:null,sessionRowMeters:45,sessionPackWeight:null};
  const context=vm.createContext({
   localStorage,$:id=>nodes[id]??={value:'',classList:{add(){},remove(){}}},num:id=>values[id]??null,val:()=>'',beginJourney(){},
   setTimeout(){},workouts:()=>[],adaptiveSession:()=>({title:'Run + row',type:'Run',steps:[]}),prescriptionWeek:()=>13,
@@ -56,7 +56,7 @@ test('saved sessions retain actual run ruck row and pack work',()=>{
  context.saveWorkout('YES');
  const saved=JSON.parse(localStorage.workoutHistory)[0];
  assert.equal(saved.runMiles,4.2);
- assert.equal(saved.rowMeters,6200);
+ assert.equal(saved.rowMinutes,45);
  assert.equal(saved.ruckMiles,null);
  assert.equal(saved.packWeight,null);
 });
