@@ -519,10 +519,15 @@ jobs:
           check('Missed-day debt appears only after a started journey',await visible('#missedDayBanner'));
           check('Missed-day offers reconstruction',await visible('#resolveMissed'));
           check('Missed-day offers explicit failure',await visible('#failMissed'));
+          await page.evaluate(()=>{document.getElementById('weight').value='170';persistInputs()});
           await page.locator('#resolveMissed').click();
           check('Retrospective check-in opens',await visible('#checkinSheet'));
           check('Retrospective sheet is labeled',(await page.locator('#checkinSheet').innerText()).includes('RETROSPECTIVE'));
+          await page.locator('#weight').fill('160');
+          await page.evaluate(()=>evaluate());
+          check('Historical evaluation preserves current saved draft',await page.evaluate(()=>localStorage.input_weight==='170'));
           await page.locator('#closeCheckin').click();
+          check('Closing historical entry restores current form',await page.locator('#weight').inputValue()==='170');
           await shot('09-missed-day');
 
           // Inventory all currently visible button-like controls on major states.
