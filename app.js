@@ -4,7 +4,8 @@ const num=id=>{const v=parseFloat($(id)?.value);return Number.isFinite(v)?v:null
 const val=id=>$(id)?.value||"";
 const DAY=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const blocks=[
- ["Re-entry",1,4,"Up to 2 short run/walk sessions each week","No weighted-pack walking yet","Rebuild routine, aerobic fitness and basic tissue tolerance."],
+ ["Re-entry I",1,2,"No running yet · rowing dominant","No weighted-pack walking yet","Rebuild routine and aerobic fitness without impact while lower-leg tissues begin reconditioning."],
+ ["Re-entry II",3,4,"1 short run/walk session each week","No weighted-pack walking yet","Introduce small doses of impact while rowing remains the main aerobic modality."],
  ["Foundation I",5,8,"2 runs each week · about 3–6 miles","2–4 miles easy with a light pack","Build continuous running tolerance and introduce loaded walking."],
  ["Foundation II",9,12,"2–3 runs each week · about 6–10 miles","3–5 miles easy","Build the aerobic base, bodyweight strength and loaded-carry durability."],
  ["Build I",13,16,"3 runs each week · about 10–16 miles","4–6 miles","Introduce controlled faster running while increasing loaded walking."],
@@ -20,7 +21,8 @@ const blocks=[
  ["Taper",53,56,"Reduce volume progressively","Reduce, then eliminate","Dissipate fatigue while retaining selected intensity."]
 ];
 const templates={
- "Re-entry":["Recovery & mobility","Full-body strength — Session A","Easy aerobic row","Full-body strength — Session B","Easy aerobic row","Introductory run/walk","Easy row + trunk work"],
+ "Re-entry I":["Recovery & mobility","Full-body strength — Session A","Easy aerobic row","Full-body strength — Session B","Easy aerobic row","Long easy row + lower-leg durability","Easy row + trunk work"],
+ "Re-entry II":["Recovery & mobility","Full-body strength — Session A","Easy aerobic row","Full-body strength — Session B","Easy aerobic row","Introductory run/walk","Easy row + trunk work"],
  "Foundation I":["Recovery & mobility","Full-body strength + bodyweight training","Easy aerobic row","Easy run + lower-leg durability","Full-body strength — Session B","Long easy run or light weighted-pack walk","Easy recovery row"],
  "Foundation II":["Recovery & mobility","Full-body strength + bodyweight training","Easy aerobic row","Easy run + lower-leg durability","Full-body strength — Session B","Long easy run or light weighted-pack walk","Easy recovery row"],
  "Build I":["Recovery & mobility","Quality run + strength","Easy run","Rowing threshold work","Strength + bodyweight training","Long run or weighted-pack walk","Easy recovery row"],
@@ -44,7 +46,7 @@ function programStart(){return localStorage.programStart?new Date(localStorage.p
 function currentWeek(){if(!localStorage.programStart)return 1;const start=new Date(localStorage.programStart),now=new Date();start.setHours(12,0,0,0);now.setHours(12,0,0,0);return Math.max(1,Math.min(56,Math.floor((now-start)/604800000)+1))}
 let viewedWeek=currentWeek();
 function blockForWeek(w){const b=blocks.find(x=>w>=x[1]&&w<=x[2])||blocks[0];return{name:b[0],start:b[1],end:b[2],run:b[3],ruck:b[4],focus:b[5]}}
-function daysFor(b){return templates[b.name]||templates["Re-entry"]}
+function daysFor(b){return templates[b.name]||templates["Re-entry I"]}
 function dayIndex(){if(!localStorage.programStart)return 0;const a=new Date(programStart()),b=new Date();a.setHours(12,0,0,0);b.setHours(12,0,0,0);const days=Math.floor((b-a)/86400000);return((days%7)+7)%7}
 function sessionName(){const w=prescriptionWeek(),b=blockForWeek(w);return daysFor(b)[dayIndex()]}
 function makeSession(name){
@@ -59,6 +61,7 @@ function makeSession(name){
  if(name.includes("recovery row")||name.includes("Recovery aerobic"))return{title:name,type:"Recovery",duration:"25–60 min",effort:"Very easy",why:"Support recovery while preserving aerobic rhythm.",steps:[ex("Easy row or walk","25–60 min","Continuous","Finish feeling better than you started.","Aerobic")]};
  if(name.includes("row")&&name.includes("trunk"))return{title:name,type:"Aerobic + Core",duration:"45–70 min",effort:"Easy",why:"Build aerobic capacity and trunk stiffness.",steps:[ex("Easy row","30–60 min","Continuous","Conversational effort.","Row"),ex("RKC plank","3 × 20–40 sec","60 sec","Squeeze glutes, quads and abs hard.","Core"),ex("Suitcase carry","3 rounds each side","As needed","Stay tall and breathe under control.","Carry")]};
  if(name.includes("Rowing threshold"))return{title:name,type:"Aerobic",duration:"35–60 min",effort:"Moderate / hard",why:"Develop higher aerobic power with low mechanical cost.",steps:[ex("Warm-up row","10 min","—","Easy.","Row"),ex("Controlled threshold work","20–40 min total","Variable","Hard but controlled; do not force a universal number.","Row"),ex("Cool-down row","5–10 min","—","Easy.","Row")]};
+ if(name.includes("Long easy row + lower-leg durability"))return{title:name,type:"Aerobic + Durability",duration:"65–90 min",effort:"Easy",why:"Extend low-impact aerobic work while building lower-leg capacity before running begins.",steps:[ex("Easy row","50–70 min","Continuous","Conversational effort throughout.","Row"),ex("Tibialis raises","3 × 15–25","60 sec","Controlled full range.","Durability"),ex("Calf / soleus raises","3 × 12–20","60 sec","Use straight- and bent-knee work without bouncing.","Durability"),ex("Ankle mobility","5–8 min","—","Controlled, pain-free range.","Mobility")]};
  if(name.includes("Recovery & mobility"))return{title:name,type:"Recovery",duration:"25–45 min",effort:"Very easy",why:"Reduce fatigue while keeping the body moving and joints comfortable.",steps:[ex("Easy walk or row","20–30 min","Continuous","Very easy.","Aerobic"),ex("Ankle mobility","2 × 8–10 each side","—","Move through pain-free range.","Mobility"),ex("Hip mobility","5–10 min","—","Gentle controlled movement.","Mobility"),ex("Light trunk work","2–3 easy sets","60 sec","Plank, side plank or dead bug.","Core")]};
  if(name.includes("Introductory run/walk"))return{title:name,type:"Run",duration:"20–40 min",effort:"Easy",why:"Reintroduce running-specific bone, tendon and foot stress without unnecessary overload.",steps:[ex("Warm-up walk","5–10 min","—","Brisk but comfortable.","Run"),ex("Run / walk","10–25 min total","Alternate as needed","Keep it easy. Stop for focal pain or altered gait.","Run"),ex("Cool-down walk","5 min","—","Easy.","Run")]};
  if(name.includes("lower-leg durability"))return{title:name,type:"Run + Durability",duration:"45–70 min",effort:"Easy",why:"Pair controlled running with targeted shin, calf and ankle strengthening.",steps:[ex("Easy run","Use current phase target","Continuous","Conversational pace.","Run"),ex("Tibialis raises","3 × 20","60 sec","Control the movement.","Durability"),ex("Seated soleus raises","3 × 15–20","60–90 sec","Use moderate load.","Durability"),ex("Eccentric calf raises","3 × 12–15","60–90 sec","Lower slowly.","Durability")]};
