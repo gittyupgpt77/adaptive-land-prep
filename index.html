@@ -20,6 +20,7 @@
 
 <main>
 <section id="today" class="screen active">
+  <div id="missedDayBanner" class="missed-banner hidden"></div>
   <div class="readiness-card">
     <div class="card-heading"><span>Readiness</span><button class="info-dot" data-term="readiness">i</button></div>
     <div class="readiness-main">
@@ -74,16 +75,26 @@
     <div id="completionBanner" class="success-banner hidden">Session saved ✓</div>
   </div>
   <div id="trainLibraryView" class="hidden">
-    <div class="section-row"><h2>Exercise Library</h2><span>Tap to learn</span></div>
+    <div class="section-row"><h2>Exercise Library</h2><span id="libraryCount">0 exercises</span></div>
+    <label class="library-search"><span>⌕</span><input id="librarySearch" type="search" inputmode="search" placeholder="Search exercises, muscle groups, or equipment"></label>
     <div id="exerciseLibrary" class="library-list"></div>
   </div>
 </section>
 
 <section id="week" class="screen">
+  <div class="calendar-mode"><button class="calendar-mode-btn active" data-calview="week">Week</button><button class="calendar-mode-btn" data-calview="month">Month</button></div>
+  <div id="weekView">
   <div class="week-nav">
     <button id="prevWeek">‹</button><div><small>PROGRAM WEEK</small><strong id="weekTitle">Week 1</strong><span id="weekRange"></span></div><button id="nextWeek">›</button>
   </div>
   <div id="weekSummary"></div>
+  </div>
+  <div id="monthView" class="hidden">
+    <div class="month-nav"><button id="prevMonth">‹</button><div><small>PROGRAM CALENDAR</small><strong id="monthTitle">Month</strong></div><button id="nextMonth">›</button></div>
+    <div id="monthLegend" class="month-legend"></div>
+    <div class="month-weekdays"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+    <div id="monthGrid" class="month-grid"></div>
+  </div>
 </section>
 
 <section id="trends" class="screen">
@@ -103,7 +114,8 @@
 
 <section id="program" class="screen">
   <div id="currentPhaseCard" class="phase-feature"></div>
-  <div class="section-row"><h2>Phase Milestones</h2><span id="milestoneCount"></span></div>
+  <div class="section-row"><h2>Phase Objectives</h2><span id="milestoneCount"></span></div>
+  <div id="objectiveMeta" class="objective-meta"></div>
   <div id="phaseMilestones" class="milestone-list"></div>
   <div class="section-row"><h2>All Phases</h2></div>
   <div id="programBlocks" class="phase-list"></div>
@@ -155,6 +167,7 @@
   </div>
 </div>
 
+<div id="daySheet" class="sheet-backdrop hidden"><div class="sheet day-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small id="daySheetKicker">DAY</small><h2 id="daySheetTitle">Day</h2></div><button id="daySheetClose">×</button></div><div class="day-tabs"><button class="day-tab active" data-daytab="training">Training</button><button class="day-tab" data-daytab="nutrition">Nutrition</button></div><div id="daySheetBody"></div></div></div>
 <div id="infoModal" class="sheet-backdrop hidden"><div class="sheet exercise-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small>GUIDANCE</small><h2 id="modalTitle">Exercise</h2></div><button id="modalClose">×</button></div><div id="modalContent"></div><button class="sheet-primary" id="modalDone">Got it</button></div></div>
 <script src="app.js"></script>
 </body></html>
