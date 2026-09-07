@@ -41,13 +41,8 @@
 
   <div class="section-row"><h2>Today’s Plan</h2><span id="todayTaskCount">0/4</span></div>
   <div class="plan-list">
-    <button class="plan-card primary-plan" id="todayWorkoutCard" data-go="workout">
-      <div class="plan-icon">⌁</div>
-      <div><small id="todayWorkoutType">TRAINING</small><strong id="todayWorkoutName">Loading…</strong><span id="todayWorkoutMeta">Your scheduled session</span></div>
-      <b>›</b>
-    </button>
     <div class="check-task" id="taskCheckin"><button class="task-toggle" data-task="checkin" aria-label="Mark morning metrics complete"><span class="task-circle">○</span></button><button class="task-main" data-action="checkin"><div><strong>Log morning metrics</strong><small>Recovery, sleep, pain and body weight</small></div><b>›</b></button></div>
-    <div class="check-task" id="taskWorkout"><button class="task-toggle" data-task="workout" aria-label="Mark training complete"><span class="task-circle">○</span></button><button class="task-main" data-action="workout"><div><strong>Complete today’s session</strong><small id="taskWorkoutSub">Follow the adaptive prescription</small></div><b>›</b></button></div>
+    <div class="check-task workout-task" id="taskWorkout"><button class="task-toggle" data-task="workout" aria-label="Mark training complete"><span class="task-circle">○</span></button><button class="task-main" data-action="workout"><div class="task-thumb" id="taskWorkoutThumb"></div><div><strong id="taskWorkoutTitle">Today’s session</strong><small id="taskWorkoutSub">Follow the adaptive prescription</small></div><b>›</b></button></div>
     <div class="check-task" id="taskNutrition"><button class="task-toggle" data-task="nutrition" aria-label="Mark nutrition reviewed"><span class="task-circle">○</span></button><button class="task-main" data-action="nutrition"><div><strong>Nutrition & meals</strong><small>Today’s diet, macros and intake</small></div><b>›</b></button></div>
     <div class="check-task" id="taskMobility"><button class="task-toggle" data-task="mobility" aria-label="Mark mobility complete"><span class="task-circle">○</span></button><button class="task-main" data-action="mobility"><div><strong>Mobility / prehab</strong><small>Durability work for today</small></div><b>›</b></button></div>
   </div>
