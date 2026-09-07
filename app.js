@@ -182,6 +182,45 @@ const phasePalette={"Rebuild":"#48a7ff","Build":"#7d8cff","Specificity":"#ad73e6
 function isHighVolumeSession(name){return /long|quality|threshold|specific|medium aerobic/i.test(name)}
 function nutritionForWeek(w,name){const high=isHighVolumeSession(name);if(w<=20)return{phase:"Aggressive Recomposition",cal:high?1650:1450,protein:185,carbs:high?140:90,fat:40,why:high?"Higher carbohydrate allowance for a longer or harder session.":"Low-volume Phase A target from the submitted nutrition architecture."};if(w<=22)return{phase:"Metabolic Pivot · Step 1",cal:1950,protein:185,carbs:190,fat:50,why:"Step calories upward before high-volume work expands."};if(w<=24)return{phase:"Metabolic Pivot · Step 2",cal:2250,protein:185,carbs:240,fat:60,why:"Second step before full performance fueling."};return{phase:"Performance Fueling",cal:high?4000:3400,protein:200,carbs:high?600:450,fat:88,why:high?"High-demand target emphasizing glycogen replacement.":"Baseline Phase B performance target."}}
 function nutritionHtml(w,name){const n=nutritionForWeek(w,name);return '<div class="nutrition-hero"><small>'+n.phase.toUpperCase()+'</small><strong>≈ '+n.cal.toLocaleString()+' kcal</strong><p>'+n.why+'</p></div><div class="macro-grid"><div><span>Protein</span><strong>'+n.protein+' g</strong></div><div><span>Carbs</span><strong>'+n.carbs+' g</strong></div><div><span>Fat</span><strong>'+n.fat+' g</strong></div></div><div class="nutrition-note"><strong>Adaptive rule</strong><p>Readiness and body-weight trend override an aggressive deficit when recovery or performance deteriorates.</p></div>'}
+function nutritionLogKey(d=new Date()){return"nutrition_"+dayKey(d)}
+function getNutritionLog(d=new Date()){try{return JSON.parse(localStorage.getItem(nutritionLogKey(d))||"{}")}catch(e){return{}}}
+function mealPlanForWeek(w){
+ if(w<=24)return[
+  {id:"m1",name:"Post-Workout Muscle Lock",kcal:400,foods:["6 egg whites + 1 whole egg","½ cup cooked oats + 1 tsp chia","½ medium banana"]},
+  {id:"m2",name:"Mid-Day Micronutrients",kcal:350,foods:["6 oz chicken breast","3 cups spinach / kale / baby chard","1 cup mushrooms + bell peppers","1 oz avocado"]},
+  {id:"m3",name:"Pre-Workout Structural Primer",kcal:300,foods:["1 slice sourdough","1.5 scoops whey isolate in water"]},
+  {id:"m4",name:"Nightly Recovery",kcal:400,foods:["5 oz sirloin or wild salmon","½ cup cooked brown rice","2 cups greens + lemon"]}
+ ];
+ return[
+  {id:"m1",name:"Early Morning Aerobic Fuel",kcal:750,foods:["1½ cups cooked oats + 2 tbsp chia","1 large banana","1 cup whole milk","1 scoop whey"]},
+  {id:"m2",name:"Post-Threshold Recovery",kcal:950,foods:["4 whole eggs + 4 egg whites","3 slices sourdough","Pepper jack cheese","1 cup greens","1 cup blueberries"]},
+  {id:"m3",name:"Mid-Day Performance Base",kcal:800,foods:["7 oz chicken or wild salmon","2 cups cooked white rice","2 cups greens","Mushrooms + bell peppers","2 tbsp extra virgin olive oil"]},
+  {id:"m4",name:"Pre-Workout Ignition",kcal:500,foods:["2 slices sourdough","1 tbsp honey or 1 banana","1 scoop whey in water"]},
+  {id:"m5",name:"Nightly Tissue Recovery",kcal:1000,foods:["8 oz top sirloin","2 cups white rice or 2 large sweet potatoes","Pepper jack cheese","½ avocado","2 cups greens"]}
+ ];
+}
+function hydrationForDay(w,name){const high=isHighVolumeSession(name);if(w<=24)return high?{oz:180,note:"Long or high-volume day: distribute fluid across the day and use sodium during prolonged work."}:{oz:120,note:"Baseline target; adjust for thirst, heat and urine color."};return high?{oz:"24–32 oz/hr",note:"During prolonged work, pair fluid with carbohydrate and sodium; do not force fluid beyond thirst."}:{oz:120,note:"Baseline target outside prolonged endurance work."}}
+function previousNutritionSignal(){
+ const y=new Date();y.setDate(y.getDate()-1);const log=getNutritionLog(y);if(!log.saved)return null;
+ const x=dateSession(y),target=nutritionForWeek(x.w,x.name),actual=Number(log.actualCalories)||0,mealRatio=(log.meals||[]).length/mealPlanForWeek(x.w).length;
+ return{ratio:actual?actual/target.cal:mealRatio,target:target.cal,actual,mealRatio};
+}
+function renderNutrition(){
+ const w=prescriptionWeek(),name=sessionName(),target=nutritionForWeek(w,name),meals=mealPlanForWeek(w),log=getNutritionLog(),done=new Set(log.meals||[]),hydr=hydrationForDay(w,name);
+ $("nutritionToday").innerHTML='<div class="nutrition-dashboard"><small>'+target.phase.toUpperCase()+'</small><div class="nutrition-dashboard-top"><div><strong>'+target.cal.toLocaleString()+'</strong><span>kcal target</span></div><div class="nutrition-ring" style="--p:'+Math.round(done.size/meals.length*100)+'"><b>'+Math.round(done.size/meals.length*100)+'%</b></div></div><div class="macro-grid page-macros"><div><span>Protein</span><strong>'+target.protein+' g</strong></div><div><span>Carbs</span><strong>'+target.carbs+' g</strong></div><div><span>Fat</span><strong>'+target.fat+' g</strong></div></div><p>'+target.why+'</p></div>';
+ $("mealProgress").textContent=done.size+"/"+meals.length;
+ $("nutritionMeals").innerHTML=meals.map(m=>'<div class="meal-card '+(done.has(m.id)?"done":"")+'"><button class="meal-check" data-meal="'+m.id+'">'+(done.has(m.id)?"✓":"○")+'</button><button class="meal-main" data-mealopen="'+m.id+'"><div><small>'+m.kcal+' KCAL</small><strong>'+m.name+'</strong>'+m.foods.map(f=>'<span>'+f+'</span>').join("")+'</div><b>›</b></button></div>').join("");
+ $("nutritionMeals").querySelectorAll(".meal-check").forEach(b=>b.onclick=()=>{const cur=getNutritionLog(),set=new Set(cur.meals||[]);set.has(b.dataset.meal)?set.delete(b.dataset.meal):set.add(b.dataset.meal);cur.meals=[...set];localStorage.setItem(nutritionLogKey(),JSON.stringify(cur));renderNutrition();renderToday()});
+ $("nutritionMeals").querySelectorAll(".meal-main").forEach(b=>b.onclick=()=>{const m=meals.find(x=>x.id===b.dataset.mealopen);$("modalTitle").textContent=m.name;$("modalContent").innerHTML='<div class="meal-detail"><small>'+m.kcal+' KCAL TARGET</small>'+m.foods.map((f,i)=>'<div><b>'+(i+1)+'</b><span>'+f+'</span></div>').join("")+'</div>';$("infoModal").classList.remove("hidden")});
+ $("hydrationTarget").textContent=typeof hydr.oz==="number"?hydr.oz+" oz":hydr.oz;$("hydrationCard").innerHTML='<strong>'+hydr.oz+(typeof hydr.oz==="number"?" oz":"")+'</strong><p>'+hydr.note+'</p><label><span>Fluid consumed</span><input id="waterActual" type="number" inputmode="decimal" placeholder="oz" value="'+(log.waterOz||"")+'"></label>';
+ const prev=previousNutritionSignal();$("nutritionInfluence").innerHTML=prev?'<strong>Yesterday’s fueling signal</strong><p>'+Math.round(prev.ratio*100)+'% of planned intake was recorded. '+(prev.ratio<.8?"Today’s readiness engine will treat this as a fueling caution when training load is high.":"No fueling penalty is currently indicated.")+'</p>':'<strong>How nutrition changes training</strong><p>Saved intake carries into tomorrow’s fueling status. Substantial under-fueling on a high-load day can downgrade the next prescription even when HRV looks favorable.</p>';
+ $("saveNutritionDay").textContent=log.saved?"✓ Intake saved":"Save Today’s Intake";
+}
+function saveNutrition(){
+ const log=getNutritionLog(),meals=mealPlanForWeek(prescriptionWeek()),target=nutritionForWeek(prescriptionWeek(),sessionName());
+ log.waterOz=Number($("waterActual")?.value)||0;log.saved=true;log.savedAt=new Date().toISOString();log.actualCalories=(log.meals||[]).reduce((sum,id)=>sum+(meals.find(m=>m.id===id)?.kcal||0),0);log.targetCalories=target.cal;
+ localStorage.setItem(nutritionLogKey(),JSON.stringify(log));setTask("nutrition",true);renderNutrition();renderToday();
+}
 function programWeekForDate(d){const a=new Date(programStart()),b=new Date(d);a.setHours(12,0,0,0);b.setHours(12,0,0,0);return Math.max(1,Math.min(56,Math.floor((b-a)/604800000)+1))}
 function programDayIndex(d){const a=new Date(programStart()),b=new Date(d);a.setHours(12,0,0,0);b.setHours(12,0,0,0);const days=Math.floor((b-a)/86400000);return((days%7)+7)%7}
 function dateSession(d){const w=programWeekForDate(d),bl=blockForWeek(w),name=daysFor(bl)[programDayIndex(d)];return{w,bl,name,det:makeSession(name)}}
