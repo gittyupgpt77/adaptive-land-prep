@@ -101,7 +101,7 @@
   </div>
   <div id="journeyView" class="hidden">
     <div class="journey-overview-head"><small>56-WEEK ROADMAP</small><h2>Your Journey</h2><p id="journeySummary">A zoomed-out view of the entire program.</p></div>
-    <div id="journeyTimeline" class="journey-timeline"></div>
+    <div id="journeyPhaseMap" class="journey-phase-map"></div><div id="journeyTimeline" class="journey-timeline"></div>
   </div>
 </section>
 
@@ -111,6 +111,16 @@
   <div id="nutritionMeals" class="meal-list"></div>
   <div class="section-row"><h2>Hydration</h2><span id="hydrationTarget"></span></div>
   <div id="hydrationCard" class="nutrition-page-card"></div>
+  <div class="section-row"><h2>Actual Intake</h2><span>optional but preferred</span></div>
+  <div class="nutrition-page-card actual-intake">
+    <div class="actual-grid">
+      <label><span>Calories</span><input id="actualCalories" type="number" inputmode="numeric" placeholder="kcal"></label>
+      <label><span>Protein</span><input id="actualProtein" type="number" inputmode="decimal" placeholder="g"></label>
+      <label><span>Carbs</span><input id="actualCarbs" type="number" inputmode="decimal" placeholder="g"></label>
+      <label><span>Fat</span><input id="actualFat" type="number" inputmode="decimal" placeholder="g"></label>
+    </div>
+    <small class="actual-help">Meal checkmarks track adherence. These fields record what you actually consumed and drive the next-day fueling signal when supplied.</small>
+  </div>
   <div class="section-row"><h2>Intake & Recovery</h2></div>
   <div id="nutritionInfluence" class="nutrition-page-card"></div>
   <button id="saveNutritionDay" class="nutrition-save">Save Today’s Intake</button>
