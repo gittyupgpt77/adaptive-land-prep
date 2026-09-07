@@ -1,0 +1,36 @@
+name: Nutrition Prescription Coherence Patch v2
+
+on:
+  push:
+    branches: [fix/nutrition-plan-coherence]
+    paths:
+      - '.github/workflows/nutrition-coherence-patch-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/nutrition-plan-coherence
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Apply target-coherent meal plan correction
+        run: python3 scripts/apply-nutrition-coherence-patch.py
+      - name: Verify syntax and regressions
+        run: |
+          node --check app.js
+          node --test tests/*.test.cjs
+      - name: Commit verified product changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js service-worker.js
+          git diff --cached --quiet && exit 1
+          git commit -m "Make prescribed meals match daily nutrition targets"
+          git push origin HEAD:fix/nutrition-plan-coherence
