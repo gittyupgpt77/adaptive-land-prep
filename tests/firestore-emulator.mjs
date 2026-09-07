@@ -45,6 +45,13 @@ test('fresh/stale devices cannot replace cloud history; identical retries acknow
  await assert.rejects(fresh.insert('owner',payload(3),'manual'),{code:'backup/conflict'});
  assert.equal((await s.list('owner')).length,2);
 });
+test('reordered storage keys and a new export timestamp do not create another backup',async()=>{
+ const s=store(),first=payload(1);first.data.baselineDate='2026-09-07';
+ const row=await s.insert('owner',first,'manual');
+ const reordered={...first,exportedAt:'2026-09-08T00:00:00Z',data:{baselineDate:first.data.baselineDate,trainingLogs:first.data.trainingLogs}};
+ assert.equal((await store().insert('owner',reordered,'manual')).id,row.id);
+ assert.equal((await s.list('owner')).length,1);
+});
 test('fresh-device guarded recovery restores data and allows subsequent backups',async()=>{
  const source=store(),row=await source.insert('owner',payload(1),'manual');
  const target=store();let data={};

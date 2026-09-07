@@ -49,7 +49,8 @@
   return {
    async insert(uid,payload,kind){
     assertOwner(uid);
-    const {exportedAt,...canonical}=payload;
+    // Browser storage enumeration order can change across reloads.
+    const canonical={app:payload.app,formatVersion:payload.formatVersion,data:Object.fromEntries(Object.keys(payload.data).sort().map(key=>[key,payload.data[key]]))};
     const encoded=await encode(canonical),safety=kind==='before-restore',expected=cursor(uid);
     const result=await runTransaction(db,async tx=>{
      assertOwner(uid);
