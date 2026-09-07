@@ -91,18 +91,17 @@ function migrateProductState(){
 function beginJourney(){
  if(localStorage.programStart)return;
  const base=todayCheckin()||logs().slice().sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
- if(base){
-   const start=new Date();
-   localStorage.programStart=start.toISOString();
-   localStorage.baselineDate=base.date;
-   localStorage.failedDays="[]";
-   if(dayKey(base.date)===dayKey(start)){
-     const l=logs(),hit=l.find(x=>x===base||x.date===base.date);if(hit){hit.preJourney=false;hit.week=1;localStorage.trainingLogs=JSON.stringify(l);dbSet("trainingLogs",localStorage.trainingLogs)}
-   }
-   viewedWeek=1;viewedMonth=new Date(start);
-   renderAll();return
+ if(!base){openCheckin();return}
+ const start=new Date();
+ localStorage.programStart=start.toISOString();
+ localStorage.baselineDate=base.date;
+ localStorage.failedDays="[]";
+ localStorage.removeItem("journeyPending");
+ if(dayKey(base.date)===dayKey(start)){
+   const l=logs(),hit=l.find(x=>x===base||x.date===base.date);if(hit){hit.preJourney=false;hit.week=1;localStorage.trainingLogs=JSON.stringify(l);dbSet("trainingLogs",localStorage.trainingLogs)}
  }
- localStorage.journeyPending="1";openCheckin()
+ viewedWeek=1;viewedMonth=new Date(start);
+ renderAll()
 }
 function renderJourneyStart(){
  const card=$("journeyStartCard");if(!card)return;
@@ -112,7 +111,7 @@ function renderJourneyStart(){
  card.querySelector("small").textContent=base?"BASELINE CAPTURED":"YOUR PROGRAM HAS NOT STARTED";
  card.querySelector("h2").textContent=base?"Ready for Day 1":"Set your Day 1";
  card.querySelector("p").textContent=base?"Your baseline is saved. Begin when you want the 56-week clock and curriculum accountability to start.":"Complete a baseline morning check-in, then begin the journey. Nothing before Day 1 can create curriculum debt.";
- card.querySelector("button").textContent=base?"Begin Journey":"Log Baseline & Begin";
+ card.querySelector("button").textContent=base?"Begin Journey":"Log Baseline";
 }
 function requiredFields(){const ids=["hrv","rhr","sleep","sleepQ","fatigue","load","pain","performance","weight"];let done=0;ids.forEach(id=>{const el=$(id),ok=String(el.value).trim()!=="";done+=ok?1:0;el.closest(".field").classList.toggle("field-done",ok);el.closest(".field").classList.toggle("field-needed",!ok)});const left=ids.length-done,b=$("checkinProgress");if(left===0){b.classList.add("complete");b.querySelector(".attention-icon").textContent="✓";b.querySelector("strong").textContent="Ready to evaluate";$("checkinProgressText").textContent="Required fields complete."}else{b.classList.remove("complete");b.querySelector(".attention-icon").textContent="!";b.querySelector("strong").textContent="Needs attention";$("checkinProgressText").textContent=left+" required field"+(left===1?"":"s")+" remaining."}}
 function avg(a){const x=a.filter(Number.isFinite);return x.length?x.reduce((p,c)=>p+c,0)/x.length:null}
@@ -123,9 +122,9 @@ function saveCheckin(){
  evaluate();const d=decision();if(!d.o)return;
  const l=logs(),saveDate=historicalDate?new Date(historicalDate):new Date();
  const saveWeek=historicalDate?programWeekForDate(saveDate):(localStorage.programStart?prescriptionWeek():1);
- l.unshift({date:saveDate.toISOString(),week:saveWeek,preJourney:!localStorage.programStart&&localStorage.journeyPending!=="1",weight:num("weight"),weightAvg:num("weightAvg"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),load:num("load"),pain:num("pain"),performance:val("performance"),focal:$("focal").checked,gait:$("gait").checked,overall:d.o,score:d.score,decision:d});
+ l.unshift({date:saveDate.toISOString(),week:saveWeek,preJourney:!localStorage.programStart,weight:num("weight"),weightAvg:num("weightAvg"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),load:num("load"),pain:num("pain"),performance:val("performance"),focal:$("focal").checked,gait:$("gait").checked,overall:d.o,score:d.score,decision:d});
  localStorage.trainingLogs=JSON.stringify(l.slice(0,365));dbSet("trainingLogs",localStorage.trainingLogs);
- if(!historicalDate){setTask("checkin",true);if(!localStorage.programStart){localStorage.baselineDate=saveDate.toISOString();if(localStorage.journeyPending==="1"){localStorage.programStart=saveDate.toISOString();localStorage.removeItem("journeyPending");localStorage.failedDays="[]";viewedWeek=1;viewedMonth=new Date(saveDate)}}}
+ if(!historicalDate){setTask("checkin",true);if(!localStorage.programStart)localStorage.baselineDate=saveDate.toISOString()}
  resetHistorical();closeCheckin();renderAll()
 }
 function saveWorkout(c){if(!localStorage.programStart){beginJourney();return}const arr=workouts(),name=sessionName();arr.unshift({date:new Date().toISOString(),week:prescriptionWeek(),session:name,rpe:num("sessionRPE"),duration:num("sessionDuration"),postPain:num("postPain"),completed:c||"YES",note:val("sessionNote")});localStorage.workoutHistory=JSON.stringify(arr.slice(0,500));dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",true);$("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll()}
