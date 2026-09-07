@@ -313,7 +313,16 @@ function mealPlanForWeek(w){
   {id:"m5",name:"Nightly Tissue Recovery",kcal:1000,foods:["8 oz top sirloin","2 cups white rice or 2 large sweet potatoes","Pepper jack cheese","½ avocado","2 cups greens"]}
  ];
 }
-function hydrationForDay(w,name){const high=isHighVolumeSession(name);if(w<=24)return high?{oz:180,note:"Long or high-volume day: distribute fluid across the day and use sodium during prolonged work."}:{oz:120,note:"Baseline target; adjust for thirst, heat and urine color."};return high?{oz:"24–32 oz/hr",note:"During prolonged work, pair fluid with carbohydrate and sodium; do not force fluid beyond thirst."}:{oz:120,note:"Baseline target outside prolonged endurance work."}}
+function hydrationForDay(w,name){
+ const n=name.toLowerCase();
+ const prolonged=/long|peak specific|medium aerobic|weighted-pack|ruck|specific hard/.test(n);
+ const hard=/quality|threshold|interval|hard session|run \+ strength|strength \+.*run/.test(n);
+ const recovery=/recovery|mobility|easy row|easy aerobic|light strength/.test(n);
+ if(prolonged)return{label:"Sweat-rate plan",note:"Begin hydrated, then drink to thirst and use your own sweat-rate/body-mass change to guide intake. Do not deliberately gain body mass during exercise. Replace sodium in proportion to sweat losses, heat and duration."};
+ if(hard)return{label:"Thirst + sweat rate",note:"Bring fluid and drink according to thirst, heat and observed sweat losses. If you finish meaningfully lighter, use that pre/post body-mass change to refine future sessions."};
+ if(recovery)return{label:"Drink to thirst",note:"No forced hydration target today. Begin normally hydrated and let thirst, urine color and usual body weight guide intake."};
+ return{label:"Individualized",note:"Use thirst and your observed sweat losses rather than forcing a fixed daily volume. Heat, body size, session duration and acclimatization all change fluid needs."}
+}
 function previousNutritionSignal(){
  const y=new Date();y.setDate(y.getDate()-1);const log=getNutritionLog(y);if(!log.saved)return null;
  const x=dateSession(y),target=nutritionForWeek(x.w,x.name),actual=Number(log.actualCalories)||0,mealRatio=(log.meals||[]).length/mealPlanForWeek(x.w).length;
@@ -326,7 +335,7 @@ function renderNutrition(){
  $("nutritionMeals").innerHTML=meals.map(m=>'<div class="meal-card '+(done.has(m.id)?"done":"")+'"><button class="meal-check" data-meal="'+m.id+'">'+(done.has(m.id)?"✓":"○")+'</button><button class="meal-main" data-mealopen="'+m.id+'"><div><small>'+m.kcal+' KCAL</small><strong>'+m.name+'</strong>'+m.foods.map(f=>'<span>'+f+'</span>').join("")+'</div><b>›</b></button></div>').join("");
  $("nutritionMeals").querySelectorAll(".meal-check").forEach(b=>b.onclick=()=>{const cur=getNutritionLog(),set=new Set(cur.meals||[]);set.has(b.dataset.meal)?set.delete(b.dataset.meal):set.add(b.dataset.meal);cur.meals=[...set];localStorage.setItem(nutritionLogKey(),JSON.stringify(cur));renderNutrition();renderToday()});
  $("nutritionMeals").querySelectorAll(".meal-main").forEach(b=>b.onclick=()=>{const m=meals.find(x=>x.id===b.dataset.mealopen);$("modalTitle").textContent=m.name;$("modalContent").innerHTML='<div class="meal-detail"><small>'+m.kcal+' KCAL TARGET</small>'+m.foods.map((f,i)=>'<div><b>'+(i+1)+'</b><span>'+f+'</span></div>').join("")+'</div>';$("infoModal").classList.remove("hidden")});
- $("hydrationTarget").textContent=typeof hydr.oz==="number"?hydr.oz+" oz":hydr.oz;$("hydrationCard").innerHTML='<strong>'+hydr.oz+(typeof hydr.oz==="number"?" oz":"")+'</strong><p>'+hydr.note+'</p><label><span>Fluid consumed</span><input id="waterActual" type="number" inputmode="decimal" placeholder="oz" value="'+(log.waterOz||"")+'"></label>';
+ $("hydrationTarget").textContent=hydr.label;$("hydrationCard").innerHTML='<strong>'+hydr.label+'</strong><p>'+hydr.note+'</p><label><span>Fluid consumed today</span><input id="waterActual" type="number" inputmode="decimal" placeholder="oz" value="'+(log.waterOz||"")+'"></label>';
  $("actualCalories").value=log.actualCalories??"";$("actualProtein").value=log.actualProtein??"";$("actualCarbs").value=log.actualCarbs??"";$("actualFat").value=log.actualFat??"";
  const prev=previousNutritionSignal();$("nutritionInfluence").innerHTML=prev?'<strong>Yesterday’s fueling signal</strong><p>'+Math.round(prev.ratio*100)+'% of planned intake was recorded. '+(prev.ratio<.8?"Today’s readiness engine will treat this as a fueling caution when training load is high.":"No fueling penalty is currently indicated.")+'</p>':'<strong>How nutrition changes training</strong><p>Saved intake carries into tomorrow’s fueling status. Substantial under-fueling on a high-load day can downgrade the next prescription even when HRV looks favorable.</p>';
  $("saveNutritionDay").textContent=log.saved?"✓ Intake saved":"Save Today’s Intake";
