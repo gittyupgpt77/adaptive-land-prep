@@ -180,14 +180,14 @@
     <div id="checkinProgress" class="attention-banner"><span class="attention-icon">!</span><div><strong>Needs attention</strong><small id="checkinProgressText">Complete the fields below.</small></div></div>
     <div class="checkin-section"><h3>Recovery</h3><div class="input-grid">
       <label class="field"><span>HRV <button class="info-dot tiny" data-term="HRV">i</button></span><input id="hrv" type="number" inputmode="decimal" placeholder="ms"></label>
-      <label class="field"><span>Your usual HRV <em>AUTO</em></span><input id="hrvBase" type="number" inputmode="decimal" placeholder="learning"></label>
+      <label class="field"><span>Your usual HRV <em>AUTO</em></span><input id="hrvBase" type="number" inputmode="decimal" placeholder="learning" readonly aria-readonly="true"></label>
       <label class="field"><span>Resting HR <button class="info-dot tiny" data-term="resting heart rate">i</button></span><input id="rhr" type="number" inputmode="decimal" placeholder="bpm"></label>
-      <label class="field"><span>Your usual resting HR <em>AUTO</em></span><input id="rhrBase" type="number" inputmode="decimal" placeholder="learning"></label>
+      <label class="field"><span>Your usual resting HR <em>AUTO</em></span><input id="rhrBase" type="number" inputmode="decimal" placeholder="learning" readonly aria-readonly="true"></label>
       <label class="field"><span>Sleep</span><input id="sleep" type="number" inputmode="decimal" step=".1" placeholder="hours"></label>
-      <label class="field"><span>Sleep quality</span><select id="sleepQ"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
-      <label class="field"><span>Fatigue</span><select id="fatigue"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      <label class="field"><span>Sleep quality</span><select id="sleepQ"><option value="">—</option><option value="1">1 · Very poor</option><option value="2">2 · Poor</option><option value="3">3 · Fair</option><option value="4">4 · Good</option><option value="5">5 · Excellent</option></select></label>
+      <label class="field"><span>Fatigue</span><select id="fatigue"><option value="">—</option><option value="1">1 · Fresh</option><option value="2">2 · Mild</option><option value="3">3 · Noticeable</option><option value="4">4 · High</option><option value="5">5 · Exhausted</option></select></label>
       <label class="field"><span>Grip strength <button class="info-dot tiny" data-term="grip strength">i</button></span><input id="grip" type="number" inputmode="decimal"></label>
-      <label class="field"><span>Your usual grip <em>AUTO</em></span><input id="gripBase" type="number" inputmode="decimal" placeholder="learning"></label>
+      <label class="field"><span>Your usual grip <em>AUTO</em></span><input id="gripBase" type="number" inputmode="decimal" placeholder="learning" readonly aria-readonly="true"></label>
       <label class="field"><span>Yesterday’s load</span><select id="load"><option value="">—</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
     </div></div>
     <div class="checkin-section"><h3>Pain & movement</h3><div class="input-grid">
@@ -198,7 +198,7 @@
     <label class="toggle-row"><div><strong>Limping or altered walking</strong><small>Any protective gait</small></div><input id="gait" type="checkbox"></label></div>
     <div class="checkin-section"><h3>Body weight</h3><div class="input-grid">
       <label class="field"><span>Weight</span><input id="weight" type="number" inputmode="decimal" step=".1" placeholder="lb"></label>
-      <label class="field"><span>7-day average <em>AUTO</em></span><input id="weightAvg" type="number" inputmode="decimal" step=".1" placeholder="learning"></label>
+      <label class="field"><span>7-day average <em>AUTO</em></span><input id="weightAvg" type="number" inputmode="decimal" step=".1" placeholder="learning" readonly aria-readonly="true"></label>
     </div></div>
     <button class="sheet-primary" id="evaluateBtn">Evaluate Today</button>
     <div id="results" class="sheet-results hidden">
