@@ -290,3 +290,8 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 
 .adaptation-banner{width:100%;border:1px solid #f1d59e;background:#fff8eb;color:#6d511f;border-radius:15px;padding:11px 12px;margin-top:10px;display:grid;grid-template-columns:1fr 18px;gap:9px;align-items:center;text-align:left;box-shadow:0 4px 14px rgba(118,82,20,.05)}
 .adaptation-banner.red{background:#fff1f1;border-color:#efc3c3;color:#8f3838}.adaptation-banner>div{display:flex;flex-direction:column;gap:2px}.adaptation-banner small{font-size:8px;font-weight:750;letter-spacing:.08em;opacity:.75}.adaptation-banner strong{font-size:11px}.adaptation-banner span{font-size:9px;line-height:1.4;opacity:.78}.adaptation-banner>b{font-size:20px;font-weight:400;opacity:.6}
+
+.workout-task .task-main{grid-template-columns:42px 1fr 18px;gap:9px}
+.task-thumb{width:40px;height:40px;border-radius:10px;overflow:hidden;background:#eef3f7}
+.task-thumb .exercise-photo-frame,.task-thumb img{width:100%;height:100%}.task-thumb img{object-fit:contain}
+.workout-task .task-main>div:nth-child(2){min-width:0}.workout-task .task-main strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
