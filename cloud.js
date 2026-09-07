@@ -16,6 +16,8 @@
  const assertCurrent=id=>{if(owner!==id)throw Error('Your account changed. Please try again.')};
  const store=firebase?client.makeStore(assertCurrent):null;
  el('cloudLegacy').classList.toggle('hidden',!firebase);
+ el('cloudSetup').classList.toggle('hidden',firebase);
+ el('cloudSetup').onclick=()=>{location.search='?backup=firebase'};
  const boundOwner=()=>localStorage.getItem(bindingKey);
  async function saveAutomatic(data,id){
   const serialized=JSON.stringify(Object.keys(data).sort().map(key=>[key,data[key]]));
@@ -96,4 +98,7 @@
  window.addEventListener('storage',()=>checkBackup());
  document.addEventListener('visibilitychange',()=>{if(!busy)checkBackup(true)});
  render();
+ if(requested==='firebase'||requested==='legacy'){
+  document.querySelector('[data-target="program"]').click();el('openTrends').click();panel.open=true;
+ }
 })();

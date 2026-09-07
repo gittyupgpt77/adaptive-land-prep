@@ -24,14 +24,15 @@ async function device(){
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('dialog',dialog=>dialog.accept());
  await page.clock.install();return {context,page};
 }
-async function openPanel(page){await page.locator('[data-target="program"]').click();await page.locator('#openTrends').click();await page.locator('#cloudPanel summary').click()}
+async function openPanel(page){await page.locator('[data-target="program"]').click();await page.locator('#openTrends').click();if(!await page.locator('#cloudPanel').evaluate(n=>n.open))await page.locator('#cloudPanel summary').click()}
 async function login(page,email=account.email){await page.locator('#cloudEmail').fill(email);await page.locator('#cloudPassword').fill(account.password);await page.locator('#cloudAuth button[type=submit]').click();await page.locator('#cloudSignedIn').waitFor({state:'visible'})}
 const saved=page=>page.waitForFunction(()=>document.getElementById('cloudStatus').textContent.includes('up to date'),null,{timeout:25000});
 try{
  const {context,page}=await device();
- await page.goto('http://127.0.0.1:8080/?backup=firebase');
+ await page.goto('http://127.0.0.1:8080/');
  await page.evaluate(()=>{localStorage.trainingLogs=JSON.stringify([{date:'2026-09-07',weight:170}]);localStorage.baselineDate='2026-09-07';localStorage.setItem('alp-cloud-device-owner','previous-supabase-owner')});
- await openPanel(page);await login(page);
+ await openPanel(page);await page.locator('#cloudSetup').click();await page.waitForURL('**/?backup=firebase');await login(page);
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.trainingLogs)[0].weight),170,'In-app setup preserves the original storage origin');
  assert.equal(await page.evaluate(()=>localStorage.getItem('alp-backup-provider')),null,'No migration before cloud acknowledgement');
  await page.locator('#cloudEnable').click();await page.clock.fastForward(7000);await saved(page);
  assert.equal(await page.evaluate(()=>localStorage.getItem('alp-backup-provider')),'firebase');
