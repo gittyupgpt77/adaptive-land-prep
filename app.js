@@ -214,20 +214,60 @@ function openReadiness(){
 }
 function renderToday(){renderJourneyStart();const d=todayCheckin(),det=makeSession(sessionName()),done=todayWorkout();$("todayDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});$("todayWorkoutName").textContent=det.title;$("todayWorkoutType").textContent=det.type.toUpperCase();const heroMove=det.steps?.[0]?.name;if(heroMove)$("todayWorkoutCard").querySelector(".plan-icon").innerHTML=exerciseMedia(heroMove);$("todayWorkoutMeta").textContent=det.duration+" · "+det.effort;$("taskWorkoutSub").textContent=done?"Completed today":"Follow the adaptive prescription";const score=d?.score||0;$("readinessScore").textContent=d?score:"—";$("scoreRing").style.setProperty("--score",score);$("scoreRing").style.setProperty("--ring",d?(d.overall==="GREEN"?"var(--green)":d.overall==="YELLOW"?"var(--yellow)":"var(--red)"):"var(--green)");$("readinessLabel").textContent=!localStorage.programStart?(d?"Baseline ready":"Not started"):d?(d.overall==="GREEN"?"Good":d.overall==="YELLOW"?"Caution":"Recover"):"Check in";$("readinessLabel").style.color=d?(d.overall==="GREEN"?"var(--green)":d.overall==="YELLOW"?"var(--yellow)":"var(--red)"):"";$("readinessMessage").textContent=!localStorage.programStart?"Complete a baseline and begin the journey when you are ready.":d?(d.overall==="GREEN"?"You’re ready for the planned session.":d.overall==="YELLOW"?"Train, but reduce today’s stress.":"Recovery takes priority today."):"Log your morning metrics to personalize today’s training.";$("todayHRV").textContent=d?.hrv??"—";$("todayRHR").textContent=d?.rhr??"—";$("todaySleep").textContent=d?.sleep??"—";const state={taskCheckin:!!d,taskWorkout:!!done,taskNutrition:taskDone("nutrition"),taskMobility:taskDone("mobility")};Object.entries(state).forEach(([id,doneState])=>{const el=$(id);el.classList.toggle("done",doneState);el.querySelector(".task-circle").textContent=doneState?"✓":"○"});$("todayTaskCount").textContent=Object.values(state).filter(Boolean).length+"/4"}
 function renderTrain(){const det=makeSession(sessionName()),c=todayCheckin(),label=!c?"CHECK IN":c.overall==="GREEN"?"PRIMARY":c.overall==="YELLOW"?"MODIFIED":"RECOVERY";$("workoutKicker").textContent="TODAY · WEEK "+prescriptionWeek()+" · "+blockForWeek(prescriptionWeek()).name.toUpperCase();$("workoutTitle").textContent=det.title;$("workoutWhy").textContent=det.why;$("workoutTags").innerHTML='<span>◷ '+det.duration+'</span><span>◈ '+det.effort+'</span><span>'+det.type+'</span>';$("sessionStatus").textContent=label;$("sessionStatus").className="session-status "+(!c?"yellow":c.overall==="YELLOW"?"yellow":c.overall==="RED"?"red":"");$("exerciseCount").textContent=det.steps.length+" movements";$("workoutPrescription").innerHTML=det.steps.map((e,i)=>'<button class="exercise-card" data-i="'+i+'"><div class="exercise-thumb">'+exerciseMedia(e.name)+'</div><div class="exercise-copy"><strong>'+(i+1)+'. '+e.name+'</strong><span>'+e.dose+'</span><small>Rest: '+e.rest+'</small></div><b>›</b></button>').join("");$("workoutPrescription").querySelectorAll(".exercise-card").forEach(b=>b.onclick=()=>openExercise(det.steps[+b.dataset.i]));renderLibrary()}
+const LIB_META={
+ "Barbell_Full_Squat":{name:"Back Squat",category:"Strength",tags:"barbell legs squat quads glutes"},
+ "Romanian_Deadlift":{name:"Romanian Deadlift",category:"Strength",tags:"barbell dumbbell hinge hamstrings glutes"},
+ "Standing_Military_Press":{name:"Overhead Press",category:"Strength",tags:"barbell dumbbell shoulders press"},
+ "Pullups":{name:"Pull-Up",category:"Bodyweight",tags:"pull up back lats grip bar"},
+ "Pushups":{name:"Push-Up",category:"Bodyweight",tags:"push up chest triceps bodyweight"},
+ "Split_Squat_with_Dumbbells":{name:"Split Squat / Reverse Lunge",category:"Strength",tags:"dumbbell legs unilateral lunge"},
+ "Seated_Calf_Raise":{name:"Seated Soleus Raise",category:"Durability",tags:"calf soleus lower leg seated"},
+ "Standing_Calf_Raises":{name:"Standing Calf Raise",category:"Durability",tags:"calf achilles lower leg"},
+ "Anterior_Tibialis-SMR":{name:"Tibialis Raise",category:"Durability",tags:"shin tibialis lower leg ankle"},
+ "Lying_Face_Down_Plate_Neck_Resistance":{name:"Neck Resistance",category:"Durability",tags:"neck harness plate resistance"},
+ "Standing_Olympic_Plate_Hand_Squeeze":{name:"Grip / Plate Pinch",category:"Durability",tags:"grip hand forearm plate"},
+ "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench":{name:"Forearm / Wrist Curl",category:"Durability",tags:"forearm wrist roller barbell"},
+ "One-Arm_Dumbbell_Row":{name:"One-Arm Row",category:"Strength",tags:"dumbbell row back lats"},
+ "Rickshaw_Carry":{name:"Suitcase / Loaded Carry",category:"Carry",tags:"carry kettlebell dumbbell suitcase trunk grip"},
+ "Sandbag_Load":{name:"Sandbag Bear-Hug Carry",category:"Carry",tags:"sandbag carry bear hug trunk"},
+ "Plank":{name:"RKC Plank",category:"Core",tags:"plank core trunk anti extension"},
+ "Sit-Up":{name:"Sit-Up",category:"Core",tags:"sit up core trunk"},
+ "Russian_Twist":{name:"Russian Twist",category:"Core",tags:"rotation core trunk"},
+ "Ankle_Circles":{name:"Ankle Mobility",category:"Mobility",tags:"ankle mobility range of motion"},
+ "Upward_Stretch":{name:"Hip / General Mobility",category:"Mobility",tags:"hip mobility stretch warm up recovery"},
+ "Rowing_Stationary":{name:"Concept2 Rowing",category:"Conditioning",tags:"rower concept2 aerobic threshold conditioning"},
+ "Running_Treadmill":{name:"Running",category:"Conditioning",tags:"run running aerobic intervals threshold road"},
+ "Trail_Running_Walking":{name:"Weighted-Pack Walking / Ruck",category:"Conditioning",tags:"ruck weighted pack walking endurance"},
+ "Walking_Treadmill":{name:"Walking / Cool-Down",category:"Conditioning",tags:"walk cool down recovery"},
+ "Jogging_Treadmill":{name:"Jog / Running Warm-Up",category:"Conditioning",tags:"jog warm up run"},
+ "Rope_Jumping":{name:"Jump Rope",category:"Conditioning",tags:"rope jump conditioning footwork"},
+ "Step-up_with_Knee_Raise":{name:"Step-Up",category:"Strength",tags:"step up legs unilateral box"},
+ "Barbell_Deadlift":{name:"Deadlift",category:"Strength",tags:"barbell deadlift hinge posterior chain"}
+};
+let libraryFilter="All";
 function libraryExercises(){
  const raw=[];Object.values(templates).flat().forEach(name=>makeSession(name).steps.forEach(e=>raw.push(e)));raw.push(...A,...B);
- const exact=new Map();raw.forEach(e=>exact.set(e.name.trim().toLowerCase(),e));
- const generic=/^(warm-up|warm-up row|warm-up walk|cool-down|cool-down row|cool-down walk|main session|main run|main quality work|long session|controlled threshold work)$/i;
- const score=e=>(generic.test(e.name)?100:0)+(e.name.split(/\s+/).length*2)+e.name.length/100;
  const byMovement=new Map();
- for(const e of exact.values()){
-   const movementId=datasetExerciseId(e.name)||("name:"+e.name.trim().toLowerCase());
-   const prior=byMovement.get(movementId);
-   if(!prior||score(e)<score(prior))byMovement.set(movementId,e);
+ for(const e of raw){
+   const id=datasetExerciseId(e.name);if(!id)continue;
+   const meta=LIB_META[id];if(!meta)continue;
+   if(!byMovement.has(id))byMovement.set(id,{...e,name:meta.name,category:meta.category,tags:meta.tags,movementId:id});
  }
  return[...byMovement.values()].sort((a,b)=>a.name.localeCompare(b.name));
 }
-function renderLibrary(q=""){const all=libraryExercises(),query=q.trim().toLowerCase(),arr=query?all.filter(e=>(e.name+" "+e.type+" "+e.cue).toLowerCase().includes(query)):all;if($("libraryCount"))$("libraryCount").textContent=arr.length+" exercise"+(arr.length===1?"":"s");$("exerciseLibrary").innerHTML=arr.length?arr.map((e,i)=>'<button class="library-item" data-i="'+i+'"><div class="library-thumb">'+exerciseMedia(e.name)+'</div><div><strong>'+e.name+'</strong><small>'+e.type+' · '+e.dose+'</small></div><b>›</b></button>').join(""):'<div class="empty-search">No matching exercises.</div>';$("exerciseLibrary").querySelectorAll(".library-item").forEach(b=>b.onclick=()=>openExercise(arr[+b.dataset.i]))}
+function renderLibraryFilters(){
+ const cats=["All",...new Set(libraryExercises().map(e=>e.category))];
+ $("libraryFilters").innerHTML=cats.map(c=>'<button class="library-filter '+(c===libraryFilter?"active":"")+'" data-libfilter="'+c+'">'+c+'</button>').join("");
+ $("libraryFilters").querySelectorAll(".library-filter").forEach(b=>b.onclick=()=>{libraryFilter=b.dataset.libfilter;renderLibrary($("librarySearch").value);renderLibraryFilters()});
+}
+function renderLibrary(q=""){
+ const all=libraryExercises(),query=q.trim().toLowerCase();
+ const arr=all.filter(e=>(libraryFilter==="All"||e.category===libraryFilter)&&(!query||(e.name+" "+e.category+" "+e.tags+" "+e.cue).toLowerCase().includes(query)));
+ if($("libraryCount"))$("libraryCount").textContent=arr.length+" movement"+(arr.length===1?"":"s");
+ $("exerciseLibrary").innerHTML=arr.length?arr.map((e,i)=>'<button class="library-item" data-i="'+i+'"><div class="library-thumb">'+exerciseMedia(e.name)+'</div><div><strong>'+e.name+'</strong><small>'+e.category+' · '+e.dose+'</small></div><b>›</b></button>').join(""):'<div class="empty-search">No matching movements.</div>';
+ $("exerciseLibrary").querySelectorAll(".library-item").forEach(b=>b.onclick=()=>openExercise(arr[+b.dataset.i]));
+ renderLibraryFilters();
+}
 function dateFor(w,i){const d=new Date(programStart());d.setHours(12,0,0,0);d.setDate(d.getDate()+(w-1)*7+i);return d}
 let viewedMonth=new Date();
 const phasePalette={"Foundation":"#48a7ff","Engine + Load":"#7d8cff","Specificity":"#ad73e6","Peak Work Capacity":"#ef9a57","Taper":"#55cfa0"};
