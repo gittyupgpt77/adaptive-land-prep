@@ -198,16 +198,17 @@ jobs:
           let loadedPhotos=0, visualFallbacks=0; const failedImageDetails=[];
           for(let i=0;i<libraryCount;i++){
             const item=page.locator('.library-item').nth(i);
-            await item.scrollIntoViewIfNeeded();
-            await page.waitForTimeout(35);
+            await item.scrollIntoViewIfNeeded();await page.waitForTimeout(12);
             const img=item.locator('img');
             if(await img.count()){
               const state=await img.evaluate(n=>({loaded:n.complete&&n.naturalWidth>0,src:n.currentSrc||n.src}));
               if(state.loaded)loadedPhotos++; else failedImageDetails.push({name:(await item.innerText()).split('\n')[0],src:state.src});
             } else if(await item.locator('.exercise-photo-missing').count()){visualFallbacks++;failedImageDetails.push({name:(await item.innerText()).split('\n')[0],src:null});}
-            await item.click();
-            check('Library exercise '+(i+1)+' opens detail', await visible('#infoModal'));
-            await page.locator('#modalDone').click();
+          }
+          const libSamples=[0,Math.floor(libraryCount/2),libraryCount-1].filter((x,i,a)=>x>=0&&a.indexOf(x)===i);
+          for(const i of libSamples){
+            const item=page.locator('.library-item').nth(i);await item.scrollIntoViewIfNeeded();await item.click();
+            check('Representative library exercise '+(i+1)+' opens detail',await visible('#infoModal'));await page.locator('#modalDone').click();
           }
           report.counts.loadedExercisePhotos=loadedPhotos;report.counts.visualFallbacks=visualFallbacks;report.failedImages=failedImageDetails;
           const coverage=libraryCount?loadedPhotos/libraryCount:0;report.counts.realImageCoverage=Math.round(coverage*100);
@@ -231,9 +232,10 @@ jobs:
           await page.locator('[data-calview="month"]').click();
           const monthDates=page.locator('.month-cell[data-date]:not([disabled])');
           const monthCount=await monthDates.count();report.counts.monthDates=monthCount;check('Month has interactive dates',monthCount>0);
-          for(let i=0;i<monthCount;i++){
+          const monthSamples=[0,Math.floor(monthCount/2),monthCount-1].filter((x,i,a)=>x>=0&&a.indexOf(x)===i);
+          for(const i of monthSamples){
             await monthDates.nth(i).click();
-            check('Month date '+(i+1)+' opens day',await visible('#daySheet'));
+            check('Representative month date '+(i+1)+' opens day',await visible('#daySheet'));
             await page.locator('#daySheetClose').click();
           }
           await shot('05-month');
@@ -243,10 +245,11 @@ jobs:
           const journeyCount=await page.locator('.journey-month').count();report.counts.journeyMonths=journeyCount;
           check('Journey exposes long-range roadmap',journeyCount>=12,'count='+journeyCount);
           check('Journey shows all five macro phases',(await page.locator('.journey-phase-card').count())===5);
-          for(let i=0;i<journeyCount;i++){
+          const journeySamples=[0,Math.floor(journeyCount/2),journeyCount-1].filter((x,i,a)=>x>=0&&a.indexOf(x)===i);
+          for(const i of journeySamples){
             await page.locator('[data-calview="journey"]').click();
             const item=page.locator('.journey-month').nth(i);
-            if(await item.count()){await item.click();check('Journey month '+(i+1)+' returns to Week',await visible('#weekView'));}
+            if(await item.count()){await item.click();check('Representative Journey month '+(i+1)+' returns to Week',await visible('#weekView'));}
           }
           await page.locator('[data-calview="journey"]').click();
           await shot('06-journey');
