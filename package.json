@@ -36,6 +36,7 @@
     "@capacitor/cli": "8.5.1",
     "@firebase/rules-unit-testing": "5.0.0",
     "esbuild": "0.25.9",
+    "firebase-admin": "14.3.0",
     "firebase-tools": "14.17.0"
   },
   "private": true
