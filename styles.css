@@ -321,3 +321,16 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .today-progress-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}.today-progress-head small{font-size:8px;font-weight:750;letter-spacing:.08em;color:#147be8}.today-progress-head span{font-size:9px;color:#7b8d9b}
 .today-progress-body{display:grid;grid-template-columns:1fr 18px;align-items:center;gap:8px}.today-progress-body>div{display:flex;flex-direction:column;gap:3px;min-width:0}.today-progress-body strong{font-size:13px}.today-progress-body small{font-size:9px;color:#708394;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.today-progress-body>b{font-size:20px;color:#8496a5;font-weight:400}
 .today-progress-track{height:4px;border-radius:999px;background:#e8eef4;margin-top:10px;overflow:hidden}.today-progress-track i{display:block;height:100%;background:linear-gradient(90deg,#147be8,#4ee382);border-radius:999px}
+
+/* Touch ergonomics: preserve compact visuals with generous hit areas */
+.header-action{width:44px!important;height:44px!important;padding:10px!important;margin-right:-8px}
+.task-toggle{min-width:44px;min-height:58px;padding-left:10px;padding-right:6px}
+.info-dot{min-width:32px;min-height:32px;display:inline-grid;place-items:center;margin:-6px}
+.info-dot.tiny{min-width:30px;min-height:30px}
+.library-filter{min-height:38px;padding:8px 12px}
+.calendar-mode-btn,.segment{min-height:40px}
+.week-nav>button,.month-nav>button{min-width:44px;min-height:44px}
+.day-tab{min-height:40px}
+.sheet-head>button{min-width:40px;min-height:40px}
+.nav-icon{pointer-events:none}
+.tab{min-height:54px}
