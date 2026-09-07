@@ -136,7 +136,7 @@ function datasetExerciseId(name){
   [/grip work|plate pinch|hand squeeze/,"Standing_Olympic_Plate_Hand_Squeeze"],
   [/forearm roller|wrist/,"Palms-Up_Barbell_Wrist_Curl_Over_A_Bench"],
   [/one-arm row|press \+ row|horizontal row/,"One-Arm_Dumbbell_Row"],
-  [/suitcase carry|farmer|loaded carries/,"Rickshaw_Carry"],
+  [/suitcase|farmer|loaded carry/,"Rickshaw_Carry"],
   [/bear-hug sandbag|sandbag/,"Sandbag_Load"],
   [/rkc plank|plank|trunk work|core/,"Plank"],
   [/sit-up|sit up/,"Sit-Up"],
@@ -238,8 +238,6 @@ const LIB_META={
  "Rowing_Stationary":{name:"Concept2 Rowing",category:"Conditioning",tags:"rower concept2 aerobic threshold conditioning"},
  "Running_Treadmill":{name:"Running",category:"Conditioning",tags:"run running aerobic intervals threshold road"},
  "Trail_Running_Walking":{name:"Weighted-Pack Walking / Ruck",category:"Conditioning",tags:"ruck weighted pack walking endurance"},
- "Walking_Treadmill":{name:"Walking / Cool-Down",category:"Conditioning",tags:"walk cool down recovery"},
- "Jogging_Treadmill":{name:"Jog / Running Warm-Up",category:"Conditioning",tags:"jog warm up run"},
  "Rope_Jumping":{name:"Jump Rope",category:"Conditioning",tags:"rope jump conditioning footwork"},
  "Step-up_with_Knee_Raise":{name:"Step-Up",category:"Strength",tags:"step up legs unilateral box"},
  "Barbell_Deadlift":{name:"Deadlift",category:"Strength",tags:"barbell deadlift hinge posterior chain"}
