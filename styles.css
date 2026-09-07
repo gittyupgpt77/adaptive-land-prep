@@ -304,3 +304,15 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .journey-phase-segment small{font-size:7px}.journey-phase-segment strong{font-size:10px;white-space:normal;overflow:visible;text-overflow:clip}.journey-phase-segment em{font-size:8px;white-space:nowrap}
 .actual-intake input[type=number],.nutrition-page-card input[type=number]{-webkit-appearance:none;appearance:textfield;-moz-appearance:textfield}
 .actual-intake input[type=number]::-webkit-inner-spin-button,.actual-intake input[type=number]::-webkit-outer-spin-button,.nutrition-page-card input[type=number]::-webkit-inner-spin-button,.nutrition-page-card input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+/* Journey: readable phase architecture */
+.journey-phase-map{display:block;margin:8px 0 14px}
+.journey-rail{display:flex;height:8px;border-radius:999px;overflow:hidden;background:#e7edf3;margin-bottom:10px}
+.journey-rail i{display:block;flex:var(--grow)}
+.journey-phase-list{display:flex;flex-direction:column;gap:7px}
+.journey-phase-card{width:100%;border:1px solid #dce5ed;background:white;border-radius:13px;padding:10px 11px;display:grid;grid-template-columns:8px 1fr 28px;gap:10px;align-items:center;text-align:left;color:var(--ink);box-shadow:0 3px 11px rgba(20,32,43,.035)}
+.journey-phase-card .phase-dot{width:8px;height:34px;border-radius:999px}
+.journey-phase-card>div{min-width:0}.journey-phase-card small{font-size:7px;color:#8293a1;font-weight:750;letter-spacing:.045em}.journey-phase-card strong{display:block;font-size:11px;margin:2px 0 3px}.journey-phase-card p{font-size:8px;line-height:1.35;color:#718391;margin:0}.journey-phase-card>b{font-size:9px;color:#778b9a;text-align:center}.journey-phase-card.active{border-color:#9fcef7;background:#f8fbff;box-shadow:0 0 0 2px rgba(20,123,232,.05)}.journey-phase-card.active>b{color:#147be8}.journey-phase-card.qualified .phase-dot{box-shadow:0 0 0 3px rgba(78,227,130,.12)}
+/* Insights: compact sparse-data state */
+.trend-card.trend-empty-card{min-height:96px;height:96px;display:grid;place-items:center;padding:16px;background:linear-gradient(145deg,#102a42,#0d2032)}
+.trend-card.trend-empty-card:before{content:attr(data-empty);display:block;max-width:260px;text-align:center;font-size:10px;line-height:1.5;color:#91a7ba}
