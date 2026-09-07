@@ -1,0 +1,36 @@
+name: Nutrition Add-On Refinement
+
+on:
+  push:
+    branches: [fix/nutrition-plan-coherence]
+    paths:
+      - '.github/workflows/nutrition-addons-refine.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refine-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/nutrition-plan-coherence
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Refine large nutrition add-ons
+        run: python3 scripts/refine-nutrition-addons.py
+      - name: Verify syntax and regressions
+        run: |
+          node --check app.js
+          node --test tests/*.test.cjs
+      - name: Commit verified refinement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js tests/nutrition-plan-coherence.test.cjs
+          git diff --cached --quiet && exit 1
+          git commit -m "Split large nutrition fuel add-ons around training"
+          git push origin HEAD:fix/nutrition-plan-coherence
