@@ -49,6 +49,20 @@ jobs:
           check('No curriculum debt before Day 1', !(await visible('#missedDayBanner')));
           await shot('01-fresh-today');
 
+          // An older baseline must not backdate Day 1 when Journey begins later.
+          await page.evaluate(()=>{
+            const old=new Date();old.setDate(old.getDate()-3);
+            localStorage.trainingLogs=JSON.stringify([{date:old.toISOString(),week:1,weight:170,hrv:62,rhr:54,grip:52,sleep:8,overall:'GREEN',score:92}]);
+            localStorage.baselineDate=old.toISOString();
+            localStorage.removeItem('programStart');
+          });
+          await page.reload({waitUntil:'networkidle'});
+          await page.locator('#beginJourneyBtn').click();
+          check('Begin Journey uses today as Day 1 even with older baseline',await page.evaluate(()=>{const s=new Date(localStorage.programStart);const n=new Date();return s.toDateString()===n.toDateString();}));
+          check('Older baseline does not create immediate curriculum debt',!(await visible('#missedDayBanner')));
+          await page.evaluate(()=>localStorage.clear());
+          await page.reload({waitUntil:'networkidle'});
+
           // Begin Journey -> actual baseline -> Day 1.
           await page.locator('#beginJourneyBtn').click();
           check('Begin Journey opens check-in', await visible('#checkinSheet'));
