@@ -10,6 +10,8 @@ on:
       - 'index.html'
       - 'styles.css'
       - 'app.js'
+      - 'service-worker.js'
+      - 'manifest.webmanifest'
       - '.github/workflows/ui-audit.yml'
 jobs:
   audit:
@@ -320,6 +322,27 @@ jobs:
           await page.locator('#saveBenchmarks').click();
           check('Benchmarks persist',await page.evaluate(()=>JSON.parse(localStorage.benchmarks||'{}').pushups===60));
           check('Qualification objectives refresh',(await page.locator('.quest').count())===4);
+
+          // Backup must preserve the complete athlete model, not only workouts/check-ins.
+          await page.evaluate(()=>{
+            localStorage.failedDays=JSON.stringify(['audit-missed-day']);
+            localStorage.setItem('task_mobility_audit','1');
+            localStorage.setItem('input_hrv','61');
+          });
+          const backupDownload=page.waitForEvent('download');
+          await page.locator('#openTrends').click();
+          await page.locator('.data-details summary').click();
+          await page.locator('#exportBackup').click();
+          const downloaded=await backupDownload;
+          const backupPath=await downloaded.path();
+          const backup=JSON.parse(fs.readFileSync(backupPath,'utf8'));
+          check('Backup uses complete-state format',backup.formatVersion>=3);
+          check('Backup preserves nutrition history',Object.keys(backup.data||{}).some(k=>k.startsWith('nutrition_')));
+          check('Backup preserves qualification benchmarks',typeof backup.data?.benchmarks==='string');
+          check('Backup preserves missed-day state',typeof backup.data?.failedDays==='string'&&backup.data.failedDays.includes('audit-missed-day'));
+          check('Backup preserves task completion',backup.data?.task_mobility_audit==='1');
+          check('Backup preserves check-in inputs',backup.data?.input_hrv==='61');
+          await page.locator('[data-target="program"]').click();
           await shot('08-program');
           check('Program visual capture starts at current phase',await inViewport('#currentPhaseCard'));
 
