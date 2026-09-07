@@ -30,7 +30,7 @@ const saved=page=>page.waitForFunction(()=>document.getElementById('cloudStatus'
 try{
  const {context,page}=await device();
  await page.goto('http://127.0.0.1:8080/?backup=firebase');
- await page.evaluate(()=>{localStorage.trainingLogs=JSON.stringify([{date:'2026-09-07',weight:170}]);localStorage.setItem('alp-cloud-device-owner','previous-supabase-owner')});
+ await page.evaluate(()=>{localStorage.trainingLogs=JSON.stringify([{date:'2026-09-07',weight:170}]);localStorage.baselineDate='2026-09-07';localStorage.setItem('alp-cloud-device-owner','previous-supabase-owner')});
  await openPanel(page);await login(page);
  assert.equal(await page.evaluate(()=>localStorage.getItem('alp-backup-provider')),null,'No migration before cloud acknowledgement');
  await page.locator('#cloudEnable').click();await page.clock.fastForward(7000);await saved(page);
@@ -56,4 +56,10 @@ try{
  assert.equal(await fresh.page.evaluate(()=>JSON.parse(localStorage.trainingLogs)[0].weight),170,'Clean device recovers complete saved history');
  assert.deepEqual(errors,[]);
  console.log('PASS Firebase WebKit: real emulator authentication, consent, atomic upload, reload deduplication, offline retry, account switch, clean-device recovery, iPhone screenshot.');
+}catch(error){
+ for(const [i,context] of browser.contexts().entries())for(const page of context.pages()){
+  console.error('Browser state',i,await page.evaluate(()=>({status:document.getElementById('cloudStatus')?.textContent,url:location.href})).catch(()=>null),errors);
+  fs.mkdirSync('audit-cloud',{recursive:true});await page.screenshot({path:'audit-cloud/firebase-failure-'+i+'.png'}).catch(()=>{});
+ }
+ throw error;
 }finally{await browser.close();await env.cleanup();await deleteApp(admin)}
