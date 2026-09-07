@@ -146,7 +146,7 @@
   </details>
   <details class="data-details cloud-panel" id="cloudPanel">
     <summary>Private cloud backup</summary>
-    <p id="cloudStatus" role="status" aria-live="polite">Sign in to save private backups. Your on-device data stays on this device.</p>
+    <p id="cloudStatus" role="status" aria-live="polite">Your entries stay on this device. Sign in to enable automatic private backups.</p>
     <form id="cloudAuth">
       <label>Email<input id="cloudEmail" type="email" autocomplete="username" required></label>
       <label>Password<input id="cloudPassword" type="password" autocomplete="current-password" minlength="8" required></label>
@@ -156,8 +156,8 @@
     <form id="cloudNewPassword" class="hidden"><label>New password<input id="cloudReplacement" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Update Password</button></form>
     <div id="cloudSignedIn" class="hidden">
       <p id="cloudAccount"></p>
-      <p>Backups are saved when you tap Back Up Now. Each version is kept separately. Signing out keeps training data on this device.</p>
-      <button id="cloudSave" type="button">Back Up Now</button><button id="cloudRefresh" type="button">Browse & Recover</button><button id="cloudSignout" type="button">Sign Out</button>
+      <p>After one-time setup, saved changes back up automatically while the app is open. Offline changes retry when you return online. Signing out keeps training data on this device.</p>
+      <button id="cloudEnable" type="button">Enable Automatic Backup</button><button id="cloudRefresh" type="button">Browse & Recover</button><button id="cloudSignout" type="button">Sign Out</button>
       <div id="cloudVersions" aria-label="Saved cloud backups"></div><button id="cloudMore" type="button" class="hidden">Older Backups</button>
     </div>
   </details>
@@ -236,5 +236,6 @@
 <script src="app.js"></script>
 <script src="vendor/supabase.js"></script>
 <script src="cloud-core.js"></script>
+<script src="autosave-core.js"></script>
 <script src="cloud.js"></script>
 </body></html>

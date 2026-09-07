@@ -8,12 +8,30 @@
   auth:{storageKey:'alp-cloud-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},
   global:{fetch:(url,options)=>fetch(url,{...options,cache:'no-store',signal:options?.signal||AbortSignal.timeout(20000)})}
  });
- let owner=null,busy=false,offset=0,generation=0;
+ let owner=null,busy=false,offset=0,generation=0,lastSaved=null;
+ const bindingKey='alp-cloud-device-owner';
+ const boundOwner=()=>localStorage.getItem(bindingKey);
+ async function saveAutomatic(data,id){
+  const serialized=JSON.stringify(Object.keys(data).sort().map(key=>[key,data[key]]));
+  const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(serialized))),n=>n.toString(16).padStart(2,'0')).join('');
+  let receipt;try{receipt=JSON.parse(localStorage.getItem('alp-cloud-receipt')||'null')}catch{}
+  if(receipt?.owner===id&&receipt.hash===hash){lastSaved=new Date(receipt.at);return}
+  const row=await core.save(data,id);lastSaved=new Date(row.created_at);
+  try{localStorage.setItem('alp-cloud-receipt',JSON.stringify({owner:id,hash,at:row.created_at}))}catch{}
+ }
+ const automatic=createAutomaticBackup({collect:collectBackupData,save:saveAutomatic,notify:(state,error)=>{
+  if(busy)return;
+  const messages={empty:'Automatic backup is ready. Your first saved entry will back up automatically.',pending:'Saved on this device. Cloud backup pending…',offline:'Saved on this device. Cloud backup will retry when you’re online.',saving:'Saving private backup…',saved:'Automatic backup is up to date'+(lastSaved?' · '+lastSaved.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):'')+'.',error:'Saved on this device. Cloud backup could not connect and will retry automatically.'};
+  if(state==='saved'&&!lastSaved)lastSaved=new Date();
+  status(messages[state]);
+ }});
+ async function checkBackup(flush=false){try{automatic.configure(owner,boundOwner());await automatic.tick(navigator.onLine!==false,flush)}catch(error){status('Saved on this device. Automatic cloud backup is unavailable; check device storage.')}}
  const core=createCloudBackup({client,collect:collectBackupData,validate:validateBackup,restore:importBackup,confirm:window.confirm.bind(window),getCurrentId:()=>owner,assertCurrent:id=>{if(owner!==id)throw Error('Your account changed. Please try again.')}});
  function render(){
   el('cloudAuth').classList.toggle('hidden',!!owner);
   el('cloudSignedIn').classList.toggle('hidden',!owner);
   panel.querySelectorAll('button,input').forEach(node=>node.disabled=busy);
+  el('cloudEnable').classList.toggle('hidden',!!owner&&boundOwner()===owner);
  }
  async function run(action){
   if(busy)return;busy=true;render();const epoch=generation;
@@ -26,17 +44,17 @@
   for(const row of rows){
    const button=document.createElement('button');button.type='button';
    button.textContent=new Date(row.created_at).toLocaleString()+(row.kind==='before-restore'?' · Before recovery':' · Backup');
-   button.onclick=()=>run(async()=>{status('Preparing recovery…');if(!await core.recover(row.id))status('Recovery cancelled. Device data is unchanged.')});
+   button.onclick=()=>run(async()=>{automatic.pause(true);try{if(automatic.isRunning())throw Error('Your latest backup is finishing. Try recovery again in a moment.');status('Preparing recovery…');if(!await core.recover(row.id))status('Recovery cancelled. Device data is unchanged.')}finally{automatic.pause(false)}});
    el('cloudVersions').append(button);
   }
   offset+=rows.length;el('cloudMore').classList.toggle('hidden',rows.length<20);
-  if(reset&&!rows.length)status('No cloud backups yet. Tap Back Up Now to save this device.');
+  if(reset&&!rows.length)status('No cloud backups yet. Enable automatic backup to protect saved changes.');
  }
  client.auth.onAuthStateChange((event,session)=>{
   const next=session?.user&&!session.user.is_anonymous?session.user.id:null;
   if(next!==owner){generation++;owner=next;el('cloudVersions').replaceChildren();el('cloudMore').classList.add('hidden');
    el('cloudAccount').textContent=next?session.user.email||'Signed in':'';
-   status(next?'Signed in. Your on-device data is unchanged. Back up now or browse saved backups.':'Sign in to save private backups. Your on-device data stays on this device.');render();
+   lastSaved=null;automatic.configure(next,boundOwner());status(next?(boundOwner()===next?'Automatic backup is enabled. Checking saved changes…':'Enable automatic backup to connect this device’s data to this account. You can also recover an existing backup.'):'Your entries stay on this device. Sign in to enable automatic private backups.');render();
   }
   if(event==='PASSWORD_RECOVERY'){el('cloudNewPassword').classList.remove('hidden');panel.open=true;document.querySelector('[data-target="program"]').click();el('openTrends').click()}
  });
@@ -59,11 +77,16 @@
   el('cloudReplacement').value='';el('cloudNewPassword').classList.add('hidden');status('Password updated. You can access your backups.');
  })};
  el('cloudSignout').onclick=()=>run(async()=>{const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;status('Signed out. On-device training data is still available on this device.');el('cloudNewPassword').classList.add('hidden')});
- el('cloudSave').onclick=()=>run(async()=>{
-  if(!window.confirm('Save this device’s training data to '+el('cloudAccount').textContent+'?'))return;
-  status('Saving private backup…');const row=await core.save();await list();status('Cloud backup saved '+new Date(row.created_at).toLocaleString()+'.');
+ el('cloudEnable').onclick=()=>run(async()=>{
+  if(!owner)return;
+  if(!window.confirm('Automatically back up this device’s existing and future training data to '+el('cloudAccount').textContent+'? Enable this only if the data belongs to this account.'))return;
+  localStorage.setItem(bindingKey,owner);automatic.configure(owner,owner);status('Automatic backup enabled. Saved changes will back up shortly.');
  });
  el('cloudRefresh').onclick=()=>run(async()=>{status('Loading your backups…');await list();if(offset)status('Choose a backup to recover. Your current device data will be saved first.')});
  el('cloudMore').onclick=()=>run(()=>list(false));
+ setInterval(()=>{if(!document.hidden&&!busy)checkBackup()},2000);
+ window.addEventListener('online',()=>checkBackup());
+ window.addEventListener('storage',()=>checkBackup());
+ document.addEventListener('visibilitychange',()=>{if(!busy)checkBackup(true)});
  render();
 })();

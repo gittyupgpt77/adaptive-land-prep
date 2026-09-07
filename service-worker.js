@@ -1,5 +1,5 @@
-const CACHE='land-prep-v51';
-const ASSETS=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./vendor/supabase.js','./cloud-core.js','./cloud.js'];
+const CACHE='land-prep-v52';
+const ASSETS=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./vendor/supabase.js','./cloud-core.js','./autosave-core.js','./cloud.js'];
 const scope=new URL(self.registration.scope);
 const shell=new Set(ASSETS.map(path=>new URL(path,scope).href));
 const exerciseImages='https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';

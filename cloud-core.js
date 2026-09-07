@@ -11,8 +11,8 @@
    assertCurrent(data.user.id);
    return data.user;
   }
-  function snapshot(){
-   const payload={app:'Adaptive Land Prep',formatVersion:3,exportedAt:new Date().toISOString(),data:collect()};
+  function snapshot(data=collect()){
+   const payload={app:'Adaptive Land Prep',formatVersion:3,exportedAt:new Date().toISOString(),data};
    validate(payload);
    if(new TextEncoder().encode(JSON.stringify(payload)).length>9*1024*1024)throw Error('This backup is too large. Export a file backup instead.');
    return payload;
@@ -25,7 +25,7 @@
    return data;
   }
   return {
-   async save(){const owner=await user();return insert(owner,snapshot(),'manual')},
+   async save(data,expectedId){const owner=await user();if(expectedId&&owner.id!==expectedId)throw Error('Your account changed. Please try again.');return insert(owner,snapshot(data),'manual')},
    async list(offset=0){
     const owner=await user();
     const {data,error}=await client.from(table).select('id,created_at,kind').eq('user_id',owner.id).order('created_at',{ascending:false}).order('id',{ascending:false}).range(offset,offset+19);

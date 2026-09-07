@@ -11,6 +11,7 @@ on:
       - 'styles.css'
       - 'app.js'
       - 'cloud*.js'
+      - 'autosave-core.js'
       - 'vendor/**'
       - 'package*.json'
       - 'service-worker.js'
@@ -27,7 +28,7 @@ jobs:
         with:
           node-version: '24'
       - name: Syntax check
-        run: node --check app.js && node --check service-worker.js && node --check cloud.js && node --check cloud-core.js
+        run: node --check app.js && node --check service-worker.js && node --check cloud.js && node --check cloud-core.js && node --check autosave-core.js
       - name: Persistence regression tests
         run: node --test tests/*.test.cjs
       - run: npm init -y && npm install playwright
@@ -459,7 +460,8 @@ jobs:
           const beforeCloud=await page.evaluate(()=>JSON.stringify(collectBackupData()));
           await page.locator('#cloudPanel summary').click();
           check('Private cloud account controls are visible',await visible('#cloudAuth'));
-          check('Cloud actions require sign-in',!(await visible('#cloudSave')));
+          check('Cloud setup requires sign-in',await page.locator('#cloudEnable').count()===1&&!(await visible('#cloudEnable')));
+          check('Cloud backup has no routine save button',await page.locator('#cloudSave').count()===0);
           check('Opening cloud preserves all local data',beforeCloud===await page.evaluate(()=>JSON.stringify(collectBackupData())));
           check('Auth tokens are excluded from backup',await page.evaluate(()=>{localStorage.setItem('alp-cloud-auth','test-token');const safe=!Object.hasOwn(collectBackupData(),'alp-cloud-auth');localStorage.removeItem('alp-cloud-auth');return safe}));
           check('Cloud has no horizontal overflow',await page.locator('#cloudPanel').evaluate(n=>n.scrollWidth<=n.clientWidth+1));
@@ -534,12 +536,15 @@ jobs:
           if(failed.length||report.errors.length){console.error(JSON.stringify({failed,errors:report.errors},null,2));process.exitCode=1;}
           JS
           node audit.mjs
+      - name: Automatic cloud browser regression
+        run: node tests/cloud-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: consumer-audit
           path: |
             consumer-report.json
+            audit-cloud/
             01-fresh-today.png
             02-started-today.png
             03-readiness-detail.png
