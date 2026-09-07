@@ -333,3 +333,17 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .nutrition-adjustment strong{font-size:10px}.nutrition-adjustment span{font-size:9px;line-height:1.45}
 .nutrition-adjustment.yellow{background:rgba(243,184,75,.11);border:1px solid rgba(243,184,75,.22);color:#f3c56e}
 .nutrition-adjustment.red{background:rgba(255,106,106,.10);border:1px solid rgba(255,106,106,.20);color:#ff9b9b}
+
+
+/* Focus the pre-Journey state on one intentional action. */
+#today.pre-journey #readinessCard,
+#today.pre-journey #adaptationBanner,
+#today.pre-journey #todayPlanHeader,
+#today.pre-journey .plan-list,
+#today.pre-journey #todayProgressCard{display:none!important}
+
+/* Library imagery must be useful as technique reference, not decorative thumbnails. */
+.library-item{grid-template-columns:76px 1fr 18px;gap:12px;min-height:92px;padding:10px 12px}
+.library-thumb{height:72px;border-radius:12px}
+.library-item strong{font-size:13px;line-height:1.25}
+.library-item small{font-size:10px;line-height:1.35;margin-top:4px}

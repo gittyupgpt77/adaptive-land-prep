@@ -50,6 +50,7 @@ jobs:
           check('Fresh install has no program start', await page.evaluate(()=>!localStorage.programStart));
           check('Begin Journey card visible', await visible('#journeyStartCard'));
           check('No curriculum debt before Day 1', !(await visible('#missedDayBanner')));
+          check('Fresh install stays focused on onboarding', !(await visible('#readinessCard')) && !(await visible('#todayPlanHeader')));
           await shot('01-fresh-today');
 
           // An older baseline must not backdate Day 1 when Journey begins later.
@@ -87,6 +88,7 @@ jobs:
           await page.waitForTimeout(100);
           check('Explicit Begin Journey creates Day 1', await page.evaluate(()=>!!localStorage.programStart));
           check('Journey onboarding disappears', !(await visible('#journeyStartCard')));
+          check('Started Journey reveals command center', await visible('#readinessCard') && await visible('#todayPlanHeader'));
           check('Readiness score exists', (await page.locator('#readinessScore').textContent())!=='—');
           await shot('02-started-today');
 
@@ -200,6 +202,8 @@ jobs:
           await page.locator('#librarySearch').fill('');
           const libraryCount=await page.locator('.library-item').count(); report.counts.libraryExercises=libraryCount;
           check('Library has broad movement coverage', libraryCount>=20, 'count='+libraryCount);
+          const libraryThumbBox=await page.locator('.library-thumb').first().boundingBox();
+          check('Library imagery is large enough to teach',!!libraryThumbBox&&libraryThumbBox.width>=64&&libraryThumbBox.height>=64,JSON.stringify(libraryThumbBox));
           const libraryNames=await page.locator('.library-item strong').allTextContents();
           const normalizedNames=libraryNames.map(n=>n.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim());
           const duplicateNames=normalizedNames.filter((n,i,a)=>a.indexOf(n)!==i);
