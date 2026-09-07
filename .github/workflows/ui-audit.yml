@@ -12,6 +12,7 @@ on:
       - 'app.js'
       - 'service-worker.js'
       - 'manifest.webmanifest'
+      - 'tests/**'
       - '.github/workflows/ui-audit.yml'
 jobs:
   audit:
@@ -24,6 +25,8 @@ jobs:
           node-version: '24'
       - name: Syntax check
         run: node --check app.js && node --check service-worker.js
+      - name: Persistence regression tests
+        run: node --test tests/*.test.cjs
       - run: npm init -y && npm install playwright
       - run: npx playwright install --with-deps webkit
       - name: Start local app
@@ -122,6 +125,12 @@ jobs:
           check('Saved yellow state changes session title',/Modified|Recovery/i.test((await page.locator('#workoutTitle').innerText())));
           check('Saved yellow state changes actual prescription',(await page.locator('#workoutPrescription').innerText()).includes('70%')||(await page.locator('#workoutPrescription').innerText()).includes('Easy aerobic substitute'));
           await page.locator('[data-target="today"]').click();
+
+          // Saved intake must be judged against its original prescription, including zero.
+          await page.evaluate(()=>{const y=new Date();y.setDate(y.getDate()-1);localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:1000,targetCalories:2000,meals:[]}))});
+          check('Fueling uses the saved target',await page.evaluate(()=>previousNutritionSignal().ratio===0.5));
+          await page.evaluate(()=>{const y=new Date();y.setDate(y.getDate()-1);localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:0,targetCalories:2000,meals:['m1','m2','m3','m4']}))});
+          check('Explicit zero intake overrides meal completion',await page.evaluate(()=>previousNutritionSignal().ratio===0));
 
           // Nutrition causality: under-fueling yesterday must affect today's saved prescription.
           await page.evaluate(()=>{

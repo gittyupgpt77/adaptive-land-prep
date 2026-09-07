@@ -127,12 +127,12 @@ function saveCheckin(){
  const saveWeek=historicalDate?programWeekForDate(saveDate):(localStorage.programStart?prescriptionWeek():1);
  const sameDay=l.findIndex(x=>dayKey(x.date)===dayKey(saveDate));if(sameDay>=0)l.splice(sameDay,1);
  l.unshift({date:saveDate.toISOString(),week:saveWeek,preJourney:!localStorage.programStart,weight:num("weight"),weightAvg:num("weightAvg"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),load:num("load"),pain:num("pain"),performance:val("performance"),focal:$("focal").checked,gait:$("gait").checked,overall:d.o,score:d.score,decision:d,priorWorkoutSignal:historicalDate?null:previousWorkoutSignal()});
- localStorage.trainingLogs=JSON.stringify(l.slice(0,365));dbSet("trainingLogs",localStorage.trainingLogs);
+ localStorage.trainingLogs=JSON.stringify(l);dbSet("trainingLogs",localStorage.trainingLogs);
  if(!historicalDate){setTask("checkin",true);if(!localStorage.programStart)localStorage.baselineDate=saveDate.toISOString()}
  resetHistorical();closeCheckin();renderAll()
 }
 function previousWorkoutSignal(){const y=new Date();y.setDate(y.getDate()-1);const x=workouts().filter(w=>dayKey(w.date)===dayKey(y)&&w.completed!=="NO").sort((a,b)=>new Date(b.date)-new Date(a.date))[0];if(!x)return null;const pain=Number(x.postPain),rpe=Number(x.rpe);if(Number.isFinite(pain)&&pain>=5)return{level:"RED",reason:"Yesterday’s session ended with pain "+pain+"/10."};if((Number.isFinite(pain)&&pain>=3)||(Number.isFinite(rpe)&&rpe>=9))return{level:"YELLOW",reason:Number.isFinite(pain)&&pain>=3?"Yesterday’s session ended with pain "+pain+"/10.":"Yesterday’s session was rated "+rpe+"/10 effort."};return null}
-function saveWorkout(c){if(!localStorage.programStart){beginJourney();return}const status=c||"YES",rpe=num("sessionRPE"),postPain=num("postPain");if(status==="YES"&&(rpe===null||postPain===null)){$("sessionFeedback").open=true;$("completionBanner").textContent="Add effort and post-session pain before completing.";$("completionBanner").classList.add("attention");$("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),2200);return}const arr=workouts(),name=sessionName(),entry={date:new Date().toISOString(),week:prescriptionWeek(),session:name,rpe,duration:num("sessionDuration"),postPain,completed:status,note:val("sessionNote")};const existing=arr.findIndex(x=>dayKey(x.date)===todayKey());if(existing>=0)arr.splice(existing,1);arr.unshift(entry);localStorage.workoutHistory=JSON.stringify(arr.slice(0,500));dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",entry.completed==="YES");$("sessionFeedback").open=false;$("completionBanner").classList.remove("attention");$("completionBanner").textContent="Session saved ✓";$("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll()}
+function saveWorkout(c){if(!localStorage.programStart){beginJourney();return}const status=c||"YES",rpe=num("sessionRPE"),postPain=num("postPain");if(status==="YES"&&(rpe===null||postPain===null)){$("sessionFeedback").open=true;$("completionBanner").textContent="Add effort and post-session pain before completing.";$("completionBanner").classList.add("attention");$("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),2200);return}const arr=workouts(),name=sessionName(),entry={date:new Date().toISOString(),week:prescriptionWeek(),session:name,rpe,duration:num("sessionDuration"),postPain,completed:status,note:val("sessionNote")};const existing=arr.findIndex(x=>dayKey(x.date)===todayKey());if(existing>=0)arr.splice(existing,1);arr.unshift(entry);localStorage.workoutHistory=JSON.stringify(arr);dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",entry.completed==="YES");$("sessionFeedback").open=false;$("completionBanner").classList.remove("attention");$("completionBanner").textContent="Session saved ✓";$("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll()}
 const EXERCISE_DB_BASE="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
 function datasetExerciseId(name){
  const n=name.toLowerCase();
@@ -306,17 +306,17 @@ function nutritionLogKey(d=new Date()){return"nutrition_"+dayKey(d)}
 function getNutritionLog(d=new Date()){try{return JSON.parse(localStorage.getItem(nutritionLogKey(d))||"{}")}catch(e){return{}}}
 function mealPlanForWeek(w){
  if(w<=24)return[
-  {id:"m1",name:"Post-Workout Muscle Lock",kcal:400,foods:["6 egg whites + 1 whole egg","½ cup cooked oats + 1 tsp chia","½ medium banana"]},
-  {id:"m2",name:"Mid-Day Micronutrients",kcal:350,foods:["6 oz chicken breast","3 cups spinach / kale / baby chard","1 cup mushrooms + bell peppers","1 oz avocado"]},
-  {id:"m3",name:"Pre-Workout Structural Primer",kcal:300,foods:["1 slice sourdough","1.5 scoops whey isolate in water"]},
-  {id:"m4",name:"Nightly Recovery",kcal:400,foods:["5 oz sirloin or wild salmon","½ cup cooked brown rice","2 cups greens + lemon"]}
+  {id:"m1",name:"Breakfast",kcal:400,foods:["6 egg whites + 1 whole egg","½ cup cooked oats + 1 tsp chia","½ medium banana"]},
+  {id:"m2",name:"Lunch",kcal:350,foods:["6 oz chicken breast","3 cups spinach / kale / baby chard","1 cup mushrooms + bell peppers","1 oz avocado"]},
+  {id:"m3",name:"Training snack",kcal:300,foods:["1 slice sourdough","1.5 scoops whey isolate in water"]},
+  {id:"m4",name:"Dinner",kcal:400,foods:["5 oz sirloin or wild salmon","½ cup cooked brown rice","2 cups greens + lemon"]}
  ];
  return[
-  {id:"m1",name:"Early Morning Aerobic Fuel",kcal:750,foods:["1½ cups cooked oats + 2 tbsp chia","1 large banana","1 cup whole milk","1 scoop whey"]},
-  {id:"m2",name:"Post-Threshold Recovery",kcal:950,foods:["4 whole eggs + 4 egg whites","3 slices sourdough","Pepper jack cheese","1 cup greens","1 cup blueberries"]},
-  {id:"m3",name:"Mid-Day Performance Base",kcal:800,foods:["7 oz chicken or wild salmon","2 cups cooked white rice","2 cups greens","Mushrooms + bell peppers","2 tbsp extra virgin olive oil"]},
-  {id:"m4",name:"Pre-Workout Ignition",kcal:500,foods:["2 slices sourdough","1 tbsp honey or 1 banana","1 scoop whey in water"]},
-  {id:"m5",name:"Nightly Tissue Recovery",kcal:1000,foods:["8 oz top sirloin","2 cups white rice or 2 large sweet potatoes","Pepper jack cheese","½ avocado","2 cups greens"]}
+  {id:"m1",name:"Breakfast",kcal:750,foods:["1½ cups cooked oats + 2 tbsp chia","1 large banana","1 cup whole milk","1 scoop whey"]},
+  {id:"m2",name:"After-training meal",kcal:950,foods:["4 whole eggs + 4 egg whites","3 slices sourdough","Pepper jack cheese","1 cup greens","1 cup blueberries"]},
+  {id:"m3",name:"Lunch",kcal:800,foods:["7 oz chicken or wild salmon","2 cups cooked white rice","2 cups greens","Mushrooms + bell peppers","2 tbsp extra virgin olive oil"]},
+  {id:"m4",name:"Training snack",kcal:500,foods:["2 slices sourdough","1 tbsp honey or 1 banana","1 scoop whey in water"]},
+  {id:"m5",name:"Dinner",kcal:1000,foods:["8 oz top sirloin","2 cups white rice or 2 large sweet potatoes","Pepper jack cheese","½ avocado","2 cups greens"]}
  ];
 }
 function todayNutritionPrescription(w=prescriptionWeek(),name=sessionName()){
@@ -346,8 +346,9 @@ function hydrationForDay(w,name){
 }
 function previousNutritionSignal(){
  const y=new Date();y.setDate(y.getDate()-1);const log=getNutritionLog(y);if(!log.saved)return null;
- const x=dateSession(y),target=nutritionForWeek(x.w,x.name),actual=Number(log.actualCalories)||0,mealRatio=(log.meals||[]).length/mealPlanForWeek(x.w).length;
- return{ratio:actual?actual/target.cal:mealRatio,target:target.cal,actual,mealRatio};
+ const x=dateSession(y),target=nutritionForWeek(x.w,x.name),actual=typeof log.actualCalories==="number"&&Number.isFinite(log.actualCalories)?log.actualCalories:null,mealRatio=(log.meals||[]).length/mealPlanForWeek(x.w).length;
+ const savedTarget=Number(log.targetCalories)>0?Number(log.targetCalories):target.cal;
+ return{ratio:actual!==null?actual/savedTarget:mealRatio,target:savedTarget,actual,mealRatio};
 }
 function renderNutrition(){
  const w=prescriptionWeek(),name=sessionName(),target=todayNutritionPrescription(w,name),meals=todayMealPlan(w),log=getNutritionLog(),done=new Set(log.meals||[]),hydr=hydrationForDay(w,name);
@@ -368,7 +369,7 @@ function saveNutrition(){
  log.waterOz=Number($("waterActual")?.value)||0;
  log.saved=true;log.savedAt=new Date().toISOString();
  const rawCalories=val("actualCalories").trim(),rawProtein=val("actualProtein").trim(),rawCarbs=val("actualCarbs").trim(),rawFat=val("actualFat").trim(),enteredCalories=rawCalories===""?null:Number(rawCalories),enteredProtein=rawProtein===""?null:Number(rawProtein),enteredCarbs=rawCarbs===""?null:Number(rawCarbs),enteredFat=rawFat===""?null:Number(rawFat),hasManualDeviation=[rawCalories,rawProtein,rawCarbs,rawFat].some(Boolean);
- log.actualCalories=Number.isFinite(enteredCalories)&&enteredCalories>0?enteredCalories:checkedCalories;
+ log.actualCalories=Number.isFinite(enteredCalories)&&enteredCalories>=0?enteredCalories:checkedCalories;
  const fullPrescription=(log.meals||[]).length===meals.length&&meals.every(m=>(log.meals||[]).includes(m.id));
  log.actualProtein=Number.isFinite(enteredProtein)&&enteredProtein>=0?enteredProtein:(fullPrescription?target.protein:null);
  log.actualCarbs=Number.isFinite(enteredCarbs)&&enteredCarbs>=0?enteredCarbs:(fullPrescription?target.carbs:null);
@@ -504,6 +505,53 @@ const DB_NAME="AdaptiveLandPrepDB",STORE="kv";function openDB(){return new Promi
 function isAppStorageKey(k){return APP_STORAGE_KEYS.has(k)||k.startsWith("input_")||k.startsWith("task_")||k.startsWith("nutrition_")}
 function collectBackupData(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&isAppStorageKey(k))data[k]=localStorage.getItem(k)}return data}
 function exportBackup(){const p={app:"Adaptive Land Prep",formatVersion:3,exportedAt:new Date().toISOString(),data:collectBackupData()},b=new Blob([JSON.stringify(p,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="adaptive-land-prep-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.lastBackupAt=p.exportedAt;countRecords()}
-async function importBackup(f){const o=JSON.parse(await f.text());if(o.app!=="Adaptive Land Prep"||!o.data||typeof o.data!=="object")throw Error();if(Number(o.formatVersion||2)>=3){const existing=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&isAppStorageKey(k))existing.push(k)}existing.forEach(k=>localStorage.removeItem(k));Object.entries(o.data).forEach(([k,v])=>{if(isAppStorageKey(k)&&typeof v==="string")localStorage.setItem(k,v)})}else{Object.entries(o.data).forEach(([k,v])=>{if(isAppStorageKey(k)&&typeof v==="string")localStorage.setItem(k,v)})}if(localStorage.trainingLogs)dbSet("trainingLogs",localStorage.trainingLogs);if(localStorage.workoutHistory)dbSet("workoutHistory",localStorage.workoutHistory);location.reload()}
+function validateBackup(o){
+ const object=v=>v!==null&&typeof v==="object"&&!Array.isArray(v),date=v=>typeof v==="string"&&v.trim()!==""&&Number.isFinite(Date.parse(v));
+ const fail=()=>{throw new Error("Invalid or unsupported backup")};
+ if(!object(o)||o.app!=="Adaptive Land Prep"||!object(o.data)||![2,3].includes(o.formatVersion??2))fail();
+ const data={};
+ for(const [k,v] of Object.entries(o.data)){
+  if(!isAppStorageKey(k))continue;
+  if(typeof v!=="string")fail();
+  if(k==="programStart"||k==="baselineDate"){if(!date(v))fail()}
+  else if(k==="trainingLogs"||k==="workoutHistory"){
+   const rows=JSON.parse(v);if(!Array.isArray(rows))fail();
+   for(const r of rows){
+    if(!object(r)||!date(r.date))fail();
+    if(r.week!==undefined&&(!Number.isInteger(r.week)||r.week<1||r.week>56))fail();
+    for(const field of ["weight","weightAvg","hrv","hrvBase","rhr","rhrBase","grip","gripBase","sleep","sleepQ","fatigue","load","pain","score","rpe","duration","postPain"]){if(r[field]!=null&&(typeof r[field]!=="number"||!Number.isFinite(r[field])))fail()}
+    if(k==="workoutHistory"&&(typeof r.session!=="string"||!["YES","NO","PARTIAL"].includes(r.completed)))fail();
+    if(r.overall!==undefined&&!["GREEN","YELLOW","RED"].includes(r.overall))fail();
+    if(r.decision!=null){if(!object(r.decision)||!["GREEN","YELLOW","RED"].includes(r.decision.o))fail();for(const field of ["a","b","c"]){if(r.decision[field]!=null&&!["","GREEN","YELLOW","RED"].includes(r.decision[field]))fail()}}
+   }
+  }else if(k==="failedDays"){const days=JSON.parse(v);if(!Array.isArray(days)||!days.every(date))fail()}
+  else if(k==="benchmarks"||k.startsWith("nutrition_")){
+   const record=JSON.parse(v);if(!object(record))fail();
+   if(k.startsWith("nutrition_")){
+    if(record.meals!==undefined&&(!Array.isArray(record.meals)||!record.meals.every(x=>typeof x==="string")))fail();
+    if(record.saved!==undefined&&typeof record.saved!=="boolean")fail();
+    for(const field of ["waterOz","actualCalories","actualProtein","actualCarbs","actualFat","targetCalories","targetProtein","targetCarbs","targetFat"]){if(record[field]!=null&&(typeof record[field]!=="number"||!Number.isFinite(record[field])||record[field]<0))fail()}
+   }
+  }else if(k.startsWith("task_")||k==="input_focal"||k==="input_gait"){if(v!=="0"&&v!=="1")fail()}
+  data[k]=v;
+ }
+ // An empty or unrelated file must never erase an existing journey.
+ if(!Object.keys(data).length)fail();
+ return {version:o.formatVersion??2,data};
+}
+async function importBackup(f){
+ const backup=validateBackup(JSON.parse(await f.text())),previous=collectBackupData();
+ try{
+  // Write first so a quota failure cannot erase the existing history.
+  for(const [k,v] of Object.entries(backup.data))localStorage.setItem(k,v);
+  if(backup.version===3)for(const k of Object.keys(previous))if(!Object.hasOwn(backup.data,k))localStorage.removeItem(k);
+ }catch(error){
+  for(const k of Object.keys(backup.data))if(!Object.hasOwn(previous,k))localStorage.removeItem(k);
+  for(const [k,v] of Object.entries(previous))localStorage.setItem(k,v);
+  throw error;
+ }
+ await Promise.all([dbSet("trainingLogs",localStorage.trainingLogs||"[]"),dbSet("workoutHistory",localStorage.workoutHistory||"[]")]);
+ location.reload();
+}
 $("exportBackup").onclick=exportBackup;$("importBackup").onchange=e=>e.target.files[0]&&importBackup(e.target.files[0]).catch(()=>alert("That backup could not be restored."));
 migrateProductState();viewedWeek=currentWeek();viewedMonth=new Date(programStart());$("headerAction").innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 9.5h16"/></svg>';$("headerAction").style.display="grid";renderAll();requestPersistence();if("serviceWorker"in navigator)addEventListener("load",async()=>{try{const r=await navigator.serviceWorker.register("./service-worker.js");await r.update();navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!sessionStorage.swReloaded){sessionStorage.swReloaded="1";location.reload()}})}catch(e){console.info("Offline cache unavailable in this environment")}});
