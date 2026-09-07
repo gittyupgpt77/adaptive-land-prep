@@ -36,6 +36,7 @@ try{
  assert.equal(await page.evaluate(()=>localStorage.getItem('alp-backup-provider')),null,'No migration before cloud acknowledgement');
  await page.locator('#cloudEnable').click();await page.clock.fastForward(7000);await saved(page);
  assert.equal(await page.evaluate(()=>localStorage.getItem('alp-backup-provider')),'firebase');
+ assert.equal(new URL(page.url()).search,'','Completed setup returns to the offline-cacheable launch URL');
  assert.equal(await page.evaluate(()=>localStorage.getItem('alp-cloud-device-owner')),'previous-supabase-owner','Old recovery binding preserved');
  const revision=await page.evaluate(()=>localStorage.getItem('alp-firestore-revision-owner'));
  await page.goto('http://127.0.0.1:8080/');await page.clock.fastForward(7000);await saved(page);

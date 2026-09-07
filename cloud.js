@@ -18,6 +18,12 @@
  el('cloudLegacy').classList.toggle('hidden',!firebase);
  el('cloudSetup').classList.toggle('hidden',firebase);
  el('cloudSetup').onclick=()=>{location.search='?backup=firebase'};
+ function selectFirebase(){
+  if(!firebase)return;
+  localStorage.setItem('alp-backup-provider','firebase');
+  // Return to the cacheable launch URL once setup/recovery has succeeded.
+  if(requested==='firebase'){const url=new URL(location.href);url.searchParams.delete('backup');history.replaceState(null,'',url.href)}
+ }
  const boundOwner=()=>localStorage.getItem(bindingKey);
  async function saveAutomatic(data,id){
   const serialized=JSON.stringify(Object.keys(data).sort().map(key=>[key,data[key]]));
@@ -25,7 +31,7 @@
   let receipt;try{receipt=JSON.parse(localStorage.getItem(receiptKey)||'null')}catch{}
   if(!firebase&&receipt?.owner===id&&receipt.hash===hash){lastSaved=new Date(receipt.at);return}
   const row=await core.save(data,id);lastSaved=new Date(row.created_at);
-  if(firebase)localStorage.setItem('alp-backup-provider','firebase');
+  selectFirebase();
   try{localStorage.setItem(receiptKey,JSON.stringify({owner:id,hash,at:row.created_at}))}catch{}
  }
  const automatic=createAutomaticBackup({collect:collectBackupData,save:saveAutomatic,notify:(state,error)=>{
@@ -35,7 +41,7 @@
   status(state==='error'&&error?.code?.startsWith('backup/')?error.message:state==='error'&&error?.code==='permission-denied'?'Private backup setup needs to be completed. Your entries remain on this device.':messages[state]);
  }});
  async function checkBackup(flush=false){try{automatic.configure(owner,boundOwner());await automatic.tick(navigator.onLine!==false,flush)}catch(error){status('Saved on this device. Automatic cloud backup is unavailable; check device storage.')}}
- const core=createCloudBackup({client,store,collect:collectBackupData,validate:validateBackup,restore:async file=>{if(firebase)localStorage.setItem('alp-backup-provider','firebase');return importBackup(file)},confirm:window.confirm.bind(window),getCurrentId:()=>owner,assertCurrent});
+ const core=createCloudBackup({client,store,collect:collectBackupData,validate:validateBackup,restore:async file=>{selectFirebase();return importBackup(file)},confirm:window.confirm.bind(window),getCurrentId:()=>owner,assertCurrent});
  function render(){
   el('cloudAuth').classList.toggle('hidden',!!owner);
   el('cloudSignedIn').classList.toggle('hidden',!owner);
