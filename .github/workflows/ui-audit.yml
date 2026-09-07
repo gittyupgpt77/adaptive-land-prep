@@ -51,6 +51,8 @@ jobs:
           await page.screenshot({ path: 'checkin.png', fullPage: true });
           await page.locator('#closeCheckin').click();
 
+          await page.evaluate(() => { const d=new Date(); d.setDate(d.getDate()-1); localStorage.programStart=d.toISOString(); localStorage.failedDays='[]'; });
+          await page.reload({waitUntil:'networkidle'});
           await page.locator('[data-target="workout"]').click();
           await page.waitForTimeout(200);
           await page.screenshot({ path: 'train.png', fullPage: true });
@@ -59,15 +61,14 @@ jobs:
           await page.locator('#librarySearch').fill('plank');
           await page.waitForTimeout(120);
           await page.screenshot({ path: 'library-search.png', fullPage: true });
-          await page.locator('[data-trainview="session"]').click();
-
-          const ex = page.locator('.exercise-card').nth(1);
-          if (await ex.count()) {
-            await ex.click();
+          const plank = page.locator('.library-item').first();
+          if (await plank.count()) {
+            await plank.click();
             await page.waitForTimeout(120);
             await page.screenshot({ path: 'exercise-detail.png', fullPage: true });
             await page.locator('#modalDone').click();
           }
+          await page.locator('[data-trainview="session"]').click();
 
           await page.locator('[data-target="week"]').click();
           await page.waitForTimeout(200);
