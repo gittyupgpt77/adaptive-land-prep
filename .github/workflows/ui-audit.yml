@@ -67,9 +67,9 @@ jobs:
           await page.evaluate(()=>localStorage.clear());
           await page.reload({waitUntil:'networkidle'});
 
-          // Begin Journey -> actual baseline -> Day 1.
+          // Baseline and Day 1 are two separate user decisions.
           await page.locator('#beginJourneyBtn').click();
-          check('Begin Journey opens check-in', await visible('#checkinSheet'));
+          check('Log Baseline opens check-in', await visible('#checkinSheet'));
           const fields = {hrv:'62',rhr:'54',sleep:'8',sleepQ:'5',fatigue:'1',grip:'52',load:'2',pain:'0',performance:'YES',weight:'170'};
           for(const [id,v] of Object.entries(fields)){
             const el=page.locator('#'+id);
@@ -78,8 +78,12 @@ jobs:
           await page.locator('#evaluateBtn').click();
           check('Evaluate reveals adaptive results', await visible('#results'));
           await page.locator('#saveBtn').click();
-          await page.waitForTimeout(150);
-          check('Program start created from real check-in', await page.evaluate(()=>!!localStorage.programStart));
+          await page.waitForTimeout(120);
+          check('Saving baseline alone does not start Journey', await page.evaluate(()=>!localStorage.programStart));
+          check('Baseline state offers explicit Begin Journey',(await page.locator('#beginJourneyBtn').innerText()).includes('Begin Journey'));
+          await page.locator('#beginJourneyBtn').click();
+          await page.waitForTimeout(100);
+          check('Explicit Begin Journey creates Day 1', await page.evaluate(()=>!!localStorage.programStart));
           check('Journey onboarding disappears', !(await visible('#journeyStartCard')));
           check('Readiness score exists', (await page.locator('#readinessScore').textContent())!=='—');
           await shot('02-started-today');
