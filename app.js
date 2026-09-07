@@ -381,7 +381,7 @@ function mealPlanForTarget(w,target){
  if(gap<0)throw new Error("Meal template exceeds nutrition target");
  if(gap>0){
    const chunks=gap>600?[Math.round(gap/2),gap-Math.round(gap/2)]:[gap],recovery=target?.adjustment?.level==="red";
-   chunks.forEach((kcal,i)=>meals.push({id:"fuel-addon-"+(i+1),name:chunks.length>1?(i===0?"Pre-Training Fuel Add-On":"Post-Training Fuel Add-On"):(recovery?"Recovery Fuel Add-On":w<=24?"Training Fuel Add-On":"Performance Fuel Add-On"),kcal,foods:fuelAddOnFoods(kcal)}));
+   chunks.forEach((kcal,i)=>meals.push({id:"fuel-addon-"+(i+1),name:chunks.length>1?(i===0?"Pre-Training Fuel Add-On":"Post-Training Fuel Add-On"):(recovery?"Recovery Carbohydrate Add-On":w<=24?"Training Fuel Add-On":"Performance Fuel Add-On"),kcal,foods:fuelAddOnFoods(kcal)}));
  }
  return meals
 }
