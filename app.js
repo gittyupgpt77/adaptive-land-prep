@@ -369,9 +369,10 @@ function saveNutrition(){
  log.saved=true;log.savedAt=new Date().toISOString();
  const rawCalories=val("actualCalories").trim(),rawProtein=val("actualProtein").trim(),rawCarbs=val("actualCarbs").trim(),rawFat=val("actualFat").trim(),enteredCalories=rawCalories===""?null:Number(rawCalories),enteredProtein=rawProtein===""?null:Number(rawProtein),enteredCarbs=rawCarbs===""?null:Number(rawCarbs),enteredFat=rawFat===""?null:Number(rawFat),hasManualDeviation=[rawCalories,rawProtein,rawCarbs,rawFat].some(Boolean);
  log.actualCalories=Number.isFinite(enteredCalories)&&enteredCalories>0?enteredCalories:checkedCalories;
- log.actualProtein=Number.isFinite(enteredProtein)&&enteredProtein>=0?enteredProtein:Math.round(target.protein*mealRatio);
- log.actualCarbs=Number.isFinite(enteredCarbs)&&enteredCarbs>=0?enteredCarbs:Math.round(target.carbs*mealRatio);
- log.actualFat=Number.isFinite(enteredFat)&&enteredFat>=0?enteredFat:Math.round(target.fat*mealRatio);
+ const fullPrescription=(log.meals||[]).length===meals.length&&meals.every(m=>(log.meals||[]).includes(m.id));
+ log.actualProtein=Number.isFinite(enteredProtein)&&enteredProtein>=0?enteredProtein:(fullPrescription?target.protein:null);
+ log.actualCarbs=Number.isFinite(enteredCarbs)&&enteredCarbs>=0?enteredCarbs:(fullPrescription?target.carbs:null);
+ log.actualFat=Number.isFinite(enteredFat)&&enteredFat>=0?enteredFat:(fullPrescription?target.fat:null);
  log.intakeSource=hasManualDeviation?"manual-deviation":"prescribed-meals";
  log.targetCalories=target.cal;log.targetProtein=target.protein;log.targetCarbs=target.carbs;log.targetFat=target.fat;
  localStorage.setItem(nutritionLogKey(),JSON.stringify(log));setTask("nutrition",true);renderNutrition();renderToday()

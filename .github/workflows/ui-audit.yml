@@ -376,7 +376,7 @@ jobs:
           await page.locator('[data-target="nutrition"]').click();
           const mealsForAuto=page.locator('.meal-check');for(let i=0;i<await mealsForAuto.count();i++)await mealsForAuto.nth(i).click();
           await page.locator('#saveNutritionDay').click();
-          check('Prescribed meals auto-populate actual macros',await page.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('nutrition_'));const n=JSON.parse(localStorage[k]||'{}');return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein>0&&n.actualCarbs>0&&n.actualFat>0}));
+          check('Full prescribed plan inherits prescribed macros without manual duplication',await page.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('nutrition_'));const n=JSON.parse(localStorage[k]||'{}');return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein===n.targetProtein&&n.actualCarbs===n.targetCarbs&&n.actualFat===n.targetFat;}));
           await page.locator('[data-target="today"]').click();
           check('Nutrition Today task requires saved intake',await page.locator('#taskNutrition').evaluate(n=>n.classList.contains('done')));
           await shot('07-nutrition');
