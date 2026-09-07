@@ -372,14 +372,17 @@ function baseMealPlan(w){
  ];
 }
 function fuelAddOnFoods(kcal){
- if(kcal<=225)return["Add roughly "+kcal+" kcal of carbohydrate around training","Example: about 1 cup cooked rice, or a similar portion of oats / bread / fruit"];
- if(kcal<=550)return["Add roughly "+kcal+" kcal, primarily carbohydrate, across the meals nearest training","Example: about 1½ cups cooked rice plus 2 slices sourdough, adjusted with labels for your usual brands"];
- return["Distribute roughly "+kcal+" kcal of additional fuel across breakfast, pre/post-training and dinner","Favor the rice, oats, sourdough and fruit already in the plan rather than adding another protein-heavy meal"];
+ if(kcal<=225)return["Add roughly "+kcal+" kcal of carbohydrate near training","Example: about 1 cup cooked rice, or a similar portion of oats / bread / fruit"];
+ if(kcal<=450)return["Add roughly "+kcal+" kcal, primarily carbohydrate, near training","Example: cooked rice plus fruit, or sourdough plus oats, adjusted with labels for your usual brands"];
+ return["Add roughly "+kcal+" kcal, primarily carbohydrate, near training","Example: about 1½ cups cooked rice + 2 slices sourdough + a banana is roughly 600 kcal; scale the portions to this card’s target"];
 }
 function mealPlanForTarget(w,target){
  const meals=baseMealPlan(w).map(m=>({...m,foods:[...m.foods]})),base=meals.reduce((s,m)=>s+m.kcal,0),goal=Math.round(Number(target?.cal)||base),gap=goal-base;
  if(gap<0)throw new Error("Meal template exceeds nutrition target");
- if(gap>0)meals.push({id:"fuel-addon",name:target?.adjustment?.level==="red"?"Recovery Fuel Add-On":w<=24?"Training Fuel Add-On":"Performance Fuel Add-On",kcal:gap,foods:fuelAddOnFoods(gap)});
+ if(gap>0){
+   const chunks=gap>600?[Math.round(gap/2),gap-Math.round(gap/2)]:[gap],recovery=target?.adjustment?.level==="red";
+   chunks.forEach((kcal,i)=>meals.push({id:"fuel-addon-"+(i+1),name:chunks.length>1?(i===0?"Pre-Training Fuel Add-On":"Post-Training Fuel Add-On"):(recovery?"Recovery Fuel Add-On":w<=24?"Training Fuel Add-On":"Performance Fuel Add-On"),kcal,foods:fuelAddOnFoods(kcal)}));
+ }
  return meals
 }
 function mealPlanForWeek(w){return baseMealPlan(w)}

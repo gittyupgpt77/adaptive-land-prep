@@ -31,8 +31,12 @@ test('prescribed meals reconcile to the displayed calorie target across program 
 test('recovery fueling adds to the meal prescription rather than only changing the dashboard',()=>{
  const c=nutritionContext(),target={...c.nutritionForWeek(25,'Quality run'),cal:4200,adjustment:{level:'red'}},meals=c.mealPlanForTarget(25,target);
  assert.equal(meals.reduce((s,m)=>s+m.kcal,0),4200);
- assert.equal(meals.at(-1).name,'Recovery Fuel Add-On');
- assert.equal(meals.at(-1).kcal,800);
+ const addons=meals.filter(m=>m.id.startsWith('fuel-addon-'));
+ assert.equal(addons.length,2);
+ assert.equal(addons[0].kcal,400);
+ assert.equal(addons[1].kcal,400);
+ assert.equal(addons[0].name,'Pre-Training Fuel Add-On');
+ assert.equal(addons[1].name,'Post-Training Fuel Add-On');
 });
 
 test('post-transition base meal template is the 3400-kcal lower-volume plan',()=>{
