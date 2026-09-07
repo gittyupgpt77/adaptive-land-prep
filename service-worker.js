@@ -1,4 +1,4 @@
-const CACHE='land-prep-v48';
+const CACHE='land-prep-v49';
 const ASSETS=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest'];
 const scope=new URL(self.registration.scope);
 const shell=new Set(ASSETS.map(path=>new URL(path,scope).href));

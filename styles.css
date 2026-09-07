@@ -357,3 +357,8 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 
 /* Explicit CTA contrast inside dark training/check-in surfaces. */
 .complete-session,.secondary-action,.sheet-primary,.sheet-secondary{color:#fff}
+
+/* Keep activity dates on their own line at iPhone widths. */
+.log-card>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.log-card>div strong{overflow-wrap:anywhere}
+.log-card>small{flex:0 0 auto;margin-left:10px}

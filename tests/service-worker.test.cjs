@@ -5,7 +5,7 @@ const fs=require('node:fs');
 function harness(){
  const handlers={},removed=[],writes=[];
  const cache={addAll:async()=>{},match:async()=>({offline:true}),put:async(req,res)=>writes.push(req.url)};
- const context={URL,Set,Promise,self:{registration:{scope:'https://example.com/adaptive-land-prep/'},addEventListener:(name,fn)=>handlers[name]=fn,skipWaiting:async()=>{},clients:{claim:async()=>{}}},caches:{open:async()=>cache,keys:async()=>['other-app-v1','land-prep-v47','land-prep-v48'],delete:async k=>removed.push(k)},fetch:async()=>({ok:true,clone:()=>({})})};
+ const context={URL,Set,Promise,self:{registration:{scope:'https://example.com/adaptive-land-prep/'},addEventListener:(name,fn)=>handlers[name]=fn,skipWaiting:async()=>{},clients:{claim:async()=>{}}},caches:{open:async()=>cache,keys:async()=>['other-app-v1','land-prep-v47','land-prep-v49'],delete:async k=>removed.push(k)},fetch:async()=>({ok:true,clone:()=>({})})};
  vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../service-worker.js'),'utf8'),context);
  return {handlers,removed,writes,request:async(url,authorized=false)=>{let response;handlers.fetch({request:{url,method:'GET',headers:{has:()=>authorized}},respondWith:p=>response=p});return response&&await response;}};
 }
