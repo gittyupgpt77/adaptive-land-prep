@@ -235,7 +235,7 @@ jobs:
           await page.locator('[data-calview="journey"]').click();
           const journeyCount=await page.locator('.journey-month').count();report.counts.journeyMonths=journeyCount;
           check('Journey exposes long-range roadmap',journeyCount>=12,'count='+journeyCount);
-          check('Journey shows all five macro phases',(await page.locator('.journey-phase-segment').count())===5);
+          check('Journey shows all five macro phases',(await page.locator('.journey-phase-card').count())===5);
           for(let i=0;i<journeyCount;i++){
             await page.locator('[data-calview="journey"]').click();
             const item=page.locator('.journey-month').nth(i);
