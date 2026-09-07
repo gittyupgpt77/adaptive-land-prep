@@ -6,3 +6,9 @@ consumer-report.json
 0*.png
 audit.mjs
 adaptive-land-prep-backup*.json
+
+www/
+ios/
+build/
+cloud-automatic.png
+audit-cloud/

@@ -1,0 +1,29 @@
+name: iOS Shell Evaluation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'capacitor.config.json'
+      - 'scripts/build-native.cjs'
+      - 'package*.json'
+      - '.github/workflows/ios-evaluation.yml'
+jobs:
+  simulator-build:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build:native
+      - run: npx cap add ios
+      - name: Compile for simulator without signing
+        run: xcodebuild -project ios/App/App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-evaluation
+          path: build/Build/Products/Debug-iphonesimulator/App.app

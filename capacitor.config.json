@@ -1,0 +1,6 @@
+{
+  "appId": "com.adaptivelandprep.app",
+  "appName": "Adaptive Land Prep",
+  "webDir": "www",
+  "ios": { "contentInset": "never" }
+}
