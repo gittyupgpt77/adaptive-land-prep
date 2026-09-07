@@ -1,6 +1,8 @@
 # iOS migration evaluation
 
-Decision: retain the working PWA while evaluating Capacitor reuse. The shell is a developer prototype, not a released native application or a durability solution. No paid service or Apple enrollment is enabled by this change.
+Decision updated 2026-09-07: retain the working PWA and pause native migration. The owner's requirements are zero ongoing cost and no routine maintenance after Day 1. Free personal-team iPhone provisioning expires after seven days and requires rebuilding/reinstalling; ordinary Apple Developer Program membership costs USD 99/year. Neither meets those requirements. A successful unsigned simulator build did not resolve this distribution constraint or data preservation. See [the storage decision](free-storage-decision.md) for the replacement backend direction and outstanding setup blocker.
+
+The shell remains a developer prototype, not a released native application or a durability solution. No paid service or Apple enrollment is enabled by this change.
 
 `npm ci && npm run build:native && npx cap add ios` generates an Xcode project with bundled assets, not a remotely hosted WebView. `npx cap open ios` opens it on a Mac. GitHub Actions compiles an unsigned simulator application. There is no signed iPhone distribution yet.
 
@@ -16,3 +18,5 @@ Decision: retain the working PWA while evaluating Capacitor reuse. The shell is 
 The current PWA improvement is automatic private versioned backup while the app runs, with local-first entries and reconnect retries. It does not promise iOS background execution or automatic merging between devices. Complete check-in/session actions remain intentional physiological records; backup is not a daily chore.
 
 References: https://capacitorjs.com/docs/getting-started, https://capacitorjs.com/docs/apis/preferences, https://supabase.com/docs/guides/platform/free-project-pausing
+
+Distribution references checked 2026-09-07: https://developer.apple.com/help/account/basics/about-your-developer-account/ and https://developer.apple.com/help/account/membership/program-enrollment/

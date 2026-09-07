@@ -7,6 +7,8 @@ Training data stays on-device until the athlete enables automatic private backup
 ## iPhone installation
 Open https://gittyupgpt77.github.io/adaptive-land-prep/ in Safari and choose **Share → Add to Home Screen**.
 
+The no-cost, no-routine-maintenance storage requirements and proposed Firebase migration are tracked in [the storage decision](docs/free-storage-decision.md). That migration is not live. The Capacitor prototype is paused because free personal iPhone provisioning requires recurring reinstallation. The deployed backup behavior below still uses Supabase.
+
 ## Private backup and recovery
 Open **Program → View Recovery & Weight Trends → Private cloud backup**.
 Create a backup account with email and password, confirm the email, then sign in. This account is separate from a Supabase dashboard login. Enable **Automatic Backup** once to associate this device's existing and future data with that account. Saved changes then back up automatically, including training history, nutrition and drafts, benchmarks, journey dates, tasks, and check-in inputs. There is no manual backup button. The app observes local changes every two seconds, coalesces nearby changes, retries connectivity failures with bounded backoff, and avoids unchanged uploads using a SHA-256 receipt. Offline changes remain local and retry when the app is online again. An iPhone PWA cannot promise uploads while closed; reopening resumes pending work. Switching accounts requires a new explicit device/account association before uploads can begin.
