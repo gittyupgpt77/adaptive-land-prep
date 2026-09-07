@@ -46,7 +46,7 @@ test('saved sessions retain actual run ruck row and pack work',()=>{
  const s=source(),start=s.indexOf('function saveWorkout(c){'),end=s.indexOf('\nconst EXERCISE_DB_BASE=',start);
  const localStorage={programStart:'2026-09-01'};
  const nodes={sessionFeedback:{open:false},completionBanner:{textContent:'',classList:{add(){},remove(){}}}};
- const values={sessionRPE:6,postPain:0,sessionDuration:52,sessionRunMiles:4.2,sessionRuckMiles:null,sessionRowMeters:45,sessionPackWeight:null};
+ const values={sessionRPE:6,postPain:0,sessionDuration:52,sessionRunMiles:4.2,sessionRuckMiles:null,sessionRowMinutes:45,sessionPackWeight:null};
  const context=vm.createContext({
   localStorage,$:id=>nodes[id]??={value:'',classList:{add(){},remove(){}}},num:id=>values[id]??null,val:()=>'',beginJourney(){},
   setTimeout(){},workouts:()=>[],adaptiveSession:()=>({title:'Run + row',type:'Run',steps:[]}),prescriptionWeek:()=>13,

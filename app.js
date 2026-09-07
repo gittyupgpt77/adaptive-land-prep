@@ -95,7 +95,7 @@ function sessionModalities(det){
 }
 function renderSessionMetricFields(det){
  const m=sessionModalities(det);
- [["sessionRunMilesField",m.run],["sessionRuckMilesField",m.ruck],["sessionRowMetersField",m.row],["sessionPackWeightField",m.ruck]].forEach(([id,show])=>$(id)?.classList.toggle("hidden",!show));
+ [["sessionRunMilesField",m.run],["sessionRuckMilesField",m.ruck],["sessionRowMinutesField",m.row],["sessionPackWeightField",m.ruck]].forEach(([id,show])=>$(id)?.classList.toggle("hidden",!show));
 }
 function actualWorkSummary(work){
  if(!work)return"";const bits=[];
@@ -177,7 +177,7 @@ function saveWorkout(c){
    $("completionBanner").classList.add("attention");$("completionBanner").classList.remove("hidden");
    setTimeout(()=>$("completionBanner").classList.add("hidden"),2200);return
  }
- const arr=workouts(),prescription=adaptiveSession(),entry={date:new Date().toISOString(),week:prescriptionWeek(),session:prescription.title,prescription,rpe,duration:num("sessionDuration"),postPain,runMiles:num("sessionRunMiles"),ruckMiles:num("sessionRuckMiles"),rowMinutes:num("sessionRowMeters"),packWeight:num("sessionPackWeight"),completed:status,note:val("sessionNote")};
+ const arr=workouts(),prescription=adaptiveSession(),entry={date:new Date().toISOString(),week:prescriptionWeek(),session:prescription.title,prescription,rpe,duration:num("sessionDuration"),postPain,runMiles:num("sessionRunMiles"),ruckMiles:num("sessionRuckMiles"),rowMinutes:num("sessionRowMinutes"),packWeight:num("sessionPackWeight"),completed:status,note:val("sessionNote")};
  const existing=arr.findIndex(x=>dayKey(x.date)===todayKey());if(existing>=0)arr.splice(existing,1);arr.unshift(entry);
  localStorage.workoutHistory=JSON.stringify(arr);dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",entry.completed==="YES");
  $("sessionFeedback").open=false;$("completionBanner").classList.remove("attention");
@@ -601,14 +601,14 @@ $("openBenchmarks").onclick=()=>{loadBenchmarkForm();$("benchmarkSheet").classLi
 });
 function restoreSessionFeedback(){
  const saved=workouts().find(x=>dayKey(x.date)===todayKey());
- const fields={sessionRPE:"rpe",sessionDuration:"duration",postPain:"postPain",sessionRunMiles:"runMiles",sessionRuckMiles:"ruckMiles",sessionRowMeters:"rowMinutes",sessionPackWeight:"packWeight",completed:"completed",sessionNote:"note"};
+ const fields={sessionRPE:"rpe",sessionDuration:"duration",postPain:"postPain",sessionRunMiles:"runMiles",sessionRuckMiles:"ruckMiles",sessionRowMinutes:"rowMinutes",sessionPackWeight:"packWeight",completed:"completed",sessionNote:"note"};
  for(const [id,property] of Object.entries(fields)){
   const draft=localStorage.getItem("input_session_"+todayKey()+"_"+id);
   $(id).value=draft!==null?draft:String(saved?.[property]??"");
  }
 }
 restoreSessionFeedback();
-["sessionRPE","sessionDuration","postPain","sessionRunMiles","sessionRuckMiles","sessionRowMeters","sessionPackWeight","completed","sessionNote"].forEach(id=>{
+["sessionRPE","sessionDuration","postPain","sessionRunMiles","sessionRuckMiles","sessionRowMinutes","sessionPackWeight","completed","sessionNote"].forEach(id=>{
  const field=$(id),key=()=>"input_session_"+todayKey()+"_"+id;
  const remember=()=>localStorage.setItem(key(),field.value);
  field.addEventListener("input",remember);field.addEventListener("change",remember);
