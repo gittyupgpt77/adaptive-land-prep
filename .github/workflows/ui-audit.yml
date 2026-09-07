@@ -14,6 +14,7 @@ on:
 jobs:
   audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -326,6 +327,16 @@ jobs:
           }
           report.inventory=inventory;
           report.counts.totalVisibleControls=Object.values(inventory).reduce((n,a)=>n+a.length,0);
+          // Touch ergonomics: critical controls should not require precision tapping.
+          await page.locator('[data-target="today"]').click();
+          const criticalSelectors=['#headerAction','.task-toggle','.task-main','.tab'];
+          const undersized=[];
+          for(const sel of criticalSelectors){
+            const els=page.locator(sel+':visible'),n=await els.count();
+            for(let i=0;i<n;i++){const box=await els.nth(i).boundingBox();if(box&&(box.width<40||box.height<40))undersized.push({sel,i,w:Math.round(box.width),h:Math.round(box.height)});}
+          }
+          report.undersizedCriticalControls=undersized;
+          check('Critical touch targets are finger-friendly',undersized.length===0,JSON.stringify(undersized));
 
           check('No runtime errors',report.errors.length===0,JSON.stringify(report.errors));
           const failed=report.assertions.filter(x=>!x.pass);
