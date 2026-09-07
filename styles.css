@@ -328,3 +328,8 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .sheet-head>button{min-width:40px;min-height:40px}
 .nav-icon{pointer-events:none}
 .tab{min-height:54px}
+
+.nutrition-adjustment{margin-top:11px;border-radius:12px;padding:10px 11px;display:flex;flex-direction:column;gap:3px}
+.nutrition-adjustment strong{font-size:10px}.nutrition-adjustment span{font-size:9px;line-height:1.45}
+.nutrition-adjustment.yellow{background:rgba(243,184,75,.11);border:1px solid rgba(243,184,75,.22);color:#f3c56e}
+.nutrition-adjustment.red{background:rgba(255,106,106,.10);border:1px solid rgba(255,106,106,.20);color:#ff9b9b}
