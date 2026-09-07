@@ -121,21 +121,21 @@ jobs:
           await page.locator('#librarySearch').fill('');
           const libraryCount=await page.locator('.library-item').count(); report.counts.libraryExercises=libraryCount;
           check('Library has broad movement coverage', libraryCount>=35, 'count='+libraryCount);
-          let loadedPhotos=0, visualFallbacks=0;
+          let loadedPhotos=0, visualFallbacks=0; const failedImageDetails=[];
           for(let i=0;i<libraryCount;i++){
             const item=page.locator('.library-item').nth(i);
             await item.scrollIntoViewIfNeeded();
             await page.waitForTimeout(35);
             const img=item.locator('img');
             if(await img.count()){
-              const loaded=await img.evaluate(n=>n.complete&&n.naturalWidth>0);
-              if(loaded)loadedPhotos++;
-            } else if(await item.locator('.exercise-photo-missing').count()) visualFallbacks++;
+              const state=await img.evaluate(n=>({loaded:n.complete&&n.naturalWidth>0,src:n.currentSrc||n.src}));
+              if(state.loaded)loadedPhotos++; else failedImageDetails.push({name:(await item.innerText()).split('\n')[0],src:state.src});
+            } else if(await item.locator('.exercise-photo-missing').count()){visualFallbacks++;failedImageDetails.push({name:(await item.innerText()).split('\n')[0],src:null});}
             await item.click();
             check('Library exercise '+(i+1)+' opens detail', await visible('#infoModal'));
             await page.locator('#modalDone').click();
           }
-          report.counts.loadedExercisePhotos=loadedPhotos;report.counts.visualFallbacks=visualFallbacks;
+          report.counts.loadedExercisePhotos=loadedPhotos;report.counts.visualFallbacks=visualFallbacks;report.failedImages=failedImageDetails;
           const coverage=libraryCount?loadedPhotos/libraryCount:0;report.counts.realImageCoverage=Math.round(coverage*100);
           check('Real exercise image coverage is high',coverage>=.85,'coverage='+Math.round(coverage*100)+'%, fallbacks='+visualFallbacks);
           await shot('04-library');
