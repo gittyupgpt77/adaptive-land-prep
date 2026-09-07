@@ -138,20 +138,23 @@ function datasetExerciseId(name){
   [/one-arm row|press \+ row|horizontal row/,"One-Arm_Dumbbell_Row"],
   [/suitcase carry|farmer|loaded carries/,"Rickshaw_Carry"],
   [/bear-hug sandbag|sandbag/,"Sandbag_Load"],
-  [/rkc plank|plank|trunk work/,"Plank"],
+  [/rkc plank|plank|trunk work|core/,"Plank"],
   [/sit-up|sit up/,"Sit-Up"],
   [/russian twist/,"Russian_Twist"],
   [/ankle mobility|ankle circles/,"Ankle_Circles"],
-  [/hip mobility|full body stretch/,"Upward_Stretch"],
+  [/hip mobility|mobility|stretch/,"Upward_Stretch"],
+  [/controlled threshold work/,"Rowing_Stationary"],
+  [/main quality work/,"Running_Treadmill"],
+  [/long session/,"Trail_Running_Walking"],
+  [/main session/,"Running_Treadmill"],
+  [/cool-down|cool down/,"Walking_Treadmill"],
+  [/warm-up|warmup/,"Jogging_Treadmill"],
   [/row|rowing/,"Rowing_Stationary"],
   [/run|running|jog/,"Running_Treadmill"],
   [/walk|weighted-pack|ruck/,"Trail_Running_Walking"],
   [/jump rope|rope jumping/,"Rope_Jumping"],
   [/step-up|step up/,"Step-up_with_Knee_Raise"],
-  [/deadlift/,"Barbell_Deadlift"],
-  [/core/,"Plank"],
-  [/mobility|stretch/,"Full_Body_Stretching"],
-  [/warm-up|warmup/,"Full_Body_Stretching"]
+  [/deadlift/,"Barbell_Deadlift"]
  ];
  for(const [re,id] of map)if(re.test(n))return id;
  return"";
