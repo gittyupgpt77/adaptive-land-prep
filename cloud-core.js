@@ -1,11 +1,13 @@
 /* Transport-independent backup operations. Never mutate device state on sign-in. */
 (function(root){
  'use strict';
- function createCloudBackup({client,collect,validate,restore,confirm,assertCurrent}){
+ function createCloudBackup({client,collect,validate,restore,confirm,assertCurrent,getCurrentId}){
   const table='athlete_backups';
   async function user(){
+   const expected=getCurrentId();
    const {data,error}=await client.auth.getUser();
    if(error||!data?.user||data.user.is_anonymous)throw Error('Sign in to your backup account first.');
+   if(data.user.id!==expected)throw Error("Your account changed. Please try again.");
    assertCurrent(data.user.id);
    return data.user;
   }

@@ -9,7 +9,7 @@
   global:{fetch:(url,options)=>fetch(url,{...options,cache:'no-store',signal:options?.signal||AbortSignal.timeout(20000)})}
  });
  let owner=null,busy=false,offset=0,generation=0;
- const core=createCloudBackup({client,collect:collectBackupData,validate:validateBackup,restore:importBackup,confirm:window.confirm.bind(window),assertCurrent:id=>{if(owner!==id)throw Error('Your account changed. Please try again.')}});
+ const core=createCloudBackup({client,collect:collectBackupData,validate:validateBackup,restore:importBackup,confirm:window.confirm.bind(window),getCurrentId:()=>owner,assertCurrent:id=>{if(owner!==id)throw Error('Your account changed. Please try again.')}});
  function render(){
   el('cloudAuth').classList.toggle('hidden',!!owner);
   el('cloudSignedIn').classList.toggle('hidden',!owner);
