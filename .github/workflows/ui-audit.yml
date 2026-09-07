@@ -37,7 +37,7 @@ jobs:
           page.on('pageerror', e => report.errors.push({type:'pageerror', message:e.message}));
           page.on('console', m => { if(m.type()==='error') report.errors.push({type:'console', message:m.text()}); });
           const visible = async sel => await page.locator(sel).isVisible().catch(()=>false);
-          const shot = async name => { await page.evaluate(()=>window.scrollTo(0,0)); await page.waitForTimeout(60); return page.screenshot({path:name+'.png',fullPage:false}); };
+          const shot = async name => { await page.evaluate(()=>{document.documentElement.style.scrollBehavior='auto';document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0)}); await page.waitForTimeout(20); return page.screenshot({path:name+'.png',fullPage:false}); };
 
           await page.goto('http://127.0.0.1:8080',{waitUntil:'networkidle'});
           await page.evaluate(()=>localStorage.clear());
@@ -154,7 +154,7 @@ jobs:
           for(const t of tabs){
             await page.locator('[data-target="'+t+'"]').click();
             check('Tab opens '+t, await visible('#'+t));
-            check('Tab '+t+' resets scroll', (await page.evaluate(()=>window.scrollY))===0);
+            await page.waitForTimeout(20);check('Tab '+t+' resets scroll', (await page.evaluate(()=>Math.max(window.scrollY,document.documentElement.scrollTop,document.body.scrollTop)))===0);
           }
 
           // Train: every current-session exercise.
