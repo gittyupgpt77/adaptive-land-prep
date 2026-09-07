@@ -118,7 +118,7 @@ function saveCheckin(){
  if(!historicalDate){setTask("checkin",true);if(!localStorage.programStart){localStorage.baselineDate=saveDate.toISOString();if(localStorage.journeyPending==="1"){localStorage.programStart=saveDate.toISOString();localStorage.removeItem("journeyPending");localStorage.failedDays="[]";viewedWeek=1;viewedMonth=new Date(saveDate)}}}
  resetHistorical();closeCheckin();renderAll()
 }
-function saveWorkout(c){const arr=workouts(),name=sessionName();arr.unshift({date:new Date().toISOString(),week:prescriptionWeek(),session:name,rpe:num("sessionRPE"),duration:num("sessionDuration"),postPain:num("postPain"),completed:c||"YES",note:val("sessionNote")});localStorage.workoutHistory=JSON.stringify(arr.slice(0,500));dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",true);$("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll()}
+function saveWorkout(c){if(!localStorage.programStart){beginJourney();return}const arr=workouts(),name=sessionName();arr.unshift({date:new Date().toISOString(),week:prescriptionWeek(),session:name,rpe:num("sessionRPE"),duration:num("sessionDuration"),postPain:num("postPain"),completed:c||"YES",note:val("sessionNote")});localStorage.workoutHistory=JSON.stringify(arr.slice(0,500));dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",true);$("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll()}
 const EXERCISE_DB_BASE="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
 function datasetExerciseId(name){
  const n=name.toLowerCase();
@@ -218,7 +218,10 @@ let viewedMonth=new Date();
 const phasePalette={"Rebuild":"#48a7ff","Build":"#7d8cff","Specificity":"#ad73e6","Work Capacity":"#ef9a57","Taper":"#55cfa0"};
 function isHighVolumeSession(name){return /long|quality|threshold|specific|medium aerobic/i.test(name)}
 function nutritionForWeek(w,name){const high=isHighVolumeSession(name);if(w<=20)return{phase:"Aggressive Recomposition",cal:high?1650:1450,protein:185,carbs:high?140:90,fat:40,why:high?"Higher carbohydrate allowance for a longer or harder session.":"Low-volume Phase A target from the submitted nutrition architecture."};if(w<=22)return{phase:"Metabolic Pivot · Step 1",cal:1950,protein:185,carbs:190,fat:50,why:"Step calories upward before high-volume work expands."};if(w<=24)return{phase:"Metabolic Pivot · Step 2",cal:2250,protein:185,carbs:240,fat:60,why:"Second step before full performance fueling."};return{phase:"Performance Fueling",cal:high?4000:3400,protein:200,carbs:high?600:450,fat:88,why:high?"High-demand target emphasizing glycogen replacement.":"Baseline Phase B performance target."}}
-function nutritionHtml(w,name){const n=nutritionForWeek(w,name);return '<div class="nutrition-hero"><small>'+n.phase.toUpperCase()+'</small><strong>≈ '+n.cal.toLocaleString()+' kcal</strong><p>'+n.why+'</p></div><div class="macro-grid"><div><span>Protein</span><strong>'+n.protein+' g</strong></div><div><span>Carbs</span><strong>'+n.carbs+' g</strong></div><div><span>Fat</span><strong>'+n.fat+' g</strong></div></div><div class="nutrition-note"><strong>Adaptive rule</strong><p>Readiness and body-weight trend override an aggressive deficit when recovery or performance deteriorates.</p></div>'}
+function nutritionHtml(w,name){
+ const n=nutritionForWeek(w,name),meals=mealPlanForWeek(w);
+ return '<div class="nutrition-hero"><small>'+n.phase.toUpperCase()+'</small><strong>≈ '+n.cal.toLocaleString()+' kcal</strong><p>'+n.why+'</p></div><div class="macro-grid"><div><span>Protein</span><strong>'+n.protein+' g</strong></div><div><span>Carbs</span><strong>'+n.carbs+' g</strong></div><div><span>Fat</span><strong>'+n.fat+' g</strong></div></div><div class="calendar-meal-plan">'+meals.map(m=>'<div><small>'+m.kcal+' KCAL</small><strong>'+m.name+'</strong><p>'+m.foods.join(" · ")+'</p></div>').join("")+'</div><div class="nutrition-note"><strong>Adaptive rule</strong><p>Readiness and body-weight trend override an aggressive deficit when recovery or performance deteriorates.</p></div>';
+}
 function nutritionLogKey(d=new Date()){return"nutrition_"+dayKey(d)}
 function getNutritionLog(d=new Date()){try{return JSON.parse(localStorage.getItem(nutritionLogKey(d))||"{}")}catch(e){return{}}}
 function mealPlanForWeek(w){
@@ -254,6 +257,7 @@ function renderNutrition(){
  $("saveNutritionDay").textContent=log.saved?"✓ Intake saved":"Save Today’s Intake";
 }
 function saveNutrition(){
+ if(!localStorage.programStart){beginJourney();return}
  const log=getNutritionLog(),meals=mealPlanForWeek(prescriptionWeek()),target=nutritionForWeek(prescriptionWeek(),sessionName());
  log.waterOz=Number($("waterActual")?.value)||0;log.saved=true;log.savedAt=new Date().toISOString();log.actualCalories=(log.meals||[]).reduce((sum,id)=>sum+(meals.find(m=>m.id===id)?.kcal||0),0);log.targetCalories=target.cal;
  localStorage.setItem(nutritionLogKey(),JSON.stringify(log));setTask("nutrition",true);renderNutrition();renderToday();
@@ -311,6 +315,7 @@ function switchTab(t){
 }
 function renderAll(){applyBaselines();renderMissedBanner();renderToday();renderTrain();renderWeek();renderMonth();renderJourney();renderNutrition();renderTrends();renderProgram();requiredFields();bindInfo(document)}
 function handleTaskToggle(key){
+ if(key!=="checkin"&&!localStorage.programStart){beginJourney();return}
  if(key==="checkin"){if(todayCheckin())return;openCheckin();return}
  if(key==="workout"){if(todayWorkout())return;saveWorkout("YES");return}
  if(key==="nutrition"){setTask("nutrition",!taskDone("nutrition"));renderToday();renderNutrition();return}
