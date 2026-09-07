@@ -241,6 +241,10 @@ jobs:
           // Calendar Week: every day; both day tabs.
           await page.locator('[data-target="week"]').click();
           const days=await page.locator('.day-button').count(); report.counts.weekDays=days; check('Week exposes seven days',days===7);
+          check('Week 1 remains running-free',!/run\/walk|easy run|quality run|long run/i.test(await page.locator('#weekSummary').innerText()));
+          await page.locator('#nextWeek').click();await page.locator('#nextWeek').click();
+          check('Week 3 introduces controlled run/walk',/run\/walk/i.test(await page.locator('#weekSummary').innerText()));
+          await page.locator('#prevWeek').click();await page.locator('#prevWeek').click();
           for(let i=0;i<days;i++){
             await page.locator('.day-button').nth(i).click();
             check('Day '+(i+1)+' opens',await visible('#daySheet'));
