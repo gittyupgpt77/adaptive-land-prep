@@ -384,6 +384,11 @@ jobs:
           await page.reload({waitUntil:'networkidle'});
           await page.locator('[data-target="program"]').click();
           check('Unqualified phase advancement is locked',(await page.locator('#currentPhaseCard').innerText()).includes('Phase promotion locked'));
+          await page.evaluate(()=>{localStorage.benchmarks=JSON.stringify({pushups:100,pullups:20,situps:90,run4:'21:30',bodyFat:12,ruckMiles:12,ruckWeight:35,ruckComfortable:'YES',peakPainFree:'YES'})});
+          await page.reload({waitUntil:'networkidle'});
+          await page.locator('[data-target="program"]').click();
+          check('Later benchmark success cannot skip earlier qualification set',(await page.locator('#currentPhaseCard').innerText()).includes('Phase promotion locked'));
+          check('Program progress count describes visible qualification set',(await page.locator('#milestoneCount').innerText()).match(/^\d\/4$/));
           await page.locator('#openTrends').click();
           check('Insights opens trends',await visible('#trends'));
           await shot('09-insights');
