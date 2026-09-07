@@ -316,3 +316,8 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 /* Insights: compact sparse-data state */
 .trend-card.trend-empty-card{min-height:96px;height:96px;display:grid;place-items:center;padding:16px;background:linear-gradient(145deg,#102a42,#0d2032)}
 .trend-card.trend-empty-card:before{content:attr(data-empty);display:block;max-width:260px;text-align:center;font-size:10px;line-height:1.5;color:#91a7ba}
+
+.today-progress-card{width:100%;border:1px solid #dce5ed;background:white;color:var(--ink);border-radius:17px;padding:12px 14px;margin-top:14px;text-align:left;box-shadow:0 5px 16px rgba(20,32,43,.045)}
+.today-progress-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}.today-progress-head small{font-size:8px;font-weight:750;letter-spacing:.08em;color:#147be8}.today-progress-head span{font-size:9px;color:#7b8d9b}
+.today-progress-body{display:grid;grid-template-columns:1fr 18px;align-items:center;gap:8px}.today-progress-body>div{display:flex;flex-direction:column;gap:3px;min-width:0}.today-progress-body strong{font-size:13px}.today-progress-body small{font-size:9px;color:#708394;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.today-progress-body>b{font-size:20px;color:#8496a5;font-weight:400}
+.today-progress-track{height:4px;border-radius:999px;background:#e8eef4;margin-top:10px;overflow:hidden}.today-progress-track i{display:block;height:100%;background:linear-gradient(90deg,#147be8,#4ee382);border-radius:999px}
