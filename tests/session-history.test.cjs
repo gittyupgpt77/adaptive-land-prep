@@ -32,11 +32,13 @@ test('completion records the prescribed session for normal, reduced and recovery
    workouts:()=>[],prescriptionWeek:()=>1,dbSet:()=>{},setTask:()=>{},
    $:()=>({classList:{add(){},remove(){}}}),setTimeout:()=>{},renderAll:()=>{}
   });
-  vm.runInContext(source.slice(source.indexOf('function adaptiveSession(){'),source.indexOf('\nfunction ',source.indexOf('function adaptiveSession(){')+1)),context);
-  vm.runInContext(source.slice(source.indexOf('function saveWorkout(c){'),source.indexOf('\n',source.indexOf('function saveWorkout(c){'))),context);
+  const start=source.indexOf('function adaptiveSessionFor(');
+  vm.runInContext(source.slice(start,source.indexOf('\nfunction readinessBreakdown',start)),context);
+  vm.runInContext(source.slice(source.indexOf('function saveWorkout(c){'),source.indexOf('\nconst EXERCISE_DB_BASE=',source.indexOf('function saveWorkout(c){'))),context);
   context.saveWorkout('YES');
   const saved=JSON.parse(localStorage.workoutHistory)[0];
   assert.equal(saved.session,expected);
+  assert.equal(saved.prescription.title,expected);
   assert.equal(saved.rpe,5);assert.equal(saved.postPain,0);assert.equal(saved.completed,'YES');
  }
 });
