@@ -142,6 +142,7 @@ jobs:
           await page.locator('.task-main[data-action="checkin"]').click();
           await page.locator('#sleep').fill('6.5');
           await page.locator('#sleepQ').selectOption('3');
+          await page.locator('#fatigue').selectOption('3');
           await page.locator('#evaluateBtn').click();
           await page.locator('#saveBtn').click();
           await page.waitForTimeout(120);
