@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Land Prep">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="styles.css?v=67">
+<link rel="stylesheet" href="styles.css?v=68">
 <title>Adaptive Land Prep</title>
 </head>
 <body>
@@ -33,9 +33,9 @@
     <div id="directiveReason" class="directive-reason"></div>
     <div id="directiveWorkout" class="directive-workout hidden"></div>
     <div id="directiveMacros" class="directive-macros hidden"></div>
-    <div id="directiveTimeline" class="directive-timeline"></div>
     <button id="directivePrimary" class="directive-primary">Begin morning check-in</button>
     <button id="directiveSecondary" class="directive-secondary hidden"></button>
+    <div id="directiveTimeline" class="directive-timeline" aria-label="Daily progress"></div>
   </section>
   <div id="morningWelcome" class="hidden"><p class="hello-date" id="helloDate"></p><p id="helloJourney"></p><progress id="helloProgress" max="56" value="0"></progress><h2 tabindex="-1" id="helloTitle">Hello.</h2><p id="helloCopy">Let’s start with this morning’s measurements.</p><div id="morningFormSlot"></div></div>
   <div id="readinessCard" class="readiness-card readiness-button" role="button" tabindex="0">
@@ -74,8 +74,8 @@
       <div><div class="session-kicker" id="workoutKicker">TODAY</div><h2 id="workoutTitle">Loading…</h2><div id="workoutTags" class="session-tags"></div></div>
       <span class="session-status" id="sessionStatus">PRIMARY</span>
     </div>
-    <div class="why-card"><strong>Why this session?</strong><p id="workoutWhy"></p></div>
-    <div class="why-card" id="weekTargetCard"></div>
+    <details class="session-context" id="sessionRationale"><summary>Why this session?</summary><p id="workoutWhy"></p></details>
+    <details class="session-context"><summary>This week’s training limits</summary><div class="why-card" id="weekTargetCard"></div></details>
     <div class="section-row"><h2>Exercises</h2><span id="exerciseCount"></span></div>
     <div id="workoutPrescription" class="exercise-stack"></div>
     <div id="postSessionPrompt" class="post-session-prompt">
@@ -274,11 +274,11 @@
 
 <div id="daySheet" class="sheet-backdrop hidden"><div class="sheet day-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small id="daySheetKicker">DAY</small><h2 id="daySheetTitle">Day</h2></div><button id="daySheetClose">×</button></div><div class="day-tabs"><button class="day-tab active" data-daytab="training">Training</button><button class="day-tab" data-daytab="nutrition">Nutrition</button></div><div id="daySheetBody"></div></div></div>
 <div id="infoModal" class="sheet-backdrop hidden"><div class="sheet exercise-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small>GUIDANCE</small><h2 id="modalTitle">Exercise</h2></div><button id="modalClose">×</button></div><div id="modalContent"></div><button class="sheet-primary" id="modalDone">Got it</button></div></div>
-<script src="app.js?v=67"></script>
+<script src="app.js?v=68"></script>
 <script src="vendor/supabase.js"></script>
 <script src="vendor/firebase.js"></script>
 <script src="firestore-backup.js"></script>
 <script src="cloud-core.js"></script>
 <script src="autosave-core.js"></script>
-<script src="cloud.js?v=67"></script>
+<script src="cloud.js?v=68"></script>
 </body></html>

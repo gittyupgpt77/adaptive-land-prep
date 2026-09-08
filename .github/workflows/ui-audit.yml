@@ -119,7 +119,10 @@ jobs:
           check('Started Journey reveals one directive card', await visible('#dailyDirective') && !(await visible('#todayPlanHeader')) && !(await visible('.plan-list')));
           check('Directive uses categorical state', ['ON PLAN','ADJUST','RECOVERY'].includes((await page.locator('#directiveState').innerText()).trim()));
           check('Directive omits pseudo-physiological percentage', !(await page.locator('#dailyDirective').innerText()).includes('/100'));
-          check('Directive contains the generated session and macro target',(await page.locator('#directiveWorkout').innerText()).length>20&&(await page.locator('#directiveMacros').innerText()).includes('Protein'));
+          check('Training preview keeps nutrition targets out of the current task',(await page.locator('#directiveWorkout').innerText()).includes('guided steps')&&!(await visible('#directiveMacros')));
+          const actionBounds=await page.locator('#directivePrimary').boundingBox();
+          check('Next training action fits the initial iPhone viewport',actionBounds&&actionBounds.y>=0&&actionBounds.y+actionBounds.height<780);
+          check('Normal recovery needs no extra explanation panel',!(await visible('#directiveReason')));
           await shot('02-started-today');
           const directiveTargets=await page.locator('#directivePrimary:visible,#directiveSecondary:visible').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return{w:r.width,h:r.height}}));
           check('Directive actions are finger-friendly',directiveTargets.length>=1&&directiveTargets.every(r=>r.w>=40&&r.h>=44));
