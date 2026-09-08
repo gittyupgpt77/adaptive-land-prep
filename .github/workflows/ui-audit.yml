@@ -229,6 +229,7 @@ jobs:
           await page.locator('#postPain').selectOption('4');
           await page.locator('#completed').selectOption('YES');
           await page.locator('#completeWorkout').click();
+          check('Recording a session opens nutrition automatically',await visible('#nutrition'));
           check('Workout response persists',await page.evaluate(()=>{const w=JSON.parse(localStorage.workoutHistory||'[]')[0];return w?.rpe===9&&w?.postPain===4&&w?.completed==='YES';}));
           check('Workout task completes only from saved session',await page.locator('#taskWorkout').evaluate(n=>n.classList.contains('done')));
           await page.locator('[data-target="nutrition"]').click();
@@ -247,7 +248,10 @@ jobs:
           await page.locator('[data-target="today"]').click();
           await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();n.saved=true;n.savedAt=new Date().toISOString();n.intakeSource='prescribed-meals';n.meals=meals.map(m=>m.id);n.actualCalories=todayNutritionPrescription().cal;localStorage.setItem(nutritionLogKey(),JSON.stringify(n));renderAll();switchTab('today')});
           check('Saved complete nutrition advances Today to evening summary',(await page.locator('#directiveStage').innerText()).includes('EVENING')&&(await page.locator('#directiveState').innerText()).includes('DAY COMPLETE'));
-          check('Evening summary has no compulsory next-action button',!(await visible('#directivePrimary')));
+          check('Day stays open until explicitly ended',(await page.locator('#directivePrimary').innerText())==='End day');
+          await page.locator('#directivePrimary').click();
+          check('Ended day has no new morning prompt',!(await visible('#directivePrimary'))&&!(await visible('#morningWelcome')));
+          await page.evaluate(()=>{const s=JSON.parse(localStorage.daySession);s.closedAt=null;localStorage.daySession=JSON.stringify(s)});
           check('Directive retains Journey context',(await page.locator('#directiveJourney').innerText()).includes('Week'));
           await page.locator('[data-target="program"]').click();
           check('Escape-hatch navigation still opens Program',await visible('#program'));
@@ -389,6 +393,8 @@ jobs:
           }
           check('Meal taps save a complete day without a second save',await page.evaluate(()=>getNutritionLog().saved&&getNutritionLog().complete));
           check('Meal completion updates progress',(await page.locator('#mealProgress').textContent()).startsWith(mealCount+'/'));
+          check('Final meal advances to the day summary',await visible('#today'));
+          await page.locator('[data-target="nutrition"]').click();
           await page.locator('#waterActual').fill('120');
           await page.locator('#actualCalories').fill('1525');
           await page.locator('#actualProtein').fill('181');
@@ -400,6 +406,7 @@ jobs:
           await page.locator('[data-target="today"]').click();
           await page.locator('[data-target="nutrition"]').click();
           check('Nutrition drafts survive navigation',(await page.locator('#actualCarbs').inputValue())==='112'&&(await page.locator('#actualFat').inputValue())==='42'&&(await page.locator('#waterActual').inputValue())==='120');
+          if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           check('Nutrition save returns athlete to Today',await visible('#today'));
           await page.locator('[data-target="nutrition"]').click();
@@ -412,15 +419,18 @@ jobs:
           await page.evaluate(()=>{localStorage.removeItem('nutrition_'+new Date().toDateString())});
           await page.locator('[data-target="nutrition"]').click();
           const mealsForAuto=page.locator('.meal-check');for(let i=0;i<await mealsForAuto.count();i++)await mealsForAuto.nth(i).click();
+          if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           await page.locator('[data-target="nutrition"]').click();
           check('Full prescribed plan inherits prescribed macros without manual duplication',await page.evaluate(()=>{const n=JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}');return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein===n.targetProtein&&n.actualCarbs===n.targetCarbs&&n.actualFat===n.targetFat;}));
           check('Inferred totals never populate deviation fields',(await page.locator('#actualCalories').inputValue())===''&&(await page.locator('#actualProtein').inputValue())==='');
           await page.locator('.meal-check').first().click();
+          if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           await page.locator('[data-target="nutrition"]').click();
           check('Partial meals recompute intake without stale full-plan overrides',await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();return n.intakeSource==='prescribed-meals'&&n.actualCalories===meals.filter(m=>n.meals.includes(m.id)).reduce((sum,m)=>sum+m.kcal,0)&&n.actualProtein===null;}));
           await page.locator('.meal-check').first().click();
+          if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           await page.locator('[data-target="today"]').click();
           check('Nutrition Today task requires saved intake',await page.locator('#taskNutrition').evaluate(n=>n.classList.contains('done')));
@@ -449,7 +459,7 @@ jobs:
           });
           const backupDownload=page.waitForEvent('download');
           await page.locator('#openSettings').click();
-          await page.locator('.data-details:not(.cloud-panel) summary').click();
+          await page.getByText('Data & backup',{exact:true}).click();
           await page.locator('#exportBackup').click();
           const downloaded=await backupDownload;
           const backupPath=await downloaded.path();
@@ -549,11 +559,49 @@ jobs:
           await page.reload({waitUntil:'networkidle'});
           check('Recovered partial session restores feedback',await page.locator('#sessionRPE').inputValue()==='7'&&await page.locator('#postPain').inputValue()==='0'&&await page.locator('#completed').inputValue()==='PARTIAL');
           check('Recovered session restores duration and note',await page.locator('#sessionDuration').inputValue()==='35'&&await page.locator('#sessionNote').inputValue()==='Stopped early');
+          // Isolated next-day consumer loop: no hidden function calls to advance steps.
+          const morning=await browser.newPage({viewport:{width:393,height:852},deviceScaleFactor:3});
+          await morning.goto('http://127.0.0.1:8080');
+          await morning.evaluate(()=>{localStorage.programStart=new Date().toISOString();localStorage.input_hrv='99';localStorage.input_morningDate='2000-01-01'});
+          await morning.reload();
+          check('Greeting is immediately actionable',await morning.locator('#helloTitle').innerText()==='Hello.'&&await morning.locator('#hrv').isVisible());
+          check('Yesterday values do not become today answers',await morning.locator('#hrv').inputValue()==='');
+          check('Greeting carries the Journey date and week', (await morning.locator('#helloDate').textContent()).length>8&&(await morning.locator('#helloJourney').textContent()).includes('of 56'));
+          await morning.screenshot({path:'20-hello-morning.png'});
+          await morning.locator('#morningContinue').click();
+          check('Missing measurements keep athlete on the current step',await morning.locator('#helloTitle').innerText()==='Hello.'&&await morning.locator('#checkinError').isVisible());
+          for(const [id,value] of Object.entries({hrv:'60',rhr:'55',sleep:'8',weight:'170'}))await morning.locator('#'+id).fill(value);
+          await morning.reload();
+          check('Same-day unfinished measurements survive reopening',await morning.locator('#hrv').inputValue()==='60');
+          await morning.locator('#morningContinue').click();
+          for(const [id,value] of Object.entries({sleepQ:'4',fatigue:'1',load:'0',performance:'YES'}))await morning.locator('#'+id).locator('..').locator('button[data-value="'+value+'"]').click();
+          await morning.locator('#morningContinue').click();
+          await morning.locator('#pain').locator('..').locator('button[data-value="0"]').click();
+          await morning.locator('#morningContinue').click();
+          check('Confirmed morning automatically reveals the session',await morning.locator('#dailyDirective').isVisible()&&!(await morning.locator('#morningWelcome').isVisible()));
+          await morning.reload();
+          check('Confirmed check-in survives reopening',await morning.locator('#dailyDirective').isVisible());
+          const nextMorning=await morning.evaluate(()=>Date.now()+86400000);
+          await morning.clock.install({time:nextMorning});
+          await morning.reload();
+          check('Unended day survives midnight without regreeting',await morning.locator('#dailyDirective').isVisible()&&!(await morning.locator('#morningWelcome').isVisible()));
+          await morning.evaluate(()=>{
+            localStorage.workoutHistory=JSON.stringify([{date:dayDate().toISOString(),week:1,session:'Recovery',completed:'NO'}]);
+            const meals=todayMealPlan();localStorage.setItem(nutritionLogKey(),JSON.stringify({saved:true,complete:true,meals:meals.map(m=>m.id),intakeSource:'prescribed-meals'}));
+            renderAll();switchTab('today');
+          });
+          await morning.locator('#directivePrimary').click();
+          check('End day shows saved closure',(await morning.locator('#directiveTitle').innerText()).includes('Day closed'));
+          await morning.reload();
+          check('Only a later opening after closure starts morning metrics',await morning.locator('#morningWelcome').isVisible()&&await morning.locator('#hrv').inputValue()==='');
+          await morning.locator('[data-target="program"]').click();await morning.locator('#openSettings').click();
+          await morning.close();
           check('No runtime errors',report.errors.length===0,JSON.stringify(report.errors));
           const failed=report.assertions.filter(x=>!x.pass);
           report.summary={total:report.assertions.length,passed:report.assertions.length-failed.length,failed:failed.length,runtimeErrors:report.errors.length};
           fs.writeFileSync('consumer-report.json',JSON.stringify(report,null,2));
           console.log('CONSUMER_AUDIT_SUMMARY '+JSON.stringify(report.summary));
+
           await browser.close();
           if(failed.length||report.errors.length){console.error(JSON.stringify({failed,errors:report.errors},null,2));process.exitCode=1;}
           JS
@@ -569,6 +617,7 @@ jobs:
           path: |
             consumer-report.json
             audit-cloud/
+            20-hello-morning.png
             01-fresh-today.png
             02-started-today.png
             03-readiness-detail.png

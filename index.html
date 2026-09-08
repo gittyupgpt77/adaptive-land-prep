@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Land Prep">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="styles.css?v=66">
+<link rel="stylesheet" href="styles.css?v=67">
 <title>Adaptive Land Prep</title>
 </head>
 <body>
@@ -37,6 +37,7 @@
     <button id="directivePrimary" class="directive-primary">Begin morning check-in</button>
     <button id="directiveSecondary" class="directive-secondary hidden"></button>
   </section>
+  <div id="morningWelcome" class="hidden"><p class="hello-date" id="helloDate"></p><p id="helloJourney"></p><progress id="helloProgress" max="56" value="0"></progress><h2 tabindex="-1" id="helloTitle">Hello.</h2><p id="helloCopy">Let’s start with this morning’s measurements.</p><div id="morningFormSlot"></div></div>
   <div id="readinessCard" class="readiness-card readiness-button" role="button" tabindex="0">
     <div class="card-heading"><span>Readiness</span><button class="info-dot" data-term="readiness">i</button></div>
     <div class="readiness-main">
@@ -166,6 +167,11 @@
     <div class="data-row"><div><strong>Day 1</strong><small id="settingsJourneyStart">Not set</small></div></div>
     <div class="data-row"><div><strong>Current position</strong><small id="settingsJourneyPosition">Your journey begins when you choose Day 1.</small></div></div>
     <p class="actual-help">Your start stays fixed. Missed days and recovery changes are handled within this journey; you do not need to start over.</p>
+    <details><summary>Restart or review previous Journeys</summary>
+      <p class="actual-help">Restart only for a deliberate new beginning. Previous records are archived and included in your backups; they do not affect your new baseline or progress.</p>
+      <button id="restartJourney" type="button">Restart Journey…</button>
+      <div id="journeyArchiveList"></div>
+    </details>
   </div>
   <details class="data-details cloud-panel" id="cloudPanel">
     <summary>Account & private backup</summary>
@@ -229,7 +235,7 @@
 </div><button id="saveBenchmarks" class="sheet-primary">Save Benchmarks</button></div></div>
 <div id="readinessSheet" class="sheet-backdrop hidden"><div class="sheet readiness-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small>ADAPTIVE STATUS</small><h2>Readiness</h2></div><button id="readinessClose">×</button></div><div id="readinessDetail"></div></div></div>
 <div id="checkinSheet" class="sheet-backdrop hidden">
-  <div class="sheet">
+  <div class="sheet" id="checkinForm">
     <div class="sheet-handle"></div><div class="sheet-head"><div><small>MORNING</small><h2>Check-In</h2></div><button id="closeCheckin">×</button></div>
     <div id="checkinProgress" class="attention-banner"><span class="attention-icon">!</span><div><strong>Needs attention</strong><small id="checkinProgressText">Complete the fields below.</small></div></div>
     <p class="checkin-mode-note">Measured values use the keypad. Daily judgments use large tap choices—no notes required.</p>
@@ -255,6 +261,7 @@
       <label class="field"><span>Weight</span><input id="weight" type="number" inputmode="decimal" step=".1" placeholder="lb"></label>
       <label class="field"><span>7-day average <em>AUTO</em></span><input id="weightAvg" type="number" inputmode="decimal" step=".1" placeholder="learning" readonly aria-readonly="true"></label>
     </div></div>
+    <p id="checkinError" role="alert" class="hidden"></p><div id="morningControls" class="hidden"><button id="morningContinue" class="sheet-primary">Continue</button><button id="morningBack" class="sheet-secondary">Back</button></div>
     <button class="sheet-primary" id="evaluateBtn">Generate Today’s Directive</button>
     <div id="results" class="sheet-results hidden">
       <div class="result-grid"><div><span>Recovery</span><strong id="sysStatus">—</strong></div><div><span>Injury risk</span><strong id="mechStatus">—</strong></div><div><span>Fueling</span><strong id="fuelStatus">—</strong></div></div>
@@ -267,11 +274,11 @@
 
 <div id="daySheet" class="sheet-backdrop hidden"><div class="sheet day-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small id="daySheetKicker">DAY</small><h2 id="daySheetTitle">Day</h2></div><button id="daySheetClose">×</button></div><div class="day-tabs"><button class="day-tab active" data-daytab="training">Training</button><button class="day-tab" data-daytab="nutrition">Nutrition</button></div><div id="daySheetBody"></div></div></div>
 <div id="infoModal" class="sheet-backdrop hidden"><div class="sheet exercise-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small>GUIDANCE</small><h2 id="modalTitle">Exercise</h2></div><button id="modalClose">×</button></div><div id="modalContent"></div><button class="sheet-primary" id="modalDone">Got it</button></div></div>
-<script src="app.js?v=66"></script>
+<script src="app.js?v=67"></script>
 <script src="vendor/supabase.js"></script>
 <script src="vendor/firebase.js"></script>
 <script src="firestore-backup.js"></script>
 <script src="cloud-core.js"></script>
 <script src="autosave-core.js"></script>
-<script src="cloud.js?v=66"></script>
+<script src="cloud.js?v=67"></script>
 </body></html>

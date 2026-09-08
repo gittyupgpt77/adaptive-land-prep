@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../service-worker.js'),'utf8');
+const assetVersion=source.match(/app\.js\?v=(\d+)/)[1];
 const currentCache=source.match(/const CACHE='([^']+)'/)[1];
 function harness(){
  const handlers={},removed=[],writes=[];
@@ -12,8 +13,8 @@ function harness(){
  return {handlers,removed,writes,request:async(url,authorized=false)=>{let response;handlers.fetch({request:{url,method:'GET',headers:{has:()=>authorized}},respondWith:p=>response=p});return response&&await response;}};
 }
 test('upgrade removes only this application’s obsolete caches',async()=>{const h=harness();let done;h.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(h.removed,['land-prep-v47']);});
-test('private API and authenticated responses never enter offline cache',async()=>{const h=harness();assert.equal(await h.request('https://example.supabase.co/rest/v1/athlete'),undefined);assert.equal(await h.request('https://example.com/adaptive-land-prep/app.js?v=66',true),undefined);assert.equal(h.writes.length,0);});
-test('application shell remains available for offline caching',async()=>{const h=harness();await h.request('https://example.com/adaptive-land-prep/app.js?v=66');assert.equal(h.writes.length,1);});
+test('private API and authenticated responses never enter offline cache',async()=>{const h=harness();assert.equal(await h.request('https://example.supabase.co/rest/v1/athlete'),undefined);assert.equal(await h.request('https://example.com/adaptive-land-prep/app.js?v='+assetVersion,true),undefined);assert.equal(h.writes.length,0);});
+test('application shell remains available for offline caching',async()=>{const h=harness();await h.request('https://example.com/adaptive-land-prep/app.js?v='+assetVersion);assert.equal(h.writes.length,1);});
 
 test('every versioned entry asset is cached for offline use',async()=>{
  const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8'),h=harness();
