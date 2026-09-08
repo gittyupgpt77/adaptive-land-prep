@@ -80,3 +80,15 @@ test('post-session pain remains an immediate mechanical signal',()=>{
  vm.runInContext(source.slice(start,end),ctx);
  assert.equal(ctx.previousWorkoutSignal(d).level,'RED');
 });
+
+
+test('a weeks-old abnormal reading cannot corroborate a new isolated excursion',()=>{
+ const old=new Date();old.setDate(old.getDate()-21);
+ const c=readinessContext({values:{...normal,hrv:80},logs:[{date:old.toISOString(),...normal,hrv:82}]});
+ assert.equal(c.systemic(),'YELLOW');
+});
+test('recency follows calendar days across a gap and excludes future measurements',()=>{
+ const c=readinessContext({logs:[{date:'2026-09-05T12:00:00'},{date:'2026-09-04T23:59:00'},{date:'2026-09-08T01:00:00'},{date:'invalid'}]});
+ const rows=c.recentSystemicRecords(new Date('2026-09-08T12:00:00'));
+ assert.equal(rows.length,1);assert.equal(rows[0].date,'2026-09-05T12:00:00');
+});

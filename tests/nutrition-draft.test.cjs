@@ -13,7 +13,7 @@ test('manual and hydration drafts survive meal toggle and navigation rerender',(
  const h=harness();h.$('actualCalories').value='750';h.$('waterActual').value='64';h.$('waterActual').oninput();h.buttons[0].onclick();h.context.renderNutrition();assert.equal(h.$('actualCalories').value,'750');assert.equal(h.$('waterActual').value,'64');h.context.saveNutrition();assert.equal(h.log.actualCalories,750);assert.equal(h.log.waterOz,64);assert.equal(h.log.intakeSource,'manual-deviation');
 });
 test('meal totals stay inferred when a saved full prescription becomes partial',()=>{
- const h=harness({meals:['m1','m2']});h.context.saveNutrition();assert.equal(h.log.actualCalories,1000);assert.equal(h.log.actualProtein,100);assert.equal(h.$('actualCalories').value,'');assert.equal(h.$('actualProtein').value,'');h.buttons[1].onclick();h.context.saveNutrition();assert.equal(h.log.actualCalories,400);assert.equal(h.log.actualProtein,null);assert.equal(h.log.intakeSource,'prescribed-meals');
+ const h=harness({meals:['m1','m2']});h.context.saveNutrition();assert.equal(h.log.actualCalories,1000);assert.equal(h.log.actualProtein,null);assert.equal(h.$('actualCalories').value,'');assert.equal(h.$('actualProtein').value,'');h.buttons[1].onclick();h.context.saveNutrition();assert.equal(h.log.actualCalories,400);assert.equal(h.log.actualProtein,null);assert.equal(h.log.intakeSource,'prescribed-meals');
 });
 test('editing saved intake immediately clears completion and visible saved label',()=>{
  const h=harness({meals:['m1','m2']});h.context.saveNutrition();assert.equal(h.task,true);assert.match(h.$('saveNutritionDay').textContent,/saved/);h.$('actualCarbs').value='80';h.$('actualCarbs').oninput();assert.equal(h.log.saved,false);assert.equal(h.task,false);assert.equal(h.log.savedAt,undefined);assert.equal(h.$('saveNutritionDay').textContent,'Save Today’s Intake');
@@ -39,4 +39,23 @@ test('unfinished nutrition does not become a next-day underfueling signal',()=>{
  const c=vm.createContext({todayWorkoutRecord:()=>null,todayFlowState:()=>"nutrition",getNutritionLog:()=>({saved:true,complete:false,actualCalories:400}),dateSession:()=>({w:1,name:'Recovery'})});
  vm.runInContext(source.slice(source.indexOf('function previousNutritionSignal('),source.indexOf('// Raw entries are distinct')),c);
  assert.equal(c.previousNutritionSignal(),null);
+});
+
+
+test('only explicitly finished intake with known calories informs the next day',()=>{
+ let log={};
+ const c=vm.createContext({getNutritionLog:()=>log,dateSession:()=>({w:1,name:'Recovery'}),nutritionForWeek:()=>({cal:2000}),mealPlanForTarget:()=>[{id:'m1'},{id:'m2'}]});
+ vm.runInContext(source.slice(source.indexOf('function previousNutritionSignal('),source.indexOf('// Raw entries are distinct')),c);
+ for(const sample of [{saved:true,actualCalories:400},{saved:true,complete:false,actualCalories:400},{saved:true,complete:true,meals:['m1']},{saved:true,complete:true,actualCalories:-1},{saved:true,complete:true,intakeSource:'prescribed-meals',actualCalories:400,meals:['m1']}]){
+  log=sample;assert.equal(c.previousNutritionSignal(),null);
+ }
+ log={saved:true,complete:true,intakeSource:'manual-deviation',actualCalories:0,targetCalories:2200};
+ assert.equal(c.previousNutritionSignal().ratio,0);
+ log.actualCalories=1100;assert.equal(c.previousNutritionSignal().ratio,.5);
+});
+test('a calorie-only deviation never manufactures protein, carbohydrate or fat intake',()=>{
+ const h=harness({meals:['m1','m2']});h.$('actualCalories').value='750';h.context.saveNutrition();
+ assert.equal(h.log.complete,true);assert.equal(h.log.actualCalories,750);
+ for(const key of ['actualProtein','actualCarbs','actualFat'])assert.equal(h.log[key],null);
+ assert.equal(h.log.targetProtein,100);
 });

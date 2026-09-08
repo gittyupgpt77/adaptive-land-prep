@@ -19,6 +19,6 @@ test('application shell remains available for offline caching',async()=>{const h
 test('every versioned entry asset is cached for offline use',async()=>{
  const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8'),h=harness();
  const assets=[...html.matchAll(/(?:src|href)="([^"?]+\?v=\d+)"/g)].map(m=>m[1]);
- assert.equal(assets.length,4);
+ assert.equal(assets.length,5);
  for(const asset of assets){await h.request('https://example.com/adaptive-land-prep/'+asset);assert.ok(h.writes.includes('https://example.com/adaptive-land-prep/'+asset));}
 });

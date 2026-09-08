@@ -144,7 +144,9 @@ function systemicDomainsFromRecord(x,phaseOne){
 }
 function recentSystemicRecords(referenceDate=new Date(),limit=3){
  const end=new Date(referenceDate);end.setHours(0,0,0,0);
- return logs().filter(x=>{const d=new Date(x.date);return !Number.isNaN(d.getTime())&&d<end}).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,limit)
+ // Three calendar days, not three arbitrarily old records. This is a product recency rule.
+ const start=new Date(end);start.setDate(start.getDate()-3);
+ return logs().filter(x=>{const d=new Date(x.date);return !Number.isNaN(d.getTime())&&d>=start&&d<end}).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,limit)
 }
 function previousSessionStrain(referenceDate=new Date()){
  const y=new Date(referenceDate);y.setDate(y.getDate()-1);const x=workouts().filter(w=>dayKey(w.date)===dayKey(y)&&w.completed!=="NO").sort((a,b)=>new Date(b.date)-new Date(a.date))[0];if(!x)return null;
@@ -698,12 +700,13 @@ function hydrationForDay(w,name){
  return{label:"Individualized",note:"Use thirst and your observed sweat losses rather than forcing a fixed daily volume. Heat, body size, session duration and acclimatization all change fluid needs."}
 }
 function previousNutritionSignal(referenceDate=new Date()){
- const y=new Date(referenceDate);y.setDate(y.getDate()-1);const log=getNutritionLog(y);if(!log.saved||log.complete===false)return null;
+ const y=new Date(referenceDate);y.setDate(y.getDate()-1);const log=getNutritionLog(y);if(!log.saved||log.complete!==true)return null;
  const x=dateSession(y),target=nutritionForWeek(x.w,x.name),actual=typeof log.actualCalories==="number"&&Number.isFinite(log.actualCalories)?log.actualCalories:null,plannedMeals=Array.isArray(log.prescribedMeals)&&log.prescribedMeals.length?log.prescribedMeals:mealPlanForTarget(x.w,{...target,cal:Number(log.targetCalories)>0?Number(log.targetCalories):target.cal}),mealRatio=(log.meals||[]).length/plannedMeals.length;
  // Legacy partial meal saves did not establish that the athlete finished logging.
  if(log.intakeSource==="prescribed-meals"&&!plannedMeals.every(m=>(log.meals||[]).includes(m.id)))return null;
  const savedTarget=Number(log.targetCalories)>0?Number(log.targetCalories):target.cal;
- return{ratio:actual!==null?actual/savedTarget:mealRatio,target:savedTarget,actual,mealRatio};
+ if(actual===null||actual<0)return null;
+ return{ratio:actual/savedTarget,target:savedTarget,actual,mealRatio};
 }
 // Raw entries are distinct from computed totals: meal estimates must never become overrides.
 function nutritionDraft(log=getNutritionLog()){
@@ -747,10 +750,11 @@ function saveNutrition(finalize=true){
  log.saved=true;log.savedAt=new Date().toISOString();
  const rawCalories=val("actualCalories").trim(),rawProtein=val("actualProtein").trim(),rawCarbs=val("actualCarbs").trim(),rawFat=val("actualFat").trim(),enteredCalories=rawCalories===""?null:Number(rawCalories),enteredProtein=rawProtein===""?null:Number(rawProtein),enteredCarbs=rawCarbs===""?null:Number(rawCarbs),enteredFat=rawFat===""?null:Number(rawFat),hasManualDeviation=[rawCalories,rawProtein,rawCarbs,rawFat].some(Boolean);
  log.actualCalories=Number.isFinite(enteredCalories)&&enteredCalories>=0?enteredCalories:checkedCalories;
- const fullPrescription=(log.meals||[]).length===meals.length&&meals.every(m=>(log.meals||[]).includes(m.id)),matchesTarget=prescribedCalories===target.cal;
- log.actualProtein=Number.isFinite(enteredProtein)&&enteredProtein>=0?enteredProtein:(fullPrescription&&matchesTarget?target.protein:null);
- log.actualCarbs=Number.isFinite(enteredCarbs)&&enteredCarbs>=0?enteredCarbs:(fullPrescription&&matchesTarget?target.carbs:null);
- log.actualFat=Number.isFinite(enteredFat)&&enteredFat>=0?enteredFat:(fullPrescription&&matchesTarget?target.fat:null);
+ const fullPrescription=(log.meals||[]).length===meals.length&&meals.every(m=>(log.meals||[]).includes(m.id));
+ // Targets are not measured intake. Leave unentered macros unknown until recipes supply them.
+ log.actualProtein=Number.isFinite(enteredProtein)&&enteredProtein>=0?enteredProtein:null;
+ log.actualCarbs=Number.isFinite(enteredCarbs)&&enteredCarbs>=0?enteredCarbs:null;
+ log.actualFat=Number.isFinite(enteredFat)&&enteredFat>=0?enteredFat:null;
  log.intakeSource=hasManualDeviation?"manual-deviation":"prescribed-meals";
  // A meal tap saves progress, never a draft deviation or a claim that the day is over.
  log.complete=hasManualDeviation?finalize&&Number.isFinite(enteredCalories)&&enteredCalories>=0:fullPrescription;
@@ -835,7 +839,7 @@ function objectiveSetsForPhase(p,stats,b){
  ];
  return[
   [base("Taper adherence",stats.completeDays>=14,stats.completeDays/14,stats.completeDays+"/14 complete"),base("No unresolved curriculum debt",unresolvedInPhase(p)===0,unresolvedInPhase(p)?0:1,unresolvedInPhase(p)+" unresolved"),base("Peak durability remains pain-free",b.peakPainFree==="YES",b.peakPainFree==="YES"?1:0,b.peakPainFree==="YES"?"Qualified":"Not yet"),base("Maintain selection benchmark",runSec!=null&&runSec<=1320&&(b.pushups||0)>=100&&(b.pullups||0)>=20,Math.min(runSec?1320/runSec:0,(b.pushups||0)/100,(b.pullups||0)/20),"Run + bodyweight standards")],
-  [base("Arrive with no red mechanical flag",!todayCheckin()||todayCheckin().overall!=="RED",todayCheckin()?.overall==="RED"?0:1,todayCheckin()?.overall||"No red flag"),base("Nutrition intake saved",!!getNutritionLog().saved,getNutritionLog().saved?1:0,getNutritionLog().saved?"Saved":"Not saved"),base("Final check-in complete",!!todayCheckin(),todayCheckin()?1:0,todayCheckin()?"Complete":"Pending"),base("Program mastery ≥80%",stats.mastery>=.8,stats.mastery/.8,Math.round(stats.mastery*100)+"% mastery")]
+  [base("Mechanical check-in clear",!!todayCheckin()&&todayCheckin().decision?.b==="GREEN",todayCheckin()?.decision?.b==="GREEN"?1:0,todayCheckin()?.decision?.b||"Check-in needed"),base("Nutrition day complete",!!getNutritionLog().saved&&getNutritionLog().complete===true,getNutritionLog().saved&&getNutritionLog().complete===true?1:0,getNutritionLog().saved&&getNutritionLog().complete===true?"Complete":"Finish logging"),base("Final check-in complete",!!todayCheckin(),todayCheckin()?1:0,todayCheckin()?"Complete":"Pending"),base("Program mastery ≥80%",stats.mastery>=.8,stats.mastery/.8,Math.round(stats.mastery*100)+"% mastery")]
  ];
 }
 function phaseExitQualified(p){const sets=objectiveSetsForPhase(p,macroStats(p),getBenchmarks());return sets.every(set=>set.every(o=>o.done))}
