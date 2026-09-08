@@ -9,7 +9,7 @@ test('historical calendar prefers the saved adapted prescription',()=>{
   const savedPrescription={title:'Recovery Override',type:'Recovery',duration:'25 min',effort:'Very easy',why:'Saved reason',steps:[]};
   const rows=[{date:'2026-09-07T12:00:00Z',completed:'PARTIAL',prescription:savedPrescription}];
   const checks=[{date:'2026-09-07T08:00:00Z',decision:{o:'YELLOW',b:'GREEN'}}];
-  const context=vm.createContext({
+  const context=vm.createContext({recordedExerciseSets:()=>[],
     localStorage:{failedDays:'[]'},logs:()=>checks,workouts:()=>rows,dayKey:d=>new Date(d).toDateString(),
     programWeekForDate:()=>1,blockForWeek:()=>({name:'Re-entry I'}),daysFor:()=>['Base session'],programDayIndex:()=>0,
     adaptiveSessionFor:()=>({title:'Reconstructed'}),nutritionForWeek:()=>({phase:'x',cal:1,protein:1,carbs:1,fat:1,why:''}),
@@ -28,7 +28,7 @@ test('historical calendar prefers the saved adapted prescription',()=>{
 test('partial sessions require effort and pain feedback just like completed sessions',()=>{
   const nodes={sessionFeedback:{open:false},completionBanner:{textContent:'',classList:{add(){},remove(){}}}};
   const localStorage={programStart:'2026-09-01'};
-  const context=vm.createContext({
+  const context=vm.createContext({recordedExerciseSets:()=>[],
     localStorage,$:id=>nodes[id]??={value:''},num:()=>null,val:()=>'',beginJourney(){},setTimeout(){},workouts:()=>[],adaptiveSession:()=>({title:'Base',steps:[]}),
     prescriptionWeek:()=>1,dayKey:x=>x,todayKey:()=> 'today',dbSet(){},setTask(){},renderAll(){}
   });

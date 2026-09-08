@@ -8,7 +8,7 @@ const source=()=>fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
 test('56-week curriculum exposes exact week-specific ceilings and taper guidance',()=>{
  const s=source(),start=s.indexOf('const weeklyTargets='),end=s.indexOf('\nconst templates=',start);
  assert.ok(start>=0&&end>start,'weekly target table is present');
- const context=vm.createContext({dayDate:()=>new Date(),advanceDailyFlow:()=>{},});
+ const context=vm.createContext({recordedExerciseSets:()=>[],dayDate:()=>new Date(),advanceDailyFlow:()=>{},});
  vm.runInContext(s.slice(start,end),context);
  assert.equal(vm.runInContext('weeklyTargets.length',context),56);
  assert.equal(vm.runInContext('weekTarget(1).runCeiling',context),0);
@@ -34,7 +34,7 @@ test('weekly actual work counts completed and partial work but not skipped work'
   {week:13,completed:'NO',runMiles:9,ruckMiles:9,rowMinutes:90},
   {week:14,completed:'YES',runMiles:7}
  ];
- const context=vm.createContext({workouts:()=>rows});
+ const context=vm.createContext({recordedExerciseSets:()=>[],workouts:()=>rows});
  vm.runInContext(s.slice(start,end),context);
  const metrics=vm.runInContext('weekMetrics(13)',context);
  assert.equal(metrics.runMiles,4.75);
@@ -47,7 +47,7 @@ test('saved sessions retain actual run ruck row and pack work',()=>{
  const localStorage={programStart:'2026-09-01'};
  const nodes={sessionFeedback:{open:false},completionBanner:{textContent:'',classList:{add(){},remove(){}}}};
  const values={sessionRPE:6,postPain:0,sessionDuration:52,sessionRunMiles:4.2,sessionRuckMiles:null,sessionRowMinutes:45,sessionPackWeight:null};
- const context=vm.createContext({dayDate:()=>new Date(),advanceDailyFlow:()=>{},
+ const context=vm.createContext({recordedExerciseSets:()=>[],dayDate:()=>new Date(),advanceDailyFlow:()=>{},
   localStorage,$:id=>nodes[id]??={value:'',classList:{add(){},remove(){}}},num:id=>values[id]??null,val:()=>'',beginJourney(){},
   setTimeout(){},workouts:()=>[],adaptiveSession:()=>({title:'Run + row',type:'Run',steps:[]}),prescriptionWeek:()=>13,
   dayKey:x=>x,todayKey:()=> 'today',dbSet(){},setTask(){},renderAll(){}
