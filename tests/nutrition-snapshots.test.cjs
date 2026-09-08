@@ -31,3 +31,9 @@ test('base meal quantities stay fixed across a prescription-week change',()=>{
  assert.equal(JSON.stringify(next.find(m=>m.id==='m1')),JSON.stringify(old[0]));
  assert.equal(next.reduce((s,m)=>s+m.kcal,0),3600);
 });
+
+test('calendar meal history escapes restored text',()=>{
+ const start=source.indexOf('function nutritionHtmlForDate('),end=source.indexOf('\nfunction renderDaySheetTab',start);
+ const c=vm.createContext({getNutritionLog:()=>({saved:true,targetCalories:1450,prescriptionReason:'<img src=x>',prescribedMeals:[{id:'m1',name:'<script>bad</script>',kcal:400,foods:['<img onerror=bad>']}]}),checkinForDate:()=>null,nutritionForWeek:()=>({phase:'Foundation',protein:185,carbs:90,fat:40,why:'Fuel'}),nutritionText:value=>String(value).replaceAll('<','&lt;').replaceAll('>','&gt;')});
+ vm.runInContext(source.slice(start,end),c);const html=c.nutritionHtmlForDate(new Date(),{w:1,name:'Recovery'});assert.ok(!html.includes('<img'));assert.ok(!html.includes('<script>'));assert.ok(html.includes('&lt;script&gt;'));
+});

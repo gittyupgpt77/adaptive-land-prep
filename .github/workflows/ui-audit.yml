@@ -393,6 +393,8 @@ jobs:
           }
           check('Meal taps save a complete day without a second save',await page.evaluate(()=>getNutritionLog().saved&&getNutritionLog().complete));
           check('Meal completion updates progress',(await page.locator('#mealProgress').textContent()).startsWith(mealCount+'/'));
+          check('Final meal advances to the day summary',await visible('#today'));
+          await page.locator('[data-target="nutrition"]').click();
           await page.locator('#waterActual').fill('120');
           await page.locator('#actualCalories').fill('1525');
           await page.locator('#actualProtein').fill('181');
@@ -404,6 +406,7 @@ jobs:
           await page.locator('[data-target="today"]').click();
           await page.locator('[data-target="nutrition"]').click();
           check('Nutrition drafts survive navigation',(await page.locator('#actualCarbs').inputValue())==='112'&&(await page.locator('#actualFat').inputValue())==='42'&&(await page.locator('#waterActual').inputValue())==='120');
+          if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           check('Nutrition save returns athlete to Today',await visible('#today'));
           await page.locator('[data-target="nutrition"]').click();
@@ -416,15 +419,18 @@ jobs:
           await page.evaluate(()=>{localStorage.removeItem('nutrition_'+new Date().toDateString())});
           await page.locator('[data-target="nutrition"]').click();
           const mealsForAuto=page.locator('.meal-check');for(let i=0;i<await mealsForAuto.count();i++)await mealsForAuto.nth(i).click();
+          if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           await page.locator('[data-target="nutrition"]').click();
           check('Full prescribed plan inherits prescribed macros without manual duplication',await page.evaluate(()=>{const n=JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}');return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein===n.targetProtein&&n.actualCarbs===n.targetCarbs&&n.actualFat===n.targetFat;}));
           check('Inferred totals never populate deviation fields',(await page.locator('#actualCalories').inputValue())===''&&(await page.locator('#actualProtein').inputValue())==='');
           await page.locator('.meal-check').first().click();
+          if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           await page.locator('[data-target="nutrition"]').click();
           check('Partial meals recompute intake without stale full-plan overrides',await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();return n.intakeSource==='prescribed-meals'&&n.actualCalories===meals.filter(m=>n.meals.includes(m.id)).reduce((sum,m)=>sum+m.kcal,0)&&n.actualProtein===null;}));
           await page.locator('.meal-check').first().click();
+          if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           await page.locator('[data-target="today"]').click();
           check('Nutrition Today task requires saved intake',await page.locator('#taskNutrition').evaluate(n=>n.classList.contains('done')));
