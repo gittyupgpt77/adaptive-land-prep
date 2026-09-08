@@ -37,7 +37,7 @@
     <button id="directivePrimary" class="directive-primary">Begin morning check-in</button>
     <button id="directiveSecondary" class="directive-secondary hidden"></button>
   </section>
-  <div id="morningWelcome" class="hidden"><p class="hello-date">TODAY, ONE STEP AT A TIME</p><h2 tabindex="-1" id="helloTitle">Hello.</h2><p id="helloCopy">Let’s start with this morning’s measurements.</p><div id="morningFormSlot"></div></div>
+  <div id="morningWelcome" class="hidden"><p class="hello-date" id="helloDate"></p><p id="helloJourney"></p><progress id="helloProgress" max="56" value="0"></progress><h2 tabindex="-1" id="helloTitle">Hello.</h2><p id="helloCopy">Let’s start with this morning’s measurements.</p><div id="morningFormSlot"></div></div>
   <div id="readinessCard" class="readiness-card readiness-button" role="button" tabindex="0">
     <div class="card-heading"><span>Readiness</span><button class="info-dot" data-term="readiness">i</button></div>
     <div class="readiness-main">
@@ -167,6 +167,11 @@
     <div class="data-row"><div><strong>Day 1</strong><small id="settingsJourneyStart">Not set</small></div></div>
     <div class="data-row"><div><strong>Current position</strong><small id="settingsJourneyPosition">Your journey begins when you choose Day 1.</small></div></div>
     <p class="actual-help">Your start stays fixed. Missed days and recovery changes are handled within this journey; you do not need to start over.</p>
+    <details><summary>Restart or review previous Journeys</summary>
+      <p class="actual-help">Restart only for a deliberate new beginning. Previous records are archived and included in your backups; they do not affect your new baseline or progress.</p>
+      <button id="restartJourney" type="button">Restart Journey…</button>
+      <div id="journeyArchiveList"></div>
+    </details>
   </div>
   <details class="data-details cloud-panel" id="cloudPanel">
     <summary>Account & private backup</summary>

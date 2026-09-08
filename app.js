@@ -1,4 +1,6 @@
 
+// Recover an interrupted restart before any saved fields or adaptation are read.
+recoverInterruptedJourneyRestart();
 const $=id=>document.getElementById(id);
 const num=id=>{const v=parseFloat($(id)?.value);return Number.isFinite(v)?v:null};
 const val=id=>$(id)?.value||"";
@@ -52,7 +54,7 @@ function currentWeek(){if(!localStorage.programStart)return 1;const start=new Da
 let viewedWeek=currentWeek();
 function blockForWeek(w){const b=blocks.find(x=>w>=x[1]&&w<=x[2])||blocks[0];return{name:b[0],start:b[1],end:b[2],run:b[3],ruck:b[4],focus:b[5]}}
 function daysFor(b){return templates[b.name]||templates["Re-entry I"]}
-function dayIndex(){if(!localStorage.programStart)return 0;const a=new Date(programStart()),b=new Date();a.setHours(12,0,0,0);b.setHours(12,0,0,0);const days=Math.floor((b-a)/86400000);return((days%7)+7)%7}
+function dayIndex(){if(!localStorage.programStart)return 0;const a=new Date(programStart()),b=dayDate();a.setHours(12,0,0,0);b.setHours(12,0,0,0);const days=Math.floor((b-a)/86400000);return((days%7)+7)%7}
 function sessionName(){const w=prescriptionWeek(),b=blockForWeek(w);return daysFor(b)[dayIndex()]}
 function makeSession(name,w=prescriptionWeek()){
  const wt=weekTarget(w),runDose=weeklyRunDose(w),enduranceDose=weeklyEnduranceDose(w);
@@ -79,7 +81,22 @@ function makeSession(name,w=prescriptionWeek()){
  return{title:name,type:"Specific",duration:"30–60 min",effort:"Controlled",why:"Complete the current phase-specific session with clean technique and adaptive restraint.",steps:[ex("Main session",enduranceDose,"—","Stop for focal pain, altered gait or red recovery flags.","Specific")]};
 }
 function logs(){return JSON.parse(localStorage.trainingLogs||"[]")}function workouts(){return JSON.parse(localStorage.workoutHistory||"[]")}
-function todayKey(){return new Date().toDateString()}function todayCheckin(){return logs().find(x=>new Date(x.date).toDateString()===todayKey())}function todayWorkoutRecord(){return workouts().find(x=>new Date(x.date).toDateString()===todayKey())}function todayWorkout(){const x=todayWorkoutRecord();return x?.completed==="YES"?x:null}
+let greetOnThisOpening=false;
+function daySession(){try{const s=JSON.parse(localStorage.daySession||"null");return s&&Number.isFinite(Date.parse(s.date))?s:null}catch(e){return null}}
+function dayDate(){return new Date(daySession()?.date||Date.now())}
+function resumeDaySession(now=new Date()){
+ if(!localStorage.programStart)return;
+ const previous=daySession();greetOnThisOpening=false;
+ if(previous&&(!previous.closedAt||dayKey(previous.date)===dayKey(now)||new Date(previous.date)>now))return;
+ const recent=!previous?[...logs(),...workouts()].filter(x=>!x.preJourney&&(new Date(x.date)>=new Date(localStorage.programStart)||dayKey(x.date)===dayKey(localStorage.programStart))).sort((a,b)=>new Date(b.date)-new Date(a.date))[0]:null;
+ localStorage.daySession=JSON.stringify({date:recent?.date||now.toISOString(),closedAt:null});greetOnThisOpening=!recent;
+}
+function endDaySession(){
+ if(todayFlowState()!=="evening")return;
+ try{const s=daySession()||{date:dayDate().toISOString()};localStorage.daySession=JSON.stringify({...s,closedAt:new Date().toISOString()});renderToday();switchTab("today")}
+ catch(e){alert("Your day could not be closed. Your records are still saved. Please try again.")}
+}
+function todayKey(){return dayDate().toDateString()}function todayCheckin(){return logs().find(x=>new Date(x.date).toDateString()===todayKey())}function todayWorkoutRecord(){return workouts().find(x=>new Date(x.date).toDateString()===todayKey())}function todayWorkout(){const x=todayWorkoutRecord();return x?.completed==="YES"?x:null}
 function weekMetrics(w){
  const out={runMiles:0,ruckMiles:0,rowMinutes:0};
  for(const x of workouts().filter(x=>x.week===w&&x.completed!=="NO")){
@@ -110,7 +127,7 @@ function renderWeekTargetCard(w,det){
  $("weekTargetCard").innerHTML='<strong>Week '+w+' · '+t.weekType+'</strong><p><b>Running:</b> '+runLogged+t.run+'<br><b>Concept2:</b> '+rowLogged+t.row+'<br><b>Ruck:</b> '+ruckLogged+(t.ruck||"None scheduled")+'</p><small>Weekly ceilings are limits, not quotas. Do not force remaining mileage into today.</small>';
  renderSessionMetricFields(det)
 }
-function taskDone(k){return localStorage.getItem("task_"+k+"_"+todayKey())==="1"}function setTask(k,v){localStorage.setItem("task_"+k+"_"+todayKey(),v?"1":"0")}
+function taskDone(k){return localStorage.getItem("task_"+k+"_"+todayKey())==="1"}function setTask(k,v){const session=daySession();if(session?.closedAt)localStorage.daySession=JSON.stringify({...session,closedAt:null});localStorage.setItem("task_"+k+"_"+todayKey(),v?"1":"0")}
 function systemicDomainsFromRecord(x,phaseOne){
  const metric=v=>v===null||v===undefined||v===""?null:Number(v),out={},set=(key,level)=>{if(level==="RED"||out[key]!=="RED")out[key]=level};
  const sl=metric(x?.sleep),q=metric(x?.sleepQ),f=metric(x?.fatigue),h=metric(x?.hrv),hb=metric(x?.hrvBase),r=metric(x?.rhr),rb=metric(x?.rhrBase),g=metric(x?.grip),gb=metric(x?.gripBase),p=String(x?.performance||"");
@@ -134,7 +151,7 @@ function previousSessionStrain(referenceDate=new Date()){
 function systemic(){
  const current={sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),performance:val("performance")};
  const hasInput=[current.sleep,current.sleepQ,current.fatigue,current.hrv,current.rhr,current.grip].some(Number.isFinite)||!!current.performance;if(!hasInput)return"";
- const referenceDate=historicalDate||new Date(),w=historicalDate?programWeekForDate(referenceDate):prescriptionWeek(),phaseOne=w<=16,domains=systemicDomainsFromRecord(current,phaseOne),strain=previousSessionStrain(referenceDate);
+ const referenceDate=historicalDate||dayDate(),w=historicalDate?programWeekForDate(referenceDate):prescriptionWeek(),phaseOne=w<=16,domains=systemicDomainsFromRecord(current,phaseOne),strain=previousSessionStrain(referenceDate);
  if(strain)domains.sessionStrain="YELLOW";
  const prior=recentSystemicRecords(referenceDate).map(x=>systemicDomainsFromRecord(x,phaseOne)),red=Object.keys(domains).filter(k=>domains[k]==="RED"),yellow=Object.keys(domains).filter(k=>domains[k]==="YELLOW");
  // These are product guardrails, not validated diagnostic cutoffs: strong intervention requires
@@ -144,11 +161,11 @@ function systemic(){
  if(red.length||yellow.length>=2||repeatedYellow)return"YELLOW";
  return"GREEN"
 }
-function mechanical(){const p=num("pain"),prev=typeof previousWorkoutSignal==="function"?previousWorkoutSignal(historicalDate||new Date()):null;if(p===null&&!$("focal").checked&&!$("gait").checked){return prev?.level||""}if($("focal").checked||$("gait").checked||(p!==null&&p>=5)||prev?.level==="RED")return"RED";if((p!==null&&p>=3)||prev?.level==="YELLOW")return"YELLOW";return"GREEN"}
-function fueling(){const l=num("load"),prev=typeof previousNutritionSignal==="function"?previousNutritionSignal(historicalDate||new Date()):null;if(l===null){if(prev&&prev.ratio<.7)return"YELLOW";return""}if(prev&&prev.ratio<.65&&l>=6)return"RED";if(prev&&prev.ratio<.8&&l>=4)return"YELLOW";return"GREEN"}
+function mechanical(){const p=num("pain"),prev=typeof previousWorkoutSignal==="function"?previousWorkoutSignal(historicalDate||dayDate()):null;if(p===null&&!$("focal").checked&&!$("gait").checked){return prev?.level||""}if($("focal").checked||$("gait").checked||(p!==null&&p>=5)||prev?.level==="RED")return"RED";if((p!==null&&p>=3)||prev?.level==="YELLOW")return"YELLOW";return"GREEN"}
+function fueling(){const l=num("load"),prev=typeof previousNutritionSignal==="function"?previousNutritionSignal(historicalDate||dayDate()):null;if(l===null){if(prev&&prev.ratio<.7)return"YELLOW";return""}if(prev&&prev.ratio<.65&&l>=6)return"RED";if(prev&&prev.ratio<.8&&l>=4)return"YELLOW";return"GREEN"}
 function decision(){const a=systemic(),b=mechanical(),c=fueling(),o=!a&&!b&&!c?"":(a==="RED"||b==="RED"?"RED":(a==="YELLOW"||b==="YELLOW"||c==="RED"?"YELLOW":"GREEN"));let run="Full phase plan",ruck="Full phase plan",row="Phase plan",strength="Full plan",intensity="Planned",nutrition="Follow phase target",warning="";if(!o)return{a,b,c,o,run:"Complete check-in",ruck:"Complete check-in",row:"Complete check-in",strength:"Complete check-in",intensity:"Complete check-in",nutrition:"Complete check-in",warning:""};if(b==="RED"){run="No running";ruck="No weighted-pack walking";row="Easy row if pain-free";strength="Non-aggravating only";intensity="No hard training";warning="Mechanical override: favorable recovery metrics do not justify impact or loaded walking."}else if(o==="RED"){run="Row or walk only";ruck="No loaded walking";row="Recovery row";strength="Reduce about 50%";intensity="No hard training"}else if(o==="YELLOW"){run="Reduce about 25–40%; keep easy";ruck="Reduce distance/load";row="Prefer easy rowing";strength="Reduce about 30%";intensity="No hard intervals"}if(c==="RED")nutrition="Add energy/carbohydrate; review deficit";else if(c==="YELLOW")nutrition="Hold intake; add carbohydrate around training";return{a,b,c,o,run,ruck,row,strength,intensity,nutrition,warning}}
 function dayKey(d){return new Date(d).toDateString()}
-function missedDays(){if(!localStorage.programStart)return[];const start=new Date(localStorage.programStart),end=new Date();start.setHours(12,0,0,0);end.setHours(12,0,0,0);end.setDate(end.getDate()-1);const resolved=new Set(logs().map(x=>dayKey(x.date))),failed=new Set(JSON.parse(localStorage.failedDays||"[]")),out=[];for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const k=d.toDateString();if(!resolved.has(k)&&!failed.has(k))out.push(new Date(d))}return out}
+function missedDays(){if(!localStorage.programStart)return[];const start=new Date(localStorage.programStart),end=new Date();start.setHours(12,0,0,0);end.setHours(12,0,0,0);end.setDate(end.getDate()-1);const resolved=new Set([...logs().map(x=>dayKey(x.date)),...(daySession()?[dayKey(daySession().date)]:[])]),failed=new Set(JSON.parse(localStorage.failedDays||"[]")),out=[];for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const k=d.toDateString();if(!resolved.has(k)&&!failed.has(k))out.push(new Date(d))}return out}
 let historicalDate=null,historicalInputs=null;
 function openHistoricalCheckin(d){resetHistorical();historicalInputs=Object.fromEntries(["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight","hrvBase","rhrBase","gripBase","weightAvg","focal","gait"].map(id=>[id,{value:$(id).value,checked:$(id).checked}]));historicalDate=new Date(d);renderMorningWelcome();["hrvBase","rhrBase","gripBase","weightAvg"].forEach(id=>$(id).value="");applyBaselines();["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>{if($(id))$(id).value=""});$("focal").checked=false;$("gait").checked=false;$("checkinForm").querySelector(".sheet-head small").textContent="RETROSPECTIVE";$("checkinForm").querySelector(".sheet-head h2").textContent=historicalDate.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});$("checkinSheet").classList.remove("hidden");requiredFields()}
 function resetHistorical(){if(historicalInputs){for(const [id,state] of Object.entries(historicalInputs)){ $(id).value=state.value;$(id).checked=state.checked }historicalInputs=null}historicalDate=null;$("checkinForm").querySelector(".sheet-head small").textContent="MORNING";$("checkinForm").querySelector(".sheet-head h2").textContent="Check-In"}
@@ -171,7 +188,7 @@ function beginJourney(){
  if(dayKey(base.date)===dayKey(start)){
    const l=logs(),hit=l.find(x=>x===base||x.date===base.date);if(hit){hit.preJourney=false;hit.week=1;localStorage.trainingLogs=JSON.stringify(l);dbSet("trainingLogs",localStorage.trainingLogs)}
  }
- viewedWeek=1;viewedMonth=new Date(start);
+ resumeDaySession(start);viewedWeek=1;viewedMonth=new Date(start);
  renderAll()
 }
 function renderJourneyStart(){
@@ -226,7 +243,10 @@ function renderMorningWelcome(){
   slot.appendChild(form);$("dailyDirective").classList.add("hidden");
   enhanceCheckinTapControls();syncCheckinTapControls();
   form.classList.add("inline-checkin");form.dataset.step=morningStep;
-  $("helloTitle").textContent=["Hello.","How do you feel?","One last check."][morningStep];
+  $("helloDate").textContent=dayDate().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+  const week=prescriptionWeek();$("helloJourney").textContent="Training week "+week+" of 56 · "+macroForWeek(week).name;
+  $("helloProgress").value=week-1;$("helloProgress").setAttribute("aria-label","Training week "+week+" of 56");
+  $("helloTitle").textContent=[greetOnThisOpening?"Hello.":"Let’s continue.","How do you feel?","One last check."][morningStep];
   $("helloCopy").textContent=["Let’s start with this morning’s measurements.","A few taps help shape today’s session.","Tell me about pain and movement before we begin."][morningStep];
   form.querySelectorAll(".field,.toggle-row").forEach(el=>{
    const input=el.querySelector("input,select");el.classList.toggle("morning-hidden",!MORNING_GROUPS[morningStep].includes(input?.id));
@@ -260,10 +280,10 @@ function saveCheckin(){
  const wasHistorical=!!historicalDate;
  try{
  evaluate();const d=decision();if(!d.o)return;
- const l=logs(),saveDate=historicalDate?new Date(historicalDate):new Date();
+ const l=logs(),saveDate=historicalDate?new Date(historicalDate):dayDate();
  const saveWeek=historicalDate?programWeekForDate(saveDate):(localStorage.programStart?prescriptionWeek():1);
  const sameDay=l.findIndex(x=>dayKey(x.date)===dayKey(saveDate));if(sameDay>=0)l.splice(sameDay,1);
- l.unshift({date:saveDate.toISOString(),week:saveWeek,preJourney:!localStorage.programStart,weight:num("weight"),weightAvg:num("weightAvg"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),load:num("load"),pain:num("pain"),performance:val("performance"),focal:$("focal").checked,gait:$("gait").checked,overall:d.o,decision:d,priorWorkoutSignal:previousWorkoutSignal(saveDate)});
+ l.unshift({date:saveDate.toISOString(),recordedAt:new Date().toISOString(),week:saveWeek,preJourney:!localStorage.programStart,weight:num("weight"),weightAvg:num("weightAvg"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),load:num("load"),pain:num("pain"),performance:val("performance"),focal:$("focal").checked,gait:$("gait").checked,overall:d.o,decision:d,priorWorkoutSignal:previousWorkoutSignal(saveDate)});
  localStorage.trainingLogs=JSON.stringify(l);dbSet("trainingLogs",localStorage.trainingLogs);
  if(!historicalDate){setTask("checkin",true);if(!localStorage.programStart)localStorage.baselineDate=saveDate.toISOString()}
  resetHistorical();closeCheckin();morningStep=0;renderAll();if(!wasHistorical&&localStorage.programStart)advanceDailyFlow();
@@ -280,7 +300,7 @@ function saveWorkout(c){
    $("completionBanner").classList.add("attention");$("completionBanner").classList.remove("hidden");
    setTimeout(()=>$("completionBanner").classList.add("hidden"),2200);return
  }
- const arr=workouts(),prescription=adaptiveSession(),entry={date:new Date().toISOString(),week:prescriptionWeek(),session:prescription.title,prescription,rpe,duration:num("sessionDuration"),postPain,runMiles:num("sessionRunMiles"),ruckMiles:num("sessionRuckMiles"),rowMinutes:num("sessionRowMinutes"),packWeight:num("sessionPackWeight"),completed:status,note:val("sessionNote")};
+ const arr=workouts(),prescription=adaptiveSession(),entry={date:dayDate().toISOString(),recordedAt:new Date().toISOString(),week:prescriptionWeek(),session:prescription.title,prescription,rpe,duration:num("sessionDuration"),postPain,runMiles:num("sessionRunMiles"),ruckMiles:num("sessionRuckMiles"),rowMinutes:num("sessionRowMinutes"),packWeight:num("sessionPackWeight"),completed:status,note:val("sessionNote")};
  const existing=arr.findIndex(x=>dayKey(x.date)===todayKey());if(existing>=0)arr.splice(existing,1);arr.unshift(entry);
  localStorage.workoutHistory=JSON.stringify(arr);dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",entry.completed==="YES");
  $("sessionFeedback").open=false;$("completionBanner").classList.remove("attention");
@@ -413,6 +433,7 @@ function nutritionDayComplete(log=getNutritionLog(),meals=todayMealPlan()){
 }
 function todayFlowState(){
  if(!localStorage.programStart)return"onboarding";
+ if(daySession()?.closedAt)return"closed";
  if(!todayCheckin())return"morning";
  if(!todayWorkoutRecord())return"directive";
  if(!nutritionDayComplete())return"nutrition";
@@ -430,13 +451,13 @@ function directiveTimeline(state,record,nutrition,meals){
 function renderDailyDirective(){
  const card=$("dailyDirective");if(!card)return;
  if(!localStorage.programStart){card.classList.add("hidden");return}
- const state=todayFlowState(),d=todayCheckin(),det=adaptiveSession(),record=todayWorkoutRecord(),target=todayNutritionPrescription(),meals=todayMealPlan(),nutrition=getNutritionLog(),doneMeals=new Set(nutrition.meals||[]),w=prescriptionWeek(),calendar=currentWeek(),phase=macroForWeek(w),rstate=readinessStateMeta(d?.overall);
+ const rawState=todayFlowState(),state=rawState==="closed"?"evening":rawState,d=todayCheckin(),det=adaptiveSession(),record=todayWorkoutRecord(),target=todayNutritionPrescription(),meals=todayMealPlan(),nutrition=getNutritionLog(),doneMeals=new Set(nutrition.meals||[]),w=prescriptionWeek(),calendar=currentWeek(),phase=macroForWeek(w),rstate=readinessStateMeta(d?.overall);
  card.className="daily-directive "+state;
  $("directiveJourney").textContent=w<calendar?"Held Week "+w+" · Calendar "+calendar+" · "+phase.name:"Week "+w+" · "+phase.name;
  $("directiveTimeline").innerHTML=directiveTimeline(state,record,nutrition,meals);
  $("directiveWorkout").classList.toggle("hidden",state==="morning"||state==="evening");
  $("directiveMacros").classList.toggle("hidden",state==="morning");
- $("directivePrimary").classList.toggle("hidden",state==="evening");
+ $("directivePrimary").classList.toggle("hidden",rawState==="closed");
  $("directiveSecondary").classList.toggle("hidden",state==="morning"||state==="evening");
  if(state==="morning"){
    $("directiveStage").textContent="MORNING";$("directiveStep").textContent="STEP 1 OF 4";$("directiveState").textContent="CHECK IN";$("directiveState").className="directive-state neutral";
@@ -448,7 +469,7 @@ function renderDailyDirective(){
  $("directiveMacros").innerHTML='<div><span>Calories</span><strong>'+target.cal.toLocaleString()+'</strong><small>kcal</small></div><div><span>Protein</span><strong>'+target.protein+'</strong><small>g</small></div><div><span>Carbs</span><strong>'+target.carbs+'</strong><small>g</small></div><div><span>Fat</span><strong>'+target.fat+'</strong><small>g</small></div>';
  if(state==="directive"){
    $("directiveStage").textContent="TODAY’S DIRECTIVE";$("directiveStep").textContent="STEP 2 OF 4";$("directiveTitle").textContent=det.title;
-   $("directiveCopy").textContent=d.overall==="GREEN"?"Do this session today, then record how it landed.":d.overall==="YELLOW"?"Use the modified session below. Do not add intensity back in.":"Recovery is the assignment today. Follow the recovery session below.";
+   $("directiveCopy").textContent=dayKey(dayDate())!==dayKey(new Date())?"This day is still open. Record what you actually did; don’t repeat a session to catch up.":d.overall==="GREEN"?"Do this session today, then record how it landed.":d.overall==="YELLOW"?"Use the modified session below. Do not add intensity back in.":"Recovery is the assignment today. Follow the recovery session below.";
    $("directiveReason").textContent=directiveReason(d);
    $("directiveWorkout").innerHTML='<div class="directive-workout-head"><div><small>'+det.type.toUpperCase()+'</small><strong>'+det.duration+'</strong></div><span>'+det.effort+'</span></div><div class="directive-step-list">'+det.steps.slice(0,4).map((e,i)=>'<div><i>'+(i+1)+'</i><span><strong>'+e.name+'</strong><small>'+e.dose+'</small></span></div>').join("")+'</div>'+(det.steps.some(e=>/Reminder/.test(e.type||""))?'<p class="directive-mobility-note">Mobility is a reminder only: use your preferred pain-free routine.</p>':'');
    $("directivePrimary").textContent="Start today’s session";$("directivePrimary").onclick=()=>switchTab("workout");$("directiveSecondary").textContent="Why this prescription?";$("directiveSecondary").onclick=openReadiness;return
@@ -463,11 +484,12 @@ function renderDailyDirective(){
  }
  const actual=Number.isFinite(nutrition.actualCalories)?nutrition.actualCalories:null,status=record?.completed==="YES"?"completed":record?.completed==="PARTIAL"?"partial":"skipped";
  $("directiveStage").textContent="EVENING";$("directiveStep").textContent="STEP 4 OF 4";$("directiveState").textContent="DAY COMPLETE";$("directiveState").className="directive-state complete";
- $("directiveTitle").textContent="Today is captured";$("directiveCopy").textContent="Check-in saved · session "+status+" · intake complete. Tomorrow’s directive will use today’s response and confirmed fueling.";
- $("directiveReason").textContent="No more input is required today.";
+ $("directivePrimary").textContent="End day";$("directivePrimary").onclick=endDaySession;
+ $("directiveTitle").textContent=rawState==="closed"?"Day closed. Rest well.":"Today is captured";$("directiveCopy").textContent="Check-in saved · session "+status+" · intake complete. Tomorrow’s directive will use today’s response and confirmed fueling.";
+ $("directiveReason").textContent=rawState==="closed"?"Your progress is saved. A later day’s app opening will begin your next morning check-in.":"Everything is recorded. End this day when you are ready; reopening will resume here until you do.";
  $("directiveWorkout").innerHTML="";$("directiveMacros").innerHTML='<div><span>Recorded</span><strong>'+(actual===null?"—":Math.round(actual).toLocaleString())+'</strong><small>kcal</small></div><div><span>Target</span><strong>'+target.cal.toLocaleString()+'</strong><small>kcal</small></div><div><span>Meals</span><strong>'+doneMeals.size+'/'+meals.length+'</strong><small>confirmed</small></div><div><span>Readiness</span><strong>'+rstate.label+'</strong><small>today</small></div>';
 }
-function renderToday(){$("today").classList.toggle("pre-journey",!localStorage.programStart);$("today").classList.toggle("guided-flow",!!localStorage.programStart);renderJourneyStart();renderTodayJourney();const d=todayCheckin(),det=adaptiveSession(),record=todayWorkoutRecord(),done=record?.completed==="YES";$("todayDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});$("taskWorkoutTitle").textContent=det.title;const heroMove=det.steps?.[0]?.name;if(heroMove)$("taskWorkoutThumb").innerHTML=exerciseMedia(heroMove);$("taskWorkoutSub").textContent=done?"Completed today":record?.completed==="PARTIAL"?"Partial session recorded · review details":record?.completed==="NO"?"Skipped today · review if this changes":det.duration+" · "+det.effort;const rstate=readinessStateMeta(d?.overall);$("readinessState").textContent=rstate.badge;$("readinessStateBadge").className="readiness-state-badge "+rstate.cls;$("readinessLabel").textContent=!localStorage.programStart?(d?"Baseline ready":"Not started"):rstate.label;$("readinessLabel").style.color=d?(d.overall==="GREEN"?"var(--green)":d.overall==="YELLOW"?"var(--yellow)":"var(--red)"):"";$("readinessMessage").textContent=!localStorage.programStart?"Complete a baseline and begin the journey when you are ready.":d?(d.overall==="GREEN"?"You’re ready for the planned session.":d.overall==="YELLOW"?"Train, but reduce today’s stress.":"Recovery takes priority today."):"Log your morning metrics to personalize today’s training.";$("todayHRV").textContent=d?.hrv??"—";$("todayRHR").textContent=d?.rhr??"—";$("todaySleep").textContent=d?.sleep??"—";$("hrvDelta").textContent=d?formatDelta(d.hrv,num("hrvBase")):"baseline";$("rhrDelta").textContent=d?formatDelta(d.rhr,num("rhrBase")," bpm"):"baseline";const adapt=adaptationExplanation(d),ab=$("adaptationBanner");if(adapt){ab.classList.remove("hidden");ab.className="adaptation-banner "+(adapt.dec.o==="RED"?"red":"yellow");ab.innerHTML="<div><small>WHY TODAY CHANGED</small><strong>"+adapt.title+"</strong><span>"+adapt.copy+"</span></div><b>›</b>";ab.onclick=openReadiness}else{ab.className="adaptation-banner hidden";ab.innerHTML="";ab.onclick=null}const separateMobility=!sessionIncludesPrehab(det);$("taskMobility").classList.toggle("hidden",!separateMobility);const state={taskCheckin:!!d,taskWorkout:!!done,taskNutrition:!!getNutritionLog().saved,...(separateMobility?{taskMobility:taskDone("mobility")}:{})};Object.entries(state).forEach(([id,doneState])=>{const el=$(id);el.classList.toggle("done",doneState);el.querySelector(".task-circle").textContent=doneState?"✓":"○"});$("todayTaskCount").textContent=Object.values(state).filter(Boolean).length+"/"+Object.keys(state).length;renderDailyDirective();renderMorningWelcome()}
+function renderToday(){$("today").classList.toggle("pre-journey",!localStorage.programStart);$("today").classList.toggle("guided-flow",!!localStorage.programStart);renderJourneyStart();renderTodayJourney();const d=todayCheckin(),det=adaptiveSession(),record=todayWorkoutRecord(),done=record?.completed==="YES";$("todayDate").textContent=dayDate().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});$("taskWorkoutTitle").textContent=det.title;const heroMove=det.steps?.[0]?.name;if(heroMove)$("taskWorkoutThumb").innerHTML=exerciseMedia(heroMove);$("taskWorkoutSub").textContent=done?"Completed today":record?.completed==="PARTIAL"?"Partial session recorded · review details":record?.completed==="NO"?"Skipped today · review if this changes":det.duration+" · "+det.effort;const rstate=readinessStateMeta(d?.overall);$("readinessState").textContent=rstate.badge;$("readinessStateBadge").className="readiness-state-badge "+rstate.cls;$("readinessLabel").textContent=!localStorage.programStart?(d?"Baseline ready":"Not started"):rstate.label;$("readinessLabel").style.color=d?(d.overall==="GREEN"?"var(--green)":d.overall==="YELLOW"?"var(--yellow)":"var(--red)"):"";$("readinessMessage").textContent=!localStorage.programStart?"Complete a baseline and begin the journey when you are ready.":d?(d.overall==="GREEN"?"You’re ready for the planned session.":d.overall==="YELLOW"?"Train, but reduce today’s stress.":"Recovery takes priority today."):"Log your morning metrics to personalize today’s training.";$("todayHRV").textContent=d?.hrv??"—";$("todayRHR").textContent=d?.rhr??"—";$("todaySleep").textContent=d?.sleep??"—";$("hrvDelta").textContent=d?formatDelta(d.hrv,num("hrvBase")):"baseline";$("rhrDelta").textContent=d?formatDelta(d.rhr,num("rhrBase")," bpm"):"baseline";const adapt=adaptationExplanation(d),ab=$("adaptationBanner");if(adapt){ab.classList.remove("hidden");ab.className="adaptation-banner "+(adapt.dec.o==="RED"?"red":"yellow");ab.innerHTML="<div><small>WHY TODAY CHANGED</small><strong>"+adapt.title+"</strong><span>"+adapt.copy+"</span></div><b>›</b>";ab.onclick=openReadiness}else{ab.className="adaptation-banner hidden";ab.innerHTML="";ab.onclick=null}const separateMobility=!sessionIncludesPrehab(det);$("taskMobility").classList.toggle("hidden",!separateMobility);const state={taskCheckin:!!d,taskWorkout:!!done,taskNutrition:!!getNutritionLog().saved,...(separateMobility?{taskMobility:taskDone("mobility")}:{})};Object.entries(state).forEach(([id,doneState])=>{const el=$(id);el.classList.toggle("done",doneState);el.querySelector(".task-circle").textContent=doneState?"✓":"○"});$("todayTaskCount").textContent=Object.values(state).filter(Boolean).length+"/"+Object.keys(state).length;renderDailyDirective();renderMorningWelcome()}
 function techniqueReferenceAvailable(e){return!!datasetExerciseId(e.name)&&!/Mobility|Reminder/.test(e.type||"")}
 function trainingStepMarkup(e,i){
  if(!techniqueReferenceAvailable(e))return'<div class="exercise-reminder"><div class="exercise-index">'+(i+1)+'</div><div><strong>'+e.name+'</strong><span>'+e.dose+'</span><small>'+(e.type==="Reminder"?e.cue:"Technique image omitted because this movement label is not specific enough for a trustworthy reference.")+'</small></div></div>';
@@ -533,8 +555,8 @@ function nutritionHtml(w,name){
  const n=nutritionForWeek(w,name),meals=mealPlanForTarget(w,n);
  return '<div class="nutrition-hero"><small>'+n.phase.toUpperCase()+'</small><strong>≈ '+n.cal.toLocaleString()+' kcal</strong><p>'+n.why+'</p></div><div class="macro-grid"><div><span>Protein</span><strong>'+n.protein+' g</strong></div><div><span>Carbs</span><strong>'+n.carbs+' g</strong></div><div><span>Fat</span><strong>'+n.fat+' g</strong></div></div><div class="calendar-meal-plan">'+meals.map(m=>'<div><small>≈ '+m.kcal+' KCAL</small><strong>'+m.name+'</strong><p>'+m.foods.join(" · ")+'</p></div>').join("")+'</div><div class="nutrition-note"><strong>Adaptive rule</strong><p>Body weight changes fueling only after an established 14-day trend. During Phase 1, that trend must exceed 2.7 lb/week of loss; afterward, the normal recovery guardrail applies. Recorded under-fueling remains an independent readiness signal.</p></div>';
 }
-function nutritionLogKey(d=new Date()){return"nutrition_"+dayKey(d)}
-function getNutritionLog(d=new Date()){try{return JSON.parse(localStorage.getItem(nutritionLogKey(d))||"{}")}catch(e){return{}}}
+function nutritionLogKey(d=dayDate()){return"nutrition_"+dayKey(d)}
+function getNutritionLog(d=dayDate()){try{return JSON.parse(localStorage.getItem(nutritionLogKey(d))||"{}")}catch(e){return{}}}
 function baseMealPlan(w){
  if(w<=24)return[
   {id:"m1",name:"Breakfast",kcal:400,foods:["6 egg whites + 1 whole egg","½ cup cooked oats + 1 tsp chia","½ medium banana"]},
@@ -615,9 +637,34 @@ function nutritionPrescription(w,name,dec,referenceDate=new Date()){
  }
  return out
 }
-function todayNutritionPrescription(w=prescriptionWeek(),name=sessionName()){return nutritionPrescription(w,name,savedDecision(),new Date())}
+function todayNutritionPrescription(w=prescriptionWeek(),name=sessionName()){return nutritionPrescription(w,name,savedDecision(),dayDate())}
 function todayMealPlan(w=prescriptionWeek(),name=sessionName()){
- return mealPlanForTarget(w,todayNutritionPrescription(w,name))
+ return mealPlanForLog(w,todayNutritionPrescription(w,name),getNutritionLog())
+}
+// Confirmed food is history. Only the uneaten plan can change with today's target.
+function mealPlanForLog(w,target,log={}){
+ const fresh=mealPlanForTarget(w,target),done=new Set(log.meals||[]),snapshots=Array.isArray(log.prescribedMeals)?log.prescribedMeals:[];
+ const fixed=snapshots.filter(m=>done.has(m.id)),fixedIds=new Set(fixed.map(m=>m.id));
+ if(!fixed.length)return fresh;
+ const meals=fresh.filter(m=>!m.id.startsWith("fuel-addon-")).map(m=>fixed.find(x=>x.id===m.id)||m);
+ for(const m of fixed)if(!meals.some(x=>x.id===m.id))meals.push(m);
+ const gap=Math.max(0,Math.round(target.cal-meals.reduce((sum,m)=>sum+m.kcal,0)));
+ const chunks=gap>600?[Math.round(gap/2),gap-Math.round(gap/2)]:gap?[gap]:[];
+ let suffix=1;
+ for(const kcal of chunks){while(fixedIds.has("fuel-addon-"+suffix))suffix++;meals.push({id:"fuel-addon-"+suffix++,name:"Remaining fuel",kcal,foods:fuelAddOnFoods(kcal)})}
+ return meals.map(m=>({...m,foods:[...m.foods]}));
+}
+function nutritionText(value){return String(value).replace(/[&<>"\']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","\'":"&#39;"}[c]))}
+function mealPreparation(m){
+ const foods=m.foods.join(" ").toLowerCase(),steps=[];
+ if(/oats|rice/.test(foods))steps.push("Cook grains using the package directions. Measure portions marked cooked after cooking; keep dry and cooked measurements separate.");
+ if(/egg/.test(foods))steps.push("Scramble the listed eggs and whites together until cooked through; egg dishes should reach 160°F.");
+ if(/chicken/.test(foods))steps.push("Bake or pan-cook chicken to 165°F at the thickest part, measured with a food thermometer.");
+ if(/sirloin|salmon/.test(foods))steps.push("Cook salmon to 145°F. For whole-cut sirloin, reach 145°F and rest 3 minutes before slicing. Use the option listed on your meal.");
+ if(/greens|spinach|kale|chard|mushrooms|peppers/.test(foods))steps.push("Rinse produce, then chop. Serve greens alongside the meal or steam briefly; cook mushrooms and peppers to your preferred texture.");
+ if(/whey/.test(foods))steps.push("Mix the listed whey portion with the listed liquid; use your product’s scoop and label. Keep fruit and toast on the side.");
+ if(!steps.length)steps.push("Use the portions shown above. For a fuel addition, adjust your usual food using its package label to match the approximate calories shown.");
+ return '<details open><summary>Prepare this meal</summary><ol>'+steps.map(x=>'<li>'+x+'</li>').join('')+'</ol><p>Meat weights in the original plan do not specify raw or cooked. Keep your weighing method consistent; these remain approximate meal templates.</p></details><details><summary>Prepare ahead & store</summary><p>Batch-cook grains and proteins, then portion into shallow containers. Refrigerate within 2 hours (1 hour above 90°F), at 40°F or below. Use cooked leftovers within 3–4 days, or freeze. Reheat to 165°F.</p><p>Keep fresh greens and toast separate until serving.</p><p><a href="https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/leftovers-and-food-safety" target="_blank" rel="noopener">USDA storage guidance</a> · <a href="https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures" target="_blank" rel="noopener">Cooking temperatures</a></p></details>';
 }
 function hydrationForDay(w,name){
  const n=name.toLowerCase();
@@ -654,15 +701,15 @@ function captureNutritionDraft(log=getNutritionLog()){
 }
 function renderNutrition(){
  const w=prescriptionWeek(),name=sessionName(),target=todayNutritionPrescription(w,name),meals=todayMealPlan(w,name),log=getNutritionLog(),done=new Set(log.meals||[]),hydr=hydrationForDay(w,name);
- const confirmed=meals.filter(m=>done.has(m.id)),next=meals.find(m=>!done.has(m.id)),planned=confirmed.reduce((sum,m)=>sum+m.kcal,0),remaining=Math.max(0,target.cal-planned);
- $("nutritionToday").innerHTML='<div class="nutrition-dashboard"><small>'+(next?"NEXT TO EAT":"MEALS CONFIRMED")+'</small><h2>'+(next?next.name:"You’ve recorded every meal")+'</h2>'+(next?'<p>'+next.foods.join(" · ")+'</p><button id="eatNextMeal" class="nutrition-save">Ate this meal</button><button id="openNextMeal" class="next-meal-details">View meal details</button>':'<p>'+(log.complete?"Today’s intake is saved.":"Review any changes below before finishing today’s intake.")+'</p>')+'<p class="meal-remainder">'+confirmed.length+' of '+meals.length+' meals confirmed · ≈ '+planned.toLocaleString()+' kcal from meals<br>≈ '+remaining.toLocaleString()+' kcal in the remaining plan</p>'+(target.adjustment?'<div class="nutrition-adjustment '+target.adjustment.level+'"><strong>'+target.adjustment.title+'</strong><span>'+target.adjustment.copy+'</span></div>':'')+'<details><summary>Daily targets & timing</summary><small>program kcal target</small><p>≈ '+target.cal.toLocaleString()+' kcal · '+target.protein+' g protein · '+target.carbs+' g carbohydrate · '+target.fat+' g fat</p><p>'+target.why+'</p><p>Spread protein meals through the day. Move the training snack before or after training as comfortable; no countdown is needed.</p><p>Meal calories are existing program estimates. Ingredient-level macros and equivalent substitutions are not yet verified.</p></details></div>';
+ const confirmed=meals.filter(m=>done.has(m.id)),next=meals.find(m=>!done.has(m.id)),planned=confirmed.reduce((sum,m)=>sum+m.kcal,0),remaining=meals.filter(m=>!done.has(m.id)).reduce((sum,m)=>sum+m.kcal,0);
+ $("nutritionToday").innerHTML='<div class="nutrition-dashboard"><small>'+(dayKey(dayDate())!==dayKey(new Date())?"RECORD THIS DAY’S MEALS":next?"NEXT TO EAT":"MEALS CONFIRMED")+'</small><h2>'+(next?nutritionText(next.name):"You’ve recorded every meal")+'</h2>'+(next?'<p>'+next.foods.map(nutritionText).join(" · ")+'</p><button id="eatNextMeal" class="nutrition-save">Ate this meal</button><button id="openNextMeal" class="next-meal-details">View meal details</button>':'<p>'+(log.complete?"Today’s intake is saved.":"Review any changes below before finishing today’s intake.")+'</p>')+'<p class="meal-remainder">'+confirmed.length+' of '+meals.length+' meals confirmed · ≈ '+planned.toLocaleString()+' kcal from meals<br>≈ '+remaining.toLocaleString()+' kcal in the remaining plan</p>'+(target.adjustment?'<div class="nutrition-adjustment '+target.adjustment.level+'"><strong>'+target.adjustment.title+'</strong><span>'+target.adjustment.copy+'</span></div>':'')+'<details><summary>Daily targets & timing</summary><small>program kcal target</small><p>≈ '+target.cal.toLocaleString()+' kcal · '+target.protein+' g protein · '+target.carbs+' g carbohydrate · '+target.fat+' g fat</p><p>'+target.why+'</p><p>Spread protein meals through the day. Move the training snack before or after training as comfortable; no countdown is needed.</p><p>Meal calories are existing program estimates. Ingredient-level macros and equivalent substitutions are not yet verified.</p></details></div>';
 
  $("mealProgress").textContent=done.size+"/"+meals.length;
- $("nutritionMeals").innerHTML=meals.map(m=>'<div class="meal-card '+(done.has(m.id)?"done":"")+'"><button class="meal-check" aria-label="'+(done.has(m.id)?"Undo ":"Ate ")+m.name+'" aria-pressed="'+done.has(m.id)+'" data-meal="'+m.id+'">'+(done.has(m.id)?"✓":"○")+'</button><button class="meal-main" data-mealopen="'+m.id+'"><div><small>≈ '+m.kcal+' KCAL</small><strong>'+m.name+'</strong>'+m.foods.map(f=>'<span>'+f+'</span>').join("")+'</div><b>›</b></button></div>').join("");
- const toggleMeal=id=>{if(!localStorage.programStart){beginJourney();return}const cur=captureNutritionDraft(),set=new Set(cur.meals||[]);set.has(id)?set.delete(id):set.add(id);cur.meals=[...set];localStorage.setItem(nutritionLogKey(),JSON.stringify(cur));saveNutrition(false)};
+ $("nutritionMeals").innerHTML=meals.map(m=>'<div class="meal-card '+(done.has(m.id)?"done":"")+'"><button class="meal-check" aria-label="'+(done.has(m.id)?"Undo ":"Ate ")+nutritionText(m.name)+'" aria-pressed="'+done.has(m.id)+'" data-meal="'+nutritionText(m.id)+'">'+(done.has(m.id)?"✓":"○")+'</button><button class="meal-main" data-mealopen="'+nutritionText(m.id)+'"><div><small>≈ '+m.kcal+' KCAL</small><strong>'+nutritionText(m.name)+'</strong>'+m.foods.map(f=>'<span>'+nutritionText(f)+'</span>').join("")+'</div><b>›</b></button></div>').join("");
+ const toggleMeal=id=>{if(!localStorage.programStart){beginJourney();return}const cur=captureNutritionDraft(),set=new Set(cur.meals||[]);set.has(id)?set.delete(id):set.add(id);cur.meals=[...set];cur.prescribedMeals=meals.map(m=>({...m,foods:[...m.foods]}));localStorage.setItem(nutritionLogKey(),JSON.stringify(cur));saveNutrition(false)};
  $("nutritionMeals").querySelectorAll(".meal-check").forEach(b=>b.onclick=()=>toggleMeal(b.dataset.meal));
  if(next&&$("eatNextMeal"))$("eatNextMeal").onclick=()=>toggleMeal(next.id);
- const openMeal=id=>{const m=meals.find(x=>x.id===id);$("modalTitle").textContent=m.name;$("modalContent").innerHTML='<div class="meal-detail"><small>≈ '+m.kcal+' KCAL PLANNED</small>'+m.foods.map((f,i)=>'<div><b>'+(i+1)+'</b><span>'+f+'</span></div>').join("")+'</div>';$("infoModal").classList.remove("hidden")};
+ const openMeal=id=>{const m=meals.find(x=>x.id===id);$("modalTitle").textContent=m.name;$("modalContent").innerHTML='<div class="meal-detail"><small>≈ '+m.kcal+' KCAL PLANNED</small>'+m.foods.map((f,i)=>'<div><b>'+(i+1)+'</b><span>'+nutritionText(f)+'</span></div>').join("")+'</div>'+mealPreparation(m);$("infoModal").classList.remove("hidden")};
  $("nutritionMeals").querySelectorAll(".meal-main").forEach(b=>b.onclick=()=>openMeal(b.dataset.mealopen));
  if(next&&$("openNextMeal"))$("openNextMeal").onclick=()=>openMeal(next.id);
  const draft=nutritionDraft(log);
@@ -674,15 +721,15 @@ function renderNutrition(){
 }
 function saveNutrition(finalize=true){
  if(!localStorage.programStart){beginJourney();return}
- const log=captureNutritionDraft(),target=todayNutritionPrescription(prescriptionWeek(),sessionName()),meals=mealPlanForTarget(prescriptionWeek(),target),checkedCalories=(log.meals||[]).reduce((sum,id)=>sum+(meals.find(m=>m.id===id)?.kcal||0),0),prescribedCalories=meals.reduce((sum,m)=>sum+m.kcal,0),mealRatio=prescribedCalories?Math.min(1,checkedCalories/prescribedCalories):0;
+ const log=captureNutritionDraft(),target=todayNutritionPrescription(prescriptionWeek(),sessionName()),meals=todayMealPlan(prescriptionWeek(),sessionName()),checkedCalories=(log.meals||[]).reduce((sum,id)=>sum+(meals.find(m=>m.id===id)?.kcal||0),0),prescribedCalories=meals.reduce((sum,m)=>sum+m.kcal,0),mealRatio=prescribedCalories?Math.min(1,checkedCalories/prescribedCalories):0;
  log.waterOz=Number($("waterActual")?.value)||0;
  log.saved=true;log.savedAt=new Date().toISOString();
  const rawCalories=val("actualCalories").trim(),rawProtein=val("actualProtein").trim(),rawCarbs=val("actualCarbs").trim(),rawFat=val("actualFat").trim(),enteredCalories=rawCalories===""?null:Number(rawCalories),enteredProtein=rawProtein===""?null:Number(rawProtein),enteredCarbs=rawCarbs===""?null:Number(rawCarbs),enteredFat=rawFat===""?null:Number(rawFat),hasManualDeviation=[rawCalories,rawProtein,rawCarbs,rawFat].some(Boolean);
  log.actualCalories=Number.isFinite(enteredCalories)&&enteredCalories>=0?enteredCalories:checkedCalories;
- const fullPrescription=(log.meals||[]).length===meals.length&&meals.every(m=>(log.meals||[]).includes(m.id));
- log.actualProtein=Number.isFinite(enteredProtein)&&enteredProtein>=0?enteredProtein:(fullPrescription?target.protein:null);
- log.actualCarbs=Number.isFinite(enteredCarbs)&&enteredCarbs>=0?enteredCarbs:(fullPrescription?target.carbs:null);
- log.actualFat=Number.isFinite(enteredFat)&&enteredFat>=0?enteredFat:(fullPrescription?target.fat:null);
+ const fullPrescription=(log.meals||[]).length===meals.length&&meals.every(m=>(log.meals||[]).includes(m.id)),matchesTarget=prescribedCalories===target.cal;
+ log.actualProtein=Number.isFinite(enteredProtein)&&enteredProtein>=0?enteredProtein:(fullPrescription&&matchesTarget?target.protein:null);
+ log.actualCarbs=Number.isFinite(enteredCarbs)&&enteredCarbs>=0?enteredCarbs:(fullPrescription&&matchesTarget?target.carbs:null);
+ log.actualFat=Number.isFinite(enteredFat)&&enteredFat>=0?enteredFat:(fullPrescription&&matchesTarget?target.fat:null);
  log.intakeSource=hasManualDeviation?"manual-deviation":"prescribed-meals";
  // A meal tap saves progress, never a draft deviation or a claim that the day is over.
  log.complete=hasManualDeviation?finalize&&Number.isFinite(enteredCalories)&&enteredCalories>=0:fullPrescription;
@@ -772,7 +819,7 @@ function objectiveSetsForPhase(p,stats,b){
 }
 function phaseExitQualified(p){const sets=objectiveSetsForPhase(p,macroStats(p),getBenchmarks());return sets.every(set=>set.every(o=>o.done))}
 function promotionGate(p){const s=macroStats(p);return{passed:phaseExitQualified(p)&&unresolvedInPhase(p)===0,stats:s}}
-function prescriptionWeek(){const cw=currentWeek();for(const x of macroPhases){const p={name:x[0],start:x[1],end:x[2],focus:x[3]};if(p.end<cw&&!promotionGate(p).passed)return p.end}return cw}
+function prescriptionWeek(){const cw=localStorage.daySession?programWeekForDate(dayDate()):currentWeek();for(const x of macroPhases){const p={name:x[0],start:x[1],end:x[2],focus:x[3]};if(p.end<cw&&!promotionGate(p).passed)return p.end}return cw}
 function renderProgram(){
  const earned=prescriptionWeek(),calendar=currentWeek(),cur=macroForWeek(earned),stats=macroStats(cur),b=getBenchmarks(),sets=objectiveSetsForPhase(cur,stats,b);let setIndex=sets.findIndex(set=>!set.every(o=>o.done));if(setIndex<0)setIndex=sets.length-1;const shown=sets[setIndex],completedShown=shown.filter(o=>o.done).length,pc=Math.round(stats.mastery*100);
  $("currentPhaseCard").innerHTML=(earned<calendar?'<div class="phase-lock"><strong>Phase promotion locked</strong><span>Meet the exit qualification and clear unresolved days before the prescription advances.</span></div>':"")+'<div class="phase-feature-top"><div><small>PHASE '+(macroPhases.findIndex(x=>x[0]===cur.name)+1)+' OF '+macroPhases.length+'</small><h2>'+cur.name+'</h2><p>Weeks '+cur.start+'–'+cur.end+'<br>'+cur.focus+'</p></div><div class="xp-chip">SET '+(setIndex+1)+'/'+sets.length+'</div></div><div class="phase-progress-box"><div class="phase-ring" style="--p:'+pc+'"><span>'+pc+'%</span></div><div class="phase-progress-copy"><strong>'+stats.completeDays+' complete days</strong><small>'+stats.failed+' failed · '+missedDays().length+' unresolved</small><div class="progress-bar"><i style="width:'+pc+'%"></i></div></div></div>';
@@ -800,9 +847,9 @@ function resetViewport(){document.documentElement.scrollTop=0;document.body.scro
 function switchTab(t){
  $("headerAction").style.display=t==="today"?"grid":"none";document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));$(t).classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.target===t));
  const titles={today:"Today",workout:"Train",week:"Calendar",nutrition:"Nutrition",program:"Program",trends:"Insights",settings:"Settings"};$("pageTitle").textContent=titles[t]||t;
- $("todayDate").textContent=t==="today"?new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}):"";resetViewport();
+ $("todayDate").textContent=["today","workout","nutrition"].includes(t)?(dayKey(dayDate())!==dayKey(new Date())?"Finishing ":"")+dayDate().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}):"";resetViewport();
  if(t==="settings"){
- const started=!!localStorage.programStart;
+ const started=!!localStorage.programStart;renderJourneyArchives();
  $("settingsJourneyStatus").textContent=started?"Active":"Not started";
  $("settingsJourneyStart").textContent=started?new Date(localStorage.programStart).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"}):"Set Day 1 from Today";
  $("settingsJourneyPosition").textContent=started?"Calendar week "+currentWeek()+" · Training week "+prescriptionWeek():"Your 56-week Journey has not begun";
@@ -842,6 +889,7 @@ if($("librarySearch"))$("librarySearch").addEventListener("input",e=>renderLibra
 document.querySelectorAll(".segment").forEach(b=>b.onclick=()=>{document.querySelectorAll(".segment").forEach(x=>x.classList.toggle("active",x===b));$("trainSessionView").classList.toggle("hidden",b.dataset.trainview!=="session");$("trainLibraryView").classList.toggle("hidden",b.dataset.trainview!=="library");resetViewport()});
 $("saveNutritionDay").onclick=saveNutrition;
 $("openBenchmarks").onclick=()=>{loadBenchmarkForm();$("benchmarkSheet").classList.remove("hidden")};$("benchmarkClose").onclick=()=>$("benchmarkSheet").classList.add("hidden");$("benchmarkSheet").onclick=e=>{if(e.target===$("benchmarkSheet"))$("benchmarkSheet").classList.add("hidden")};$("saveBenchmarks").onclick=saveBenchmarkData;$("openTrends").onclick=()=>switchTab("trends");$("openSettings").onclick=()=>switchTab("settings");
+resumeDaySession();
 // Old measurements are never silently presented as a new morning's answers.
 if(localStorage.input_morningDate!==todayKey()&&!todayCheckin()){
  ["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight","focal","gait"].forEach(id=>localStorage.removeItem("input_"+id));
@@ -866,9 +914,55 @@ restoreSessionFeedback();
  const remember=()=>localStorage.setItem(key(),field.value);
  field.addEventListener("input",remember);field.addEventListener("change",remember);
 });
-const DB_NAME="AdaptiveLandPrepDB",STORE="kv";function openDB(){return new Promise((r,j)=>{const q=indexedDB.open(DB_NAME,1);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains(STORE))q.result.createObjectStore(STORE)};q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}async function dbSet(k,v){try{const d=await openDB();d.transaction(STORE,"readwrite").objectStore(STORE).put(v,k)}catch(e){}}async function requestPersistence(){let p=false;try{p=await navigator.storage?.persisted?.()||await navigator.storage?.persist?.()}catch(e){}$("persistBadge").textContent=p?"Persistent":"On device";$("dbStatus").textContent=p?"Persistent storage granted":"Local database active; keep periodic backups"}function countRecords(){$("recordCount").textContent=(logs().length+workouts().length)+" records";$("lastBackup").textContent=localStorage.lastBackupAt?new Date(localStorage.lastBackupAt).toLocaleString():"Never"}const APP_STORAGE_KEYS=new Set(["trainingLogs","workoutHistory","programStart","baselineDate","failedDays","benchmarks","input_focal","input_gait"]);
+const DB_NAME="AdaptiveLandPrepDB",STORE="kv";function openDB(){return new Promise((r,j)=>{const q=indexedDB.open(DB_NAME,1);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains(STORE))q.result.createObjectStore(STORE)};q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}async function dbSet(k,v){try{const d=await openDB();d.transaction(STORE,"readwrite").objectStore(STORE).put(v,k)}catch(e){}}async function requestPersistence(){let p=false;try{p=await navigator.storage?.persisted?.()||await navigator.storage?.persist?.()}catch(e){}$("persistBadge").textContent=p?"Persistent":"On device";$("dbStatus").textContent=p?"Persistent storage granted":"Local database active; keep periodic backups"}function countRecords(){$("recordCount").textContent=(logs().length+workouts().length)+" records";$("lastBackup").textContent=localStorage.lastBackupAt?new Date(localStorage.lastBackupAt).toLocaleString():"Never"}const APP_STORAGE_KEYS=new Set(["trainingLogs","workoutHistory","programStart","baselineDate","failedDays","benchmarks","input_focal","input_gait","journeyArchives","journeyEpoch","daySession"]);
 function isAppStorageKey(k){return APP_STORAGE_KEYS.has(k)||k.startsWith("input_")||k.startsWith("task_")||k.startsWith("nutrition_")}
-function collectBackupData(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&isAppStorageKey(k))data[k]=localStorage.getItem(k)}return data}
+function collectBackupData(){const pending=localStorage.getItem("alp-journey-restart-pending");if(pending)return JSON.parse(pending);const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&isAppStorageKey(k))data[k]=localStorage.getItem(k)}return data}
+function recoverInterruptedJourneyRestart(){
+ const pending=localStorage.getItem("alp-journey-restart-pending");if(!pending)return;
+ const previous=JSON.parse(pending);
+ if(!previous||typeof previous!=="object"||Array.isArray(previous)||!Object.values(previous).every(v=>typeof v==="string"))throw Error("Journey recovery requires an intact snapshot");
+ for(const k of ["journeyArchives","journeyEpoch","programStart"])if(!Object.hasOwn(previous,k))localStorage.removeItem(k);
+ if(previous.journeyArchives!==undefined)localStorage.setItem("journeyArchives",previous.journeyArchives);
+ for(const [k,v] of Object.entries(previous))localStorage.setItem(k,v);
+ localStorage.removeItem("alp-journey-restart-pending");
+}
+function journeyArchives(){return JSON.parse(localStorage.getItem("journeyArchives")||"[]")}
+function restartJourney(now=new Date()){
+ if(!localStorage.programStart)throw new Error("Begin your Journey before restarting it.");
+ const previous=collectBackupData(),archives=journeyArchives(),snapshot={...previous};
+ delete snapshot.journeyArchives;
+ const at=now.toISOString();
+ archives.push({id:previous.journeyEpoch||previous.programStart,endedAt:at,data:snapshot});
+ const next={journeyArchives:JSON.stringify(archives),journeyEpoch:at,programStart:at};
+ validateBackup({app:"Adaptive Land Prep",formatVersion:3,data:next});
+ localStorage.setItem("alp-journey-restart-pending",JSON.stringify(previous));
+ try{
+  // Reserve space before removing any active record. A full device leaves the old Journey intact.
+  for(const [k,v] of Object.entries(next))localStorage.setItem(k,v);
+  for(const k of Object.keys(previous))if(!Object.hasOwn(next,k))localStorage.removeItem(k);
+  localStorage.removeItem("alp-journey-restart-pending");
+ }catch(error){
+  recoverInterruptedJourneyRestart();
+  throw error;
+ }
+ // IndexedDB is a secondary mirror; all adaptation reads the active localStorage records.
+ dbSet("trainingLogs","[]");dbSet("workoutHistory","[]");
+}
+function requestJourneyRestart(){
+ if(!confirm("Start a new Journey today? Your current Journey will be archived, including its check-ins, training, nutrition and benchmarks. The new Journey starts at Week 1 with a fresh baseline. Your account stays connected, and archived records are included in future backups."))return;
+ try{restartJourney();location.reload()}catch(error){alert("Your Journey could not be restarted. Your existing records are unchanged. Check available device storage and try again.")}
+}
+function exportJourneyArchive(index){
+ const archive=journeyArchives()[index];if(!archive)return;
+ const payload={app:"Adaptive Land Prep",formatVersion:3,exportedAt:new Date().toISOString(),data:archive.data};
+ const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"})),a=document.createElement("a");
+ a.href=url;a.download="adaptive-land-prep-journey-"+archive.endedAt.slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function renderJourneyArchives(){
+ const list=$("journeyArchiveList");list.replaceChildren();
+ journeyArchives().forEach((archive,index)=>{const button=document.createElement("button");button.type="button";button.textContent="Download Journey ending "+new Date(archive.endedAt).toLocaleDateString();button.onclick=()=>exportJourneyArchive(index);list.append(button)});
+ $("restartJourney").disabled=!localStorage.programStart;
+}
 function exportBackup(){const p={app:"Adaptive Land Prep",formatVersion:3,exportedAt:new Date().toISOString(),data:collectBackupData()},b=new Blob([JSON.stringify(p,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="adaptive-land-prep-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.lastBackupAt=p.exportedAt;countRecords()}
 function validateBackup(o){
  const object=v=>v!==null&&typeof v==="object"&&!Array.isArray(v),date=v=>typeof v==="string"&&v.trim()!==""&&Number.isFinite(Date.parse(v));
@@ -878,7 +972,15 @@ function validateBackup(o){
  for(const [k,v] of Object.entries(o.data)){
   if(!isAppStorageKey(k))continue;
   if(typeof v!=="string")fail();
-  if(k==="programStart"||k==="baselineDate"){if(!date(v))fail()}
+  if(k==="daySession"){const session=JSON.parse(v);if(!object(session)||!date(session.date)||(session.closedAt!==null&&!date(session.closedAt)))fail()}
+  else if(k==="journeyArchives"){
+   const archives=JSON.parse(v);if(!Array.isArray(archives))fail();
+   const ids=new Set();for(const archive of archives){
+    if(!object(archive)||typeof archive.id!=="string"||!archive.id||ids.has(archive.id)||!date(archive.endedAt)||!object(archive.data)||Object.hasOwn(archive.data,"journeyArchives")||!date(archive.data.programStart))fail();
+    ids.add(archive.id);const valid=validateBackup({app:o.app,formatVersion:3,data:archive.data});if(Object.keys(valid.data).length!==Object.keys(archive.data).length)fail();
+   }
+  }else if(k==="journeyEpoch"){if(!date(v))fail()}
+  else if(k==="programStart"||k==="baselineDate"){if(!date(v))fail()}
   else if(k==="trainingLogs"||k==="workoutHistory"){
    const rows=JSON.parse(v);if(!Array.isArray(rows))fail();
    for(const r of rows){
@@ -894,6 +996,10 @@ function validateBackup(o){
    const record=JSON.parse(v);if(!object(record))fail();
    if(k.startsWith("nutrition_")){
     if(record.meals!==undefined&&(!Array.isArray(record.meals)||!record.meals.every(x=>typeof x==="string")))fail();
+    if(record.prescribedMeals!==undefined){
+     if(!Array.isArray(record.prescribedMeals)||!record.prescribedMeals.every(m=>object(m)&&typeof m.id==="string"&&typeof m.name==="string"&&typeof m.kcal==="number"&&Number.isFinite(m.kcal)&&m.kcal>=0&&Array.isArray(m.foods)&&m.foods.every(f=>typeof f==="string")))fail();
+     if(new Set(record.prescribedMeals.map(m=>m.id)).size!==record.prescribedMeals.length)fail();
+    }
     if(record.saved!==undefined&&typeof record.saved!=="boolean")fail();
     if(record.complete!==undefined&&typeof record.complete!=="boolean")fail();
     for(const field of ["waterOz","actualCalories","actualProtein","actualCarbs","actualFat","targetCalories","targetProtein","targetCarbs","targetFat"]){if(record[field]!=null&&(typeof record[field]!=="number"||!Number.isFinite(record[field])||record[field]<0))fail()}
@@ -919,5 +1025,17 @@ async function importBackup(f){
  await Promise.all([dbSet("trainingLogs",localStorage.trainingLogs||"[]"),dbSet("workoutHistory",localStorage.workoutHistory||"[]")]);
  location.reload();
 }
-$("exportBackup").onclick=exportBackup;$("importBackup").onchange=e=>e.target.files[0]&&importBackup(e.target.files[0]).catch(()=>alert("That backup could not be restored."));
-migrateProductState();viewedWeek=currentWeek();viewedMonth=new Date(programStart());$("headerAction").innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 9.5h16"/></svg>';$("headerAction").style.display="grid";renderAll();requestPersistence();if(!window.Capacitor?.isNativePlatform?.()&&"serviceWorker"in navigator)addEventListener("load",async()=>{try{const r=await navigator.serviceWorker.register("./service-worker.js");await r.update();navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!sessionStorage.swReloaded){sessionStorage.swReloaded="1";location.reload()}})}catch(e){console.info("Offline cache unavailable in this environment")}});
+$("exportBackup").onclick=exportBackup;$("restartJourney").onclick=requestJourneyRestart;$("importBackup").onchange=e=>e.target.files[0]&&importBackup(e.target.files[0]).catch(()=>alert("That backup could not be restored."));
+migrateProductState();viewedWeek=currentWeek();viewedMonth=new Date(programStart());$("headerAction").innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 9.5h16"/></svg>';$("headerAction").style.display="grid";renderAll();if(localStorage.programStart)advanceDailyFlow();requestPersistence();if(!window.Capacitor?.isNativePlatform?.()&&"serviceWorker"in navigator)addEventListener("load",async()=>{try{const r=await navigator.serviceWorker.register("./service-worker.js");await r.update();navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!sessionStorage.swReloaded){sessionStorage.swReloaded="1";location.reload()}})}catch(e){console.info("Offline cache unavailable in this environment")}});
+
+// Home Screen reopening resumes the open day; only an ended day can roll forward.
+document.addEventListener("visibilitychange",()=>{
+ if(document.visibilityState!=="visible"||!localStorage.programStart)return;
+ const previous=todayKey();resumeDaySession();
+ if(todayKey()!==previous){
+  morningStep=0;
+  ["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>$(id).value="");
+  $("focal").checked=false;$("gait").checked=false;persistInputs();restoreSessionFeedback();
+ }
+ renderAll();advanceDailyFlow();
+});

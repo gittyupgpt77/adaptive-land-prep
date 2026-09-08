@@ -3,7 +3,7 @@ const source=fs.readFileSync('app.js','utf8');
 function harness({fail=false,historical=false,complete=true}={}){
  const nodes={},events=[],storage={programStart:'2026-09-01',trainingLogs:'[]'};
  const $=id=>nodes[id]??={value:'1',checked:false,disabled:false,classList:{add(){},remove(){}},focus(){}};
- const context=vm.createContext({$,checkinSaving:false,morningStep:2,historicalDate:historical?new Date('2026-09-02'):null,localStorage:storage,
+ const context=vm.createContext({dayDate:()=>new Date(),advanceDailyFlow:()=>{},$,checkinSaving:false,morningStep:2,historicalDate:historical?new Date('2026-09-02'):null,localStorage:storage,
  checkinRequiredComplete:()=>complete,requiredFields:()=>{},evaluate(){if(fail)throw Error('quota')},decision:()=>({o:'GREEN'}),logs:()=>JSON.parse(storage.trainingLogs),
  programWeekForDate:()=>1,prescriptionWeek:()=>1,dayKey:d=>new Date(d).toDateString(),num:()=>1,val:()=>'YES',previousWorkoutSignal:()=>null,
  dbSet:()=>events.push('persist'),setTask:()=>{},resetHistorical:()=>{},closeCheckin:()=>{},renderAll:()=>events.push('render'),advanceDailyFlow:()=>events.push('advance')});

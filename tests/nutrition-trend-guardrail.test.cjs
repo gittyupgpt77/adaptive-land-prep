@@ -7,7 +7,7 @@ const source=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
 
 function contextWithWeights(weights,decision=null){
  const rows=weights.map(([date,weight])=>({date,weight}));
- const context=vm.createContext({
+ const context=vm.createContext({dayDate:()=>new Date(),
   logs:()=>rows,
   nutritionForWeek:()=>({phase:'Test',cal:2000,protein:180,carbs:200,fat:60,why:'Base'}),
   prescriptionWeek:()=>10,sessionName:()=> 'Easy run',savedDecision:()=>decision
@@ -98,10 +98,10 @@ test('recorded under-fueling and excessive Phase 1 loss do not stack duplicate c
 test('acute scale drops do not independently change fueling readiness',()=>{
  const start=source.indexOf('function fueling(){'),end=source.indexOf('\nfunction decision()',start);
  const values={weight:160,weightAvg:170,load:8};
- const c=vm.createContext({num:id=>values[id]??null,previousNutritionSignal:()=>null,historicalDate:null});
+ const c=vm.createContext({dayDate:()=>new Date(),num:id=>values[id]??null,previousNutritionSignal:()=>null,historicalDate:null});
  vm.runInContext(source.slice(start,end),c);
  assert.equal(c.fueling(),'GREEN');
- const c2=vm.createContext({num:id=>values[id]??null,previousNutritionSignal:()=>({ratio:.6}),historicalDate:null});
+ const c2=vm.createContext({dayDate:()=>new Date(),num:id=>values[id]??null,previousNutritionSignal:()=>({ratio:.6}),historicalDate:null});
  vm.runInContext(source.slice(start,end),c2);
  assert.equal(c2.fueling(),'RED');
 });

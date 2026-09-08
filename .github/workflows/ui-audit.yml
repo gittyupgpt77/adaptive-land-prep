@@ -248,7 +248,10 @@ jobs:
           await page.locator('[data-target="today"]').click();
           await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();n.saved=true;n.savedAt=new Date().toISOString();n.intakeSource='prescribed-meals';n.meals=meals.map(m=>m.id);n.actualCalories=todayNutritionPrescription().cal;localStorage.setItem(nutritionLogKey(),JSON.stringify(n));renderAll();switchTab('today')});
           check('Saved complete nutrition advances Today to evening summary',(await page.locator('#directiveStage').innerText()).includes('EVENING')&&(await page.locator('#directiveState').innerText()).includes('DAY COMPLETE'));
-          check('Evening summary has no compulsory next-action button',!(await visible('#directivePrimary')));
+          check('Day stays open until explicitly ended',(await page.locator('#directivePrimary').innerText())==='End day');
+          await page.locator('#directivePrimary').click();
+          check('Ended day has no new morning prompt',!(await visible('#directivePrimary'))&&!(await visible('#morningWelcome')));
+          await page.evaluate(()=>{const s=JSON.parse(localStorage.daySession);s.closedAt=null;localStorage.daySession=JSON.stringify(s)});
           check('Directive retains Journey context',(await page.locator('#directiveJourney').innerText()).includes('Week'));
           await page.locator('[data-target="program"]').click();
           check('Escape-hatch navigation still opens Program',await visible('#program'));
@@ -571,6 +574,21 @@ jobs:
           check('Confirmed morning automatically reveals the session',await morning.locator('#dailyDirective').isVisible()&&!(await morning.locator('#morningWelcome').isVisible()));
           await morning.reload();
           check('Confirmed check-in survives reopening',await morning.locator('#dailyDirective').isVisible());
+          check('Greeting carries the Journey date and week', (await morning.locator('#helloDate').textContent()).length>8&&(await morning.locator('#helloJourney').textContent()).includes('of 56'));
+          const nextMorning=await morning.evaluate(()=>Date.now()+86400000);
+          await morning.clock.install({time:nextMorning});
+          await morning.reload();
+          check('Unended day survives midnight without regreeting',await morning.locator('#dailyDirective').isVisible()&&!(await morning.locator('#morningWelcome').isVisible()));
+          await morning.evaluate(()=>{
+            localStorage.workoutHistory=JSON.stringify([{date:dayDate().toISOString(),week:1,session:'Recovery',completed:'NO'}]);
+            const meals=todayMealPlan();localStorage.setItem(nutritionLogKey(),JSON.stringify({saved:true,complete:true,meals:meals.map(m=>m.id),intakeSource:'prescribed-meals'}));
+            renderAll();switchTab('today');
+          });
+          await morning.locator('#directivePrimary').click();
+          check('End day shows saved closure',(await morning.locator('#directiveTitle').innerText()).includes('Day closed'));
+          await morning.reload();
+          check('Only a later opening after closure starts morning metrics',await morning.locator('#morningWelcome').isVisible()&&await morning.locator('#hrv').inputValue()==='');
+          await morning.locator('[data-target="program"]').click();await morning.locator('#openSettings').click();
           await morning.close();
           check('No runtime errors',report.errors.length===0,JSON.stringify(report.errors));
           const failed=report.assertions.filter(x=>!x.pass);

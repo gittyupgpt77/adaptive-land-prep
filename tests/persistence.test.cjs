@@ -32,3 +32,10 @@ test('full 56-week and multi-year histories survive restore',async()=>{
  const rows=Array.from({length:800},(_,i)=>({date:new Date(Date.UTC(2024,0,i+1)).toISOString(),week:Math.min(56,Math.floor(i/7)+1)}));
  const h=harness();await h.restore(payload({trainingLogs:JSON.stringify(rows)}));assert.equal(JSON.parse(h.values.get('trainingLogs')).length,800);
 });
+test('restored confirmed meal snapshots retain quantities and malformed snapshots are rejected',async()=>{
+ const log={meals:['m1'],prescribedMeals:[{id:'m1',name:'Breakfast',kcal:400,foods:['½ cup cooked oats']}],actualCalories:400,saved:true,complete:false};
+ const h=harness(old);await h.restore(payload({nutrition_today:JSON.stringify(log)}));assert.deepEqual(JSON.parse(h.values.get('nutrition_today')),log);
+ for(const prescribedMeals of [[null],[{id:'m1',name:'Breakfast',kcal:400,foods:'oats'}],[...log.prescribedMeals,...log.prescribedMeals]]){
+  const invalid=harness(old);await assert.rejects(invalid.restore(payload({nutrition_today:JSON.stringify({...log,prescribedMeals})})));assert.deepEqual(Object.fromEntries(invalid.values),old);
+ }
+});
