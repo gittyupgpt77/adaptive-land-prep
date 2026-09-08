@@ -64,7 +64,7 @@ jobs:
           const page=await browser.newPage({viewport:{width:393,height:852},deviceScaleFactor:3});
           const errors=[];page.on('pageerror',e=>errors.push(e.message));
           await page.goto('http://127.0.0.1:8080',{waitUntil:'networkidle'});
-          await page.evaluate(()=>{localStorage.clear();localStorage.programStart=new Date().toISOString();localStorage.failedDays='[]'});await page.reload({waitUntil:'networkidle'});
+          await page.evaluate(()=>{localStorage.clear();const base=new Date();base.setDate(base.getDate()-1);base.setHours(8,0,0,0);const date=base.toISOString();localStorage.programStart=date;localStorage.baselineDate=date;localStorage.trainingLogs=JSON.stringify([{date,week:1,preJourney:false,weight:170,hrv:62,rhr:54,grip:52,sleep:8,sleepQ:5,fatigue:1,load:2,pain:0,performance:'YES',overall:'GREEN'}]);localStorage.workoutHistory='[]';localStorage.failedDays='[]'});await page.reload({waitUntil:'networkidle'});
           const visible=async s=>page.locator(s).isVisible().catch(()=>false);
           if(!(await visible('#dailyDirective')))throw new Error('daily directive missing');
           if((await page.locator('#directiveStage').innerText()).trim()!=='MORNING')throw new Error('morning state missing');
