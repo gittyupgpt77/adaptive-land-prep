@@ -398,3 +398,16 @@ body{min-height:100dvh}
 .nutrition-dashboard h2{font-size:28px;line-height:1.15;margin:12px 0}.nutrition-dashboard details{margin-top:16px}.nutrition-dashboard summary{min-height:44px;cursor:pointer;font-weight:600}.next-meal-details{display:block;min-height:44px;width:100%;background:none;border:0;color:var(--green);font:inherit}.meal-remainder{font-size:14px;line-height:1.6}
 
 #settings .data-details{background:#fff;color:var(--ink);font-size:15px}#settings .data-details summary{color:var(--ink);min-height:44px;font-size:16px;display:flex;align-items:center}#settings .data-row strong{font-size:14px}#settings .data-row small{font-size:13px;line-height:1.5}#settings button{min-height:44px}#settingsJourneyPosition{line-height:1.5}
+
+/* Morning entry is the task itself, using the existing check-in inputs. */
+#morningWelcome{padding:24px 4px 12px}#morningWelcome .hello-date{font-size:10px;letter-spacing:.12em;color:var(--muted)}
+#helloTitle{font-size:48px;line-height:1.08;font-weight:550;letter-spacing:-.055em;margin:20px 0 12px;outline:none}
+#helloCopy{font-size:16px;line-height:1.5;color:var(--muted);margin:0 0 26px;max-width:310px}
+#checkinForm.inline-checkin{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0;width:100%;max-height:none;overflow:visible;background:transparent!important;border:0;box-shadow:none;animation:none;border-radius:0}
+.inline-checkin .checkin-section,.inline-checkin .input-grid{display:contents}
+.inline-checkin .sheet-head,.inline-checkin .sheet-handle,.inline-checkin .checkin-section h3,.inline-checkin #checkinProgress,.inline-checkin .checkin-mode-note,.inline-checkin #evaluateBtn,.inline-checkin #results,.inline-checkin .morning-hidden{display:none!important}
+.inline-checkin .field{padding:16px 12px;min-width:0}.inline-checkin .field>span{font-size:12px}.inline-checkin .field input{font-size:24px;min-height:44px}
+.inline-checkin .field:has(.tap-scale),.inline-checkin .toggle-row,.inline-checkin #morningControls,.inline-checkin #checkinError{grid-column:1/-1}
+#morningControls{margin-top:12px}#morningControls button{min-height:50px}#checkinError{color:var(--red);font-size:14px}
+#morningWelcome .field-needed{border-color:rgba(20,32,43,.10);box-shadow:none}
+@media(prefers-reduced-motion:reduce){.sheet{animation:none!important}html{scroll-behavior:auto!important}}

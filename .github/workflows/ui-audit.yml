@@ -229,6 +229,7 @@ jobs:
           await page.locator('#postPain').selectOption('4');
           await page.locator('#completed').selectOption('YES');
           await page.locator('#completeWorkout').click();
+          check('Recording a session opens nutrition automatically',await visible('#nutrition'));
           check('Workout response persists',await page.evaluate(()=>{const w=JSON.parse(localStorage.workoutHistory||'[]')[0];return w?.rpe===9&&w?.postPain===4&&w?.completed==='YES';}));
           check('Workout task completes only from saved session',await page.locator('#taskWorkout').evaluate(n=>n.classList.contains('done')));
           await page.locator('[data-target="nutrition"]').click();
@@ -549,11 +550,34 @@ jobs:
           await page.reload({waitUntil:'networkidle'});
           check('Recovered partial session restores feedback',await page.locator('#sessionRPE').inputValue()==='7'&&await page.locator('#postPain').inputValue()==='0'&&await page.locator('#completed').inputValue()==='PARTIAL');
           check('Recovered session restores duration and note',await page.locator('#sessionDuration').inputValue()==='35'&&await page.locator('#sessionNote').inputValue()==='Stopped early');
+          // Isolated next-day consumer loop: no hidden function calls to advance steps.
+          const morning=await browser.newPage({viewport:{width:393,height:852},deviceScaleFactor:3});
+          await morning.goto('http://127.0.0.1:8080');
+          await morning.evaluate(()=>{localStorage.programStart=new Date().toISOString();localStorage.input_hrv='99';localStorage.input_morningDate='2000-01-01'});
+          await morning.reload();
+          check('Greeting is immediately actionable',await morning.locator('#helloTitle').innerText()==='Hello.'&&await morning.locator('#hrv').isVisible());
+          check('Yesterday values do not become today answers',await morning.locator('#hrv').inputValue()==='');
+          await morning.screenshot({path:'20-hello-morning.png'});
+          await morning.locator('#morningContinue').click();
+          check('Missing measurements keep athlete on the current step',await morning.locator('#helloTitle').innerText()==='Hello.'&&await morning.locator('#checkinError').isVisible());
+          for(const [id,value] of Object.entries({hrv:'60',rhr:'55',sleep:'8',weight:'170'}))await morning.locator('#'+id).fill(value);
+          await morning.reload();
+          check('Same-day unfinished measurements survive reopening',await morning.locator('#hrv').inputValue()==='60');
+          await morning.locator('#morningContinue').click();
+          for(const [id,value] of Object.entries({sleepQ:'4',fatigue:'1',load:'0',performance:'YES'}))await morning.locator('#'+id).locator('..').locator('button[data-value="'+value+'"]').click();
+          await morning.locator('#morningContinue').click();
+          await morning.locator('#pain').locator('..').locator('button[data-value="0"]').click();
+          await morning.locator('#morningContinue').click();
+          check('Confirmed morning automatically reveals the session',await morning.locator('#dailyDirective').isVisible()&&!(await morning.locator('#morningWelcome').isVisible()));
+          await morning.reload();
+          check('Confirmed check-in survives reopening',await morning.locator('#dailyDirective').isVisible());
+          await morning.close();
           check('No runtime errors',report.errors.length===0,JSON.stringify(report.errors));
           const failed=report.assertions.filter(x=>!x.pass);
           report.summary={total:report.assertions.length,passed:report.assertions.length-failed.length,failed:failed.length,runtimeErrors:report.errors.length};
           fs.writeFileSync('consumer-report.json',JSON.stringify(report,null,2));
           console.log('CONSUMER_AUDIT_SUMMARY '+JSON.stringify(report.summary));
+
           await browser.close();
           if(failed.length||report.errors.length){console.error(JSON.stringify({failed,errors:report.errors},null,2));process.exitCode=1;}
           JS
@@ -569,6 +593,7 @@ jobs:
           path: |
             consumer-report.json
             audit-cloud/
+            20-hello-morning.png
             01-fresh-today.png
             02-started-today.png
             03-readiness-detail.png

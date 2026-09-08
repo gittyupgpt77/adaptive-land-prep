@@ -150,8 +150,8 @@ function decision(){const a=systemic(),b=mechanical(),c=fueling(),o=!a&&!b&&!c?"
 function dayKey(d){return new Date(d).toDateString()}
 function missedDays(){if(!localStorage.programStart)return[];const start=new Date(localStorage.programStart),end=new Date();start.setHours(12,0,0,0);end.setHours(12,0,0,0);end.setDate(end.getDate()-1);const resolved=new Set(logs().map(x=>dayKey(x.date))),failed=new Set(JSON.parse(localStorage.failedDays||"[]")),out=[];for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const k=d.toDateString();if(!resolved.has(k)&&!failed.has(k))out.push(new Date(d))}return out}
 let historicalDate=null,historicalInputs=null;
-function openHistoricalCheckin(d){resetHistorical();historicalInputs=Object.fromEntries(["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight","hrvBase","rhrBase","gripBase","weightAvg","focal","gait"].map(id=>[id,{value:$(id).value,checked:$(id).checked}]));historicalDate=new Date(d);["hrvBase","rhrBase","gripBase","weightAvg"].forEach(id=>$(id).value="");applyBaselines();["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>{if($(id))$(id).value=""});$("focal").checked=false;$("gait").checked=false;$("checkinSheet").querySelector(".sheet-head small").textContent="RETROSPECTIVE";$("checkinSheet").querySelector(".sheet-head h2").textContent=historicalDate.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});$("checkinSheet").classList.remove("hidden");requiredFields()}
-function resetHistorical(){if(historicalInputs){for(const [id,state] of Object.entries(historicalInputs)){ $(id).value=state.value;$(id).checked=state.checked }historicalInputs=null}historicalDate=null;$("checkinSheet").querySelector(".sheet-head small").textContent="MORNING";$("checkinSheet").querySelector(".sheet-head h2").textContent="Check-In"}
+function openHistoricalCheckin(d){resetHistorical();historicalInputs=Object.fromEntries(["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight","hrvBase","rhrBase","gripBase","weightAvg","focal","gait"].map(id=>[id,{value:$(id).value,checked:$(id).checked}]));historicalDate=new Date(d);renderMorningWelcome();["hrvBase","rhrBase","gripBase","weightAvg"].forEach(id=>$(id).value="");applyBaselines();["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>{if($(id))$(id).value=""});$("focal").checked=false;$("gait").checked=false;$("checkinForm").querySelector(".sheet-head small").textContent="RETROSPECTIVE";$("checkinForm").querySelector(".sheet-head h2").textContent=historicalDate.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});$("checkinSheet").classList.remove("hidden");requiredFields()}
+function resetHistorical(){if(historicalInputs){for(const [id,state] of Object.entries(historicalInputs)){ $(id).value=state.value;$(id).checked=state.checked }historicalInputs=null}historicalDate=null;$("checkinForm").querySelector(".sheet-head small").textContent="MORNING";$("checkinForm").querySelector(".sheet-head h2").textContent="Check-In"}
 function markMissedDay(d){const arr=JSON.parse(localStorage.failedDays||"[]"),k=dayKey(d);if(!arr.includes(k))arr.push(k);localStorage.failedDays=JSON.stringify(arr);renderAll()}
 function renderMissedBanner(){const m=missedDays(),b=$("missedDayBanner");if(!b)return;if(!m.length){b.classList.add("hidden");b.innerHTML="";return}const d=m[0];b.classList.remove("hidden");b.innerHTML='<div class="missed-icon">!</div><div><small>CURRICULUM DEBT</small><strong>Missed check-in · '+d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})+'</strong><p>Resolve this day before it can count toward phase mastery.</p><div class="missed-actions"><button id="resolveMissed">Enter remembered data</button><button id="failMissed">Mark missed</button></div></div>';$("resolveMissed").onclick=()=>openHistoricalCheckin(d);$("failMissed").onclick=()=>markMissedDay(d)}
 function migrateProductState(){
@@ -213,10 +213,52 @@ function checkinRequiredComplete(){return["hrv","rhr","sleep","sleepQ","fatigue"
 function requiredFields(){const ids=["hrv","rhr","sleep","sleepQ","fatigue","load","pain","performance","weight"];let done=0;ids.forEach(id=>{const el=$(id),ok=String(el.value).trim()!=="";done+=ok?1:0;el.closest(".field").classList.toggle("field-done",ok);el.closest(".field").classList.toggle("field-needed",!ok)});const left=ids.length-done,b=$("checkinProgress");if(left===0){b.classList.add("complete");b.querySelector(".attention-icon").textContent="✓";b.querySelector("strong").textContent="Ready to evaluate";$("checkinProgressText").textContent="Required fields complete."}else{b.classList.remove("complete");b.querySelector(".attention-icon").textContent="!";b.querySelector("strong").textContent="Needs attention";$("checkinProgressText").textContent=left+" required field"+(left===1?"":"s")+" remaining."}}
 function avg(a){const x=a.filter(Number.isFinite);return x.length?x.reduce((p,c)=>p+c,0)/x.length:null}
 function applyBaselines(){const l=logs().filter(x=>!historicalDate||new Date(x.date)<new Date(new Date(historicalDate).setHours(0,0,0,0))).sort((a,b)=>new Date(b.date)-new Date(a.date)),hb=avg(l.slice(0,28).map(x=>x.hrv)),rb=avg(l.slice(0,28).map(x=>x.rhr)),gb=avg(l.slice(0,28).map(x=>x.grip)),wa=avg(l.slice(0,7).map(x=>x.weight));if(hb!==null)$("hrvBase").value=hb.toFixed(0);if(rb!==null)$("rhrBase").value=rb.toFixed(0);if(gb!==null)$("gripBase").value=gb.toFixed(1);if(wa!==null)$("weightAvg").value=wa.toFixed(1)}
-function persistInputs(){if(historicalDate)return;["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>localStorage.setItem("input_"+id,$(id).value));localStorage.input_focal=$("focal").checked?"1":"0";localStorage.input_gait=$("gait").checked?"1":"0"}
+function persistInputs(){if(historicalDate)return;localStorage.input_morningDate=todayKey();["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>localStorage.setItem("input_"+id,$(id).value));localStorage.input_focal=$("focal").checked?"1":"0";localStorage.input_gait=$("gait").checked?"1":"0"}
 function evaluate(){const d=decision();[["sysStatus",d.a],["mechStatus",d.b],["fuelStatus",d.c]].forEach(x=>{$(x[0]).textContent=x[1]||"—";$(x[0]).style.color=x[1]==="GREEN"?"var(--green)":x[1]==="YELLOW"?"var(--yellow)":x[1]==="RED"?"var(--red)":""});[["runDecision",d.run],["ruckDecision",d.ruck],["c2Decision",d.row],["strengthDecision",d.strength],["intensityDecision",d.intensity],["nutritionDecision",d.nutrition]].forEach(x=>$(x[0]).textContent=x[1]);$("warningBox").textContent=d.warning;$("warningBox").classList.toggle("hidden",!d.warning);$("results").classList.remove("hidden");persistInputs()}
+let checkinSaving=false;
+let morningStep=0;
+const MORNING_GROUPS=[["hrv","rhr","sleep","weight"],["sleepQ","fatigue","load","performance"],["pain","focal","gait","grip"]];
+function renderMorningWelcome(){
+ const inline=todayFlowState()==="morning"&&!historicalDate;
+ const form=$("checkinForm"),slot=$("morningFormSlot");if(!form||!slot)return;
+ $("morningWelcome").classList.toggle("hidden",!inline);
+ if(inline){
+  slot.appendChild(form);$("dailyDirective").classList.add("hidden");
+  enhanceCheckinTapControls();syncCheckinTapControls();
+  form.classList.add("inline-checkin");form.dataset.step=morningStep;
+  $("helloTitle").textContent=["Hello.","How do you feel?","One last check."][morningStep];
+  $("helloCopy").textContent=["Let’s start with this morning’s measurements.","A few taps help shape today’s session.","Tell me about pain and movement before we begin."][morningStep];
+  form.querySelectorAll(".field,.toggle-row").forEach(el=>{
+   const input=el.querySelector("input,select");el.classList.toggle("morning-hidden",!MORNING_GROUPS[morningStep].includes(input?.id));
+  });
+  $("morningControls").classList.remove("hidden");$("morningBack").classList.toggle("hidden",morningStep===0);
+  $("morningContinue").textContent=morningStep===2?"Save & continue":"Continue";
+ }else{
+  $("checkinSheet").appendChild(form);form.classList.remove("inline-checkin");
+  form.querySelectorAll(".morning-hidden").forEach(el=>el.classList.remove("morning-hidden"));
+  $("morningControls").classList.add("hidden");
+ }
+}
+function continueMorning(){
+ const missing=MORNING_GROUPS[morningStep].find(id=>!["focal","gait","grip"].includes(id)&&!String($(id).value).trim());
+ if(missing){$("checkinError").textContent="Add the missing value to continue.";$("checkinError").classList.remove("hidden");$(missing).focus();return}
+ $("checkinError").classList.add("hidden");
+ if(morningStep===2){saveCheckin();return}
+ morningStep++;renderMorningWelcome();resetViewport();$("helloTitle").focus({preventScroll:true});
+}
+function advanceDailyFlow(){
+ const state=todayFlowState();
+ switchTab(state==="nutrition"?"nutrition":"today");
+ const screen=document.querySelector(".screen.active");
+ if(screen&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches)screen.animate([{opacity:.35,transform:"translateY(8px)"},{opacity:1,transform:"translateY(0)"}],{duration:220,easing:"ease-out"});
+ const heading=screen?.querySelector("h2");if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true})}
+}
 function saveCheckin(){
+ if(checkinSaving)return;
  if(!checkinRequiredComplete()){requiredFields();return}
+ checkinSaving=true;$("morningContinue").disabled=true;$("evaluateBtn").disabled=true;
+ const wasHistorical=!!historicalDate;
+ try{
  evaluate();const d=decision();if(!d.o)return;
  const l=logs(),saveDate=historicalDate?new Date(historicalDate):new Date();
  const saveWeek=historicalDate?programWeekForDate(saveDate):(localStorage.programStart?prescriptionWeek():1);
@@ -224,7 +266,9 @@ function saveCheckin(){
  l.unshift({date:saveDate.toISOString(),week:saveWeek,preJourney:!localStorage.programStart,weight:num("weight"),weightAvg:num("weightAvg"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),load:num("load"),pain:num("pain"),performance:val("performance"),focal:$("focal").checked,gait:$("gait").checked,overall:d.o,decision:d,priorWorkoutSignal:previousWorkoutSignal(saveDate)});
  localStorage.trainingLogs=JSON.stringify(l);dbSet("trainingLogs",localStorage.trainingLogs);
  if(!historicalDate){setTask("checkin",true);if(!localStorage.programStart)localStorage.baselineDate=saveDate.toISOString()}
- resetHistorical();closeCheckin();renderAll();if(localStorage.programStart&&typeof switchTab==="function")switchTab("today")
+ resetHistorical();closeCheckin();morningStep=0;renderAll();if(!wasHistorical&&localStorage.programStart)advanceDailyFlow();
+ }catch(error){$("checkinError").textContent="Your check-in could not be saved. Your entries are still here. Please try again.";$("checkinError").classList.remove("hidden")}
+ finally{checkinSaving=false;$("morningContinue").disabled=false;$("evaluateBtn").disabled=false}
 }
 function previousWorkoutSignal(referenceDate=new Date()){const y=new Date(referenceDate);y.setDate(y.getDate()-1);const x=workouts().filter(w=>dayKey(w.date)===dayKey(y)&&w.completed!=="NO").sort((a,b)=>new Date(b.date)-new Date(a.date))[0];if(!x)return null;const pain=Number(x.postPain);if(Number.isFinite(pain)&&pain>=5)return{level:"RED",reason:"Yesterday’s session ended with pain "+pain+"/10."};if(Number.isFinite(pain)&&pain>=3)return{level:"YELLOW",reason:"Yesterday’s session ended with pain "+pain+"/10."};return null}
 function saveWorkout(c){
@@ -241,7 +285,7 @@ function saveWorkout(c){
  localStorage.workoutHistory=JSON.stringify(arr);dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",entry.completed==="YES");
  $("sessionFeedback").open=false;$("completionBanner").classList.remove("attention");
  $("completionBanner").textContent=status==="YES"?"Session complete ✓":status==="PARTIAL"?"Partial session saved":"Skipped session saved";
- $("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll();if(typeof switchTab==="function")switchTab("today")
+ $("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll();advanceDailyFlow()
 }
 const EXERCISE_DB_BASE="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
 function datasetExerciseId(name){
@@ -423,7 +467,7 @@ function renderDailyDirective(){
  $("directiveReason").textContent="No more input is required today.";
  $("directiveWorkout").innerHTML="";$("directiveMacros").innerHTML='<div><span>Recorded</span><strong>'+(actual===null?"—":Math.round(actual).toLocaleString())+'</strong><small>kcal</small></div><div><span>Target</span><strong>'+target.cal.toLocaleString()+'</strong><small>kcal</small></div><div><span>Meals</span><strong>'+doneMeals.size+'/'+meals.length+'</strong><small>confirmed</small></div><div><span>Readiness</span><strong>'+rstate.label+'</strong><small>today</small></div>';
 }
-function renderToday(){$("today").classList.toggle("pre-journey",!localStorage.programStart);$("today").classList.toggle("guided-flow",!!localStorage.programStart);renderJourneyStart();renderTodayJourney();const d=todayCheckin(),det=adaptiveSession(),record=todayWorkoutRecord(),done=record?.completed==="YES";$("todayDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});$("taskWorkoutTitle").textContent=det.title;const heroMove=det.steps?.[0]?.name;if(heroMove)$("taskWorkoutThumb").innerHTML=exerciseMedia(heroMove);$("taskWorkoutSub").textContent=done?"Completed today":record?.completed==="PARTIAL"?"Partial session recorded · review details":record?.completed==="NO"?"Skipped today · review if this changes":det.duration+" · "+det.effort;const rstate=readinessStateMeta(d?.overall);$("readinessState").textContent=rstate.badge;$("readinessStateBadge").className="readiness-state-badge "+rstate.cls;$("readinessLabel").textContent=!localStorage.programStart?(d?"Baseline ready":"Not started"):rstate.label;$("readinessLabel").style.color=d?(d.overall==="GREEN"?"var(--green)":d.overall==="YELLOW"?"var(--yellow)":"var(--red)"):"";$("readinessMessage").textContent=!localStorage.programStart?"Complete a baseline and begin the journey when you are ready.":d?(d.overall==="GREEN"?"You’re ready for the planned session.":d.overall==="YELLOW"?"Train, but reduce today’s stress.":"Recovery takes priority today."):"Log your morning metrics to personalize today’s training.";$("todayHRV").textContent=d?.hrv??"—";$("todayRHR").textContent=d?.rhr??"—";$("todaySleep").textContent=d?.sleep??"—";$("hrvDelta").textContent=d?formatDelta(d.hrv,num("hrvBase")):"baseline";$("rhrDelta").textContent=d?formatDelta(d.rhr,num("rhrBase")," bpm"):"baseline";const adapt=adaptationExplanation(d),ab=$("adaptationBanner");if(adapt){ab.classList.remove("hidden");ab.className="adaptation-banner "+(adapt.dec.o==="RED"?"red":"yellow");ab.innerHTML="<div><small>WHY TODAY CHANGED</small><strong>"+adapt.title+"</strong><span>"+adapt.copy+"</span></div><b>›</b>";ab.onclick=openReadiness}else{ab.className="adaptation-banner hidden";ab.innerHTML="";ab.onclick=null}const separateMobility=!sessionIncludesPrehab(det);$("taskMobility").classList.toggle("hidden",!separateMobility);const state={taskCheckin:!!d,taskWorkout:!!done,taskNutrition:!!getNutritionLog().saved,...(separateMobility?{taskMobility:taskDone("mobility")}:{})};Object.entries(state).forEach(([id,doneState])=>{const el=$(id);el.classList.toggle("done",doneState);el.querySelector(".task-circle").textContent=doneState?"✓":"○"});$("todayTaskCount").textContent=Object.values(state).filter(Boolean).length+"/"+Object.keys(state).length;renderDailyDirective()}
+function renderToday(){$("today").classList.toggle("pre-journey",!localStorage.programStart);$("today").classList.toggle("guided-flow",!!localStorage.programStart);renderJourneyStart();renderTodayJourney();const d=todayCheckin(),det=adaptiveSession(),record=todayWorkoutRecord(),done=record?.completed==="YES";$("todayDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});$("taskWorkoutTitle").textContent=det.title;const heroMove=det.steps?.[0]?.name;if(heroMove)$("taskWorkoutThumb").innerHTML=exerciseMedia(heroMove);$("taskWorkoutSub").textContent=done?"Completed today":record?.completed==="PARTIAL"?"Partial session recorded · review details":record?.completed==="NO"?"Skipped today · review if this changes":det.duration+" · "+det.effort;const rstate=readinessStateMeta(d?.overall);$("readinessState").textContent=rstate.badge;$("readinessStateBadge").className="readiness-state-badge "+rstate.cls;$("readinessLabel").textContent=!localStorage.programStart?(d?"Baseline ready":"Not started"):rstate.label;$("readinessLabel").style.color=d?(d.overall==="GREEN"?"var(--green)":d.overall==="YELLOW"?"var(--yellow)":"var(--red)"):"";$("readinessMessage").textContent=!localStorage.programStart?"Complete a baseline and begin the journey when you are ready.":d?(d.overall==="GREEN"?"You’re ready for the planned session.":d.overall==="YELLOW"?"Train, but reduce today’s stress.":"Recovery takes priority today."):"Log your morning metrics to personalize today’s training.";$("todayHRV").textContent=d?.hrv??"—";$("todayRHR").textContent=d?.rhr??"—";$("todaySleep").textContent=d?.sleep??"—";$("hrvDelta").textContent=d?formatDelta(d.hrv,num("hrvBase")):"baseline";$("rhrDelta").textContent=d?formatDelta(d.rhr,num("rhrBase")," bpm"):"baseline";const adapt=adaptationExplanation(d),ab=$("adaptationBanner");if(adapt){ab.classList.remove("hidden");ab.className="adaptation-banner "+(adapt.dec.o==="RED"?"red":"yellow");ab.innerHTML="<div><small>WHY TODAY CHANGED</small><strong>"+adapt.title+"</strong><span>"+adapt.copy+"</span></div><b>›</b>";ab.onclick=openReadiness}else{ab.className="adaptation-banner hidden";ab.innerHTML="";ab.onclick=null}const separateMobility=!sessionIncludesPrehab(det);$("taskMobility").classList.toggle("hidden",!separateMobility);const state={taskCheckin:!!d,taskWorkout:!!done,taskNutrition:!!getNutritionLog().saved,...(separateMobility?{taskMobility:taskDone("mobility")}:{})};Object.entries(state).forEach(([id,doneState])=>{const el=$(id);el.classList.toggle("done",doneState);el.querySelector(".task-circle").textContent=doneState?"✓":"○"});$("todayTaskCount").textContent=Object.values(state).filter(Boolean).length+"/"+Object.keys(state).length;renderDailyDirective();renderMorningWelcome()}
 function techniqueReferenceAvailable(e){return!!datasetExerciseId(e.name)&&!/Mobility|Reminder/.test(e.type||"")}
 function trainingStepMarkup(e,i){
  if(!techniqueReferenceAvailable(e))return'<div class="exercise-reminder"><div class="exercise-index">'+(i+1)+'</div><div><strong>'+e.name+'</strong><span>'+e.dose+'</span><small>'+(e.type==="Reminder"?e.cue:"Technique image omitted because this movement label is not specific enough for a trustworthy reference.")+'</small></div></div>';
@@ -644,7 +688,7 @@ function saveNutrition(finalize=true){
  log.complete=hasManualDeviation?finalize&&Number.isFinite(enteredCalories)&&enteredCalories>=0:fullPrescription;
  if(hasManualDeviation&&!finalize){log.saved=false;delete log.savedAt}
  log.targetCalories=target.cal;log.targetProtein=target.protein;log.targetCarbs=target.carbs;log.targetFat=target.fat;log.prescribedMeals=meals.map(m=>({...m,foods:[...m.foods]}));log.prescriptionReason=target.adjustment?.copy||target.why;
- localStorage.setItem(nutritionLogKey(),JSON.stringify(log));const nutritionComplete=log.complete;setTask("nutrition",nutritionComplete);renderNutrition();renderToday();if(finalize&&typeof switchTab==="function")switchTab("today")
+ localStorage.setItem(nutritionLogKey(),JSON.stringify(log));const nutritionComplete=log.complete;setTask("nutrition",nutritionComplete);renderNutrition();renderToday();if(nutritionComplete)advanceDailyFlow()
 }
 function programWeekForDate(d){const a=new Date(programStart()),b=new Date(d);a.setHours(12,0,0,0);b.setHours(12,0,0,0);return Math.max(1,Math.min(56,Math.floor((b-a)/604800000)+1))}
 function programDayIndex(d){const a=new Date(programStart()),b=new Date(d);a.setHours(12,0,0,0);b.setHours(12,0,0,0);const days=Math.floor((b-a)/86400000);return((days%7)+7)%7}
@@ -751,7 +795,7 @@ function renderTrends(){
  const a=[...logs().map(x=>({...x,k:"Check-in"})),...workouts().map(x=>({...x,k:"Session"}))].sort((x,y)=>new Date(y.date)-new Date(x.date)).slice(0,8);
  $("trendLogList").innerHTML=a.length?a.map(x=>'<div class="log-card"><div><strong>'+(x.k==="Session"?x.session:"Morning check-in")+'</strong><small>'+new Date(x.date).toLocaleDateString()+(Number.isInteger(x.week)?' · Week '+x.week:'')+'</small></div><small>'+(x.k==="Session"?(x.completed||""):(readinessStateMeta(x.overall).label))+'</small></div>').join(""):'<div class="log-card"><small>No activity saved yet.</small></div>';countRecords()
 }
-function openCheckin(){resetHistorical();enhanceCheckinTapControls();syncCheckinTapControls();$("checkinSheet").classList.remove("hidden");requiredFields();bindInfo($("checkinSheet"))}function closeCheckin(){resetHistorical();$("checkinSheet").classList.add("hidden")}function closeModal(){$("infoModal").classList.add("hidden")}function bindInfo(root){(root||document).querySelectorAll(".info-dot[data-term]").forEach(b=>b.onclick=e=>{e.stopPropagation();openInfo(b.dataset.term)})}
+function openCheckin(){resetHistorical();if(todayFlowState()==="morning"){switchTab("today");renderMorningWelcome();return}enhanceCheckinTapControls();syncCheckinTapControls();$("checkinSheet").classList.remove("hidden");requiredFields();bindInfo($("checkinSheet"))}function closeCheckin(){resetHistorical();$("checkinSheet").classList.add("hidden");renderMorningWelcome()}function closeModal(){$("infoModal").classList.add("hidden")}function bindInfo(root){(root||document).querySelectorAll(".info-dot[data-term]").forEach(b=>b.onclick=e=>{e.stopPropagation();openInfo(b.dataset.term)})}
 function resetViewport(){document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0)}
 function switchTab(t){
  $("headerAction").style.display=t==="today"?"grid":"none";document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));$(t).classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.target===t));
@@ -785,6 +829,7 @@ $("readinessSheet").onclick=e=>{if(e.target===$("readinessSheet"))$("readinessSh
 document.querySelectorAll(".task-toggle").forEach(b=>b.onclick=e=>{e.stopPropagation();handleTaskToggle(b.dataset.task)});
 document.querySelectorAll(".task-main").forEach(b=>b.onclick=()=>{const a=b.dataset.action;if(a==="checkin")openCheckin();if(a==="workout")switchTab("workout");if(a==="nutrition")switchTab("nutrition");if(a==="mobility")openMobilityGuide()});
 $("closeCheckin").onclick=closeCheckin;$("checkinSheet").onclick=e=>{if(e.target===$("checkinSheet"))closeCheckin()};
+$("morningContinue").onclick=continueMorning;$("morningBack").onclick=()=>{morningStep=Math.max(0,morningStep-1);renderMorningWelcome();resetViewport()};
 $("evaluateBtn").onclick=saveCheckin;$("saveBtn").onclick=saveCheckin;
 $("completeWorkoutQuick").onclick=()=>{if(todayWorkout())return;$("sessionFeedback").open=true;$("sessionFeedback").scrollIntoView({behavior:"smooth",block:"center"});$("completed").value="YES";};$("completeWorkout").onclick=()=>saveWorkout(val("completed")||"YES");
 $("modalClose").onclick=closeModal;$("modalDone").onclick=closeModal;$("infoModal").onclick=e=>{if(e.target===$("infoModal"))closeModal()};
@@ -797,10 +842,14 @@ if($("librarySearch"))$("librarySearch").addEventListener("input",e=>renderLibra
 document.querySelectorAll(".segment").forEach(b=>b.onclick=()=>{document.querySelectorAll(".segment").forEach(x=>x.classList.toggle("active",x===b));$("trainSessionView").classList.toggle("hidden",b.dataset.trainview!=="session");$("trainLibraryView").classList.toggle("hidden",b.dataset.trainview!=="library");resetViewport()});
 $("saveNutritionDay").onclick=saveNutrition;
 $("openBenchmarks").onclick=()=>{loadBenchmarkForm();$("benchmarkSheet").classList.remove("hidden")};$("benchmarkClose").onclick=()=>$("benchmarkSheet").classList.add("hidden");$("benchmarkSheet").onclick=e=>{if(e.target===$("benchmarkSheet"))$("benchmarkSheet").classList.add("hidden")};$("saveBenchmarks").onclick=saveBenchmarkData;$("openTrends").onclick=()=>switchTab("trends");$("openSettings").onclick=()=>switchTab("settings");
+// Old measurements are never silently presented as a new morning's answers.
+if(localStorage.input_morningDate!==todayKey()&&!todayCheckin()){
+ ["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight","focal","gait"].forEach(id=>localStorage.removeItem("input_"+id));
+}
 ["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>{const v=localStorage.getItem("input_"+id);if(v!==null)$(id).value=v;$(id).addEventListener("input",requiredFields);$(id).addEventListener("change",requiredFields)});$("focal").checked=localStorage.input_focal==="1";$("gait").checked=localStorage.input_gait==="1";
 // Remember unfinished entries without changing a confirmed readiness/session decision.
 ["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight","focal","gait"].forEach(id=>{
- const field=$(id),remember=()=>{if(!historicalDate)localStorage.setItem("input_"+id,field.type==="checkbox"?(field.checked?"1":"0"):field.value)};
+ const field=$(id),remember=()=>{if(!historicalDate){localStorage.input_morningDate=todayKey();localStorage.setItem("input_"+id,field.type==="checkbox"?(field.checked?"1":"0"):field.value)}};
  field.addEventListener("input",remember);field.addEventListener("change",remember);
 });
 function restoreSessionFeedback(){
