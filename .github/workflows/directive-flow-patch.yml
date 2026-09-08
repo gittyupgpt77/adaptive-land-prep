@@ -90,10 +90,12 @@ jobs:
           rm directive-audit.mjs
       - name: Firebase regressions
         run: npm run build:firebase && git diff --exit-code -- vendor/firebase.js && npm run test:firebase
-      - name: Commit verified patch
+      - name: Persist exact verified product output
         run: |
+          cp .github/workflows/ui-audit.yml generated-ui-audit.yml
+          git checkout -- .github/workflows/ui-audit.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add index.html app.js styles.css service-worker.js tests/daily-directive-flow.test.cjs tests/nutrition-draft.test.cjs .github/workflows/ui-audit.yml
+          git add index.html app.js styles.css service-worker.js tests/daily-directive-flow.test.cjs tests/nutrition-draft.test.cjs generated-ui-audit.yml
           git commit -m "Guide the athlete through a single-card daily flow"
           git push origin HEAD:feat/intent-driven-daily-flow
