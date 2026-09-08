@@ -58,7 +58,7 @@ jobs:
       - name: Focused iPhone 16 browser regression
         run: |
           python3 -m http.server 8080 >/tmp/server.log 2>&1 &
-          cat > /tmp/directive-audit.mjs <<'JS'
+          cat > directive-audit.mjs <<'JS'
           import { webkit } from 'playwright';
           const browser=await webkit.launch();
           const page=await browser.newPage({viewport:{width:393,height:852},deviceScaleFactor:3});
@@ -86,7 +86,8 @@ jobs:
           if(errors.length)throw new Error('runtime: '+errors.join('; '));
           await browser.close();console.log('PASS directive-flow iPhone 16 regression');
           JS
-          node /tmp/directive-audit.mjs
+          node directive-audit.mjs
+          rm directive-audit.mjs
       - name: Firebase regressions
         run: npm run build:firebase && git diff --exit-code -- vendor/firebase.js && npm run test:firebase
       - name: Commit verified patch
