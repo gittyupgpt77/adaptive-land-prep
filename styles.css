@@ -23,9 +23,6 @@ main{padding:14px 14px 22px}
 .readiness-card{padding:16px;border-radius:20px}
 .card-heading{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:800}
 .readiness-main{display:flex;align-items:center;gap:18px;margin:14px 0}
-.score-ring{--score:0;width:95px;height:95px;border-radius:50%;background:conic-gradient(var(--green) calc(var(--score)*1%),#193149 0);display:grid;place-items:center;position:relative;flex:0 0 auto}
-.score-ring:before{content:"";position:absolute;width:75px;height:75px;border-radius:50%;background:#0b1e30}
-.score-ring>div{position:relative;text-align:center}.score-ring strong{display:block;font-size:26px}.score-ring small{font-size:10px;color:var(--muted)}
 .readiness-copy{display:flex;flex-direction:column;gap:5px}.readiness-copy strong{font-size:19px}.readiness-copy span{font-size:12px;line-height:1.45;color:var(--muted)}
 .metric-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .metric-strip>div{background:#10283c;border:1px solid rgba(255,255,255,.04);border-radius:14px;padding:10px}
@@ -69,6 +66,10 @@ main{padding:14px 14px 22px}
 .mini-exercise{padding:9px 0;border-top:1px solid rgba(255,255,255,.045);display:grid;grid-template-columns:24px 1fr;gap:8px}.mini-exercise b{width:22px;height:22px;border-radius:7px;background:rgba(23,148,255,.12);color:var(--blue2);display:grid;place-items:center;font-size:10px}.mini-exercise strong{font-size:11px}.mini-exercise small{display:block;font-size:9px;color:var(--muted);margin-top:2px}
 
 .trend-card{padding:13px;border-radius:17px}.trend-card canvas{display:block;width:100%;height:160px}
+.recovery-history{min-height:92px;display:flex;flex-direction:column;gap:12px;justify-content:center}
+.recovery-history-empty{font-size:11px;line-height:1.45;color:var(--muted);padding:10px 2px}
+.recovery-legend{display:flex;gap:12px;flex-wrap:wrap}.recovery-legend span{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--muted)}.recovery-legend i{width:7px;height:7px;border-radius:50%}.recovery-legend i.green{background:var(--green)}.recovery-legend i.yellow{background:var(--yellow)}.recovery-legend i.red{background:var(--red)}
+.recovery-strip{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 5px;scrollbar-width:none}.recovery-strip::-webkit-scrollbar{display:none}.recovery-day{flex:0 0 34px;text-align:center}.recovery-day i{display:block;width:28px;height:28px;margin:auto;border-radius:9px;border:1px solid rgba(255,255,255,.1);background:#23394b}.recovery-day.green i{background:rgba(78,227,130,.18);border-color:rgba(78,227,130,.42)}.recovery-day.yellow i{background:rgba(243,184,75,.18);border-color:rgba(243,184,75,.45)}.recovery-day.red i{background:rgba(255,106,106,.18);border-color:rgba(255,106,106,.45)}.recovery-day small{display:block;font-size:8px;color:var(--muted);margin-top:4px}
 .log-card{background:#0d2032;border:1px solid rgba(255,255,255,.05);border-radius:13px;padding:12px;margin:8px 0;display:flex;justify-content:space-between}.log-card strong{font-size:12px}.log-card small{font-size:10px;color:var(--muted)}
 .data-details{border-radius:16px;margin-top:18px;padding:0 13px}.data-details summary{padding:13px 0;font-size:12px;font-weight:750;color:#b4c8d9}.data-row{display:flex;justify-content:space-between;gap:12px;border-top:1px solid rgba(255,255,255,.05);padding:11px 0}.data-row div{display:flex;flex-direction:column;gap:2px}.data-row strong{font-size:11px}.data-row small,.data-row span{font-size:9px;color:var(--muted)}.backup-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 0 13px}.backup-grid button,.backup-grid label{border:1px solid #2a516f;background:#123149;border-radius:10px;padding:10px;text-align:center;font-size:10px}.backup-grid input{display:none}
 
@@ -99,7 +100,6 @@ main{padding:14px 14px 22px}
 
 @media(max-width:360px){.metric-strip{grid-template-columns:1fr}.feedback-grid,.input-grid{grid-template-columns:1fr}}
 
-.score-ring{background:conic-gradient(var(--ring,var(--green)) calc(var(--score)*1%),#193149 0)}
 .exercise-thumb svg,.library-thumb svg{width:100%;height:100%;display:block}
 .session-status.yellow{color:var(--yellow);background:rgba(243,184,75,.12)}.session-status.red{color:var(--red);background:rgba(255,106,106,.12)}
 
@@ -366,3 +366,9 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#eef3f8 100%);color:var(--ink);
 .cloud-panel{color:#f7fbff}.cloud-panel p{font-size:12px;line-height:1.5;overflow-wrap:anywhere;color:#b8cad9}.cloud-panel label{display:flex;flex-direction:column;gap:7px;font-size:12px;margin:12px 0}.cloud-panel input{width:100%;min-height:44px;border:1px solid #567089;border-radius:10px;padding:10px;background:#10273a;color:white;font-size:16px}.cloud-panel button{min-height:44px;border:1px solid #567089;border-radius:10px;background:#10273a;color:#fff;padding:10px 12px;margin:4px 4px 4px 0;font-size:12px}.cloud-panel button:disabled{opacity:.5}.cloud-panel #cloudSave,.cloud-panel button[type=submit]{background:#147be8;border-color:#147be8}#cloudVersions{display:flex;flex-direction:column;margin-top:12px}#cloudVersions button{text-align:left;width:100%}
 
 .cloud-panel a{display:block;min-height:44px;padding:12px 0;color:#9bd0ff;font-size:14px;line-height:1.4;text-decoration:underline}
+
+/* Categorical readiness: no pseudo-physiological percentage. */
+.readiness-state-badge{width:95px;height:95px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:0 0 auto;border:2px solid #476174;background:rgba(100,125,146,.10);color:#a9bbc9;text-align:center}
+.readiness-state-badge strong{font-size:14px;line-height:1.05;letter-spacing:.02em}.readiness-state-badge small{font-size:8px;color:currentColor!important;opacity:.72;letter-spacing:.08em}
+.readiness-state-badge.green{border-color:rgba(78,227,130,.62);background:rgba(78,227,130,.12);color:var(--green)}.readiness-state-badge.yellow{border-color:rgba(243,184,75,.66);background:rgba(243,184,75,.13);color:var(--yellow)}.readiness-state-badge.red{border-color:rgba(255,106,106,.66);background:rgba(255,106,106,.13);color:var(--red)}.readiness-state-badge.empty{border-color:#526b80;background:rgba(99,125,146,.08);color:#8fa8bd}
+.readiness-sheet-score .readiness-state-badge strong{font-size:13px}.readiness-sheet-score .readiness-state-badge small{font-size:8px}

@@ -28,7 +28,7 @@
   <div id="readinessCard" class="readiness-card readiness-button" role="button" tabindex="0">
     <div class="card-heading"><span>Readiness</span><button class="info-dot" data-term="readiness">i</button></div>
     <div class="readiness-main">
-      <div class="score-ring" id="scoreRing"><div><strong id="readinessScore">—</strong><small>/ 100</small></div></div>
+      <div class="readiness-state-badge empty" id="readinessStateBadge"><strong id="readinessState">—</strong><small>STATUS</small></div>
       <div class="readiness-copy"><strong id="readinessLabel">Check in</strong><span id="readinessMessage">Log your morning metrics to personalize today’s training.</span></div>
     </div>
     <div class="metric-strip">
@@ -140,7 +140,7 @@
 
 <section id="trends" class="screen">
   <div class="section-row"><h2>Recovery</h2><span id="trendRecovery">No data</span></div>
-  <div class="trend-card"><canvas id="recoveryChart" height="160"></canvas></div>
+  <div class="trend-card"><div id="recoveryHistory" class="recovery-history" aria-label="Recent readiness states"></div></div>
   <div class="section-row"><h2>Body Weight</h2><span id="trendWeight">No data</span></div>
   <div class="trend-card"><canvas id="weightChart" height="160"></canvas></div>
   <div class="section-row"><h2>Recent Activity</h2></div>
