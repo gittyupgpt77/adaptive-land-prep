@@ -116,7 +116,8 @@ jobs:
           check('Explicit Begin Journey creates Day 1', await page.evaluate(()=>!!localStorage.programStart));
           check('Journey onboarding disappears', !(await visible('#journeyStartCard')));
           check('Started Journey reveals command center', await visible('#readinessCard') && await visible('#todayPlanHeader'));
-          check('Readiness score exists', (await page.locator('#readinessScore').textContent())!=='—');
+          check('Readiness uses categorical state', ['ON PLAN','ADJUST','RECOVERY'].includes((await page.locator('#readinessState').innerText()).trim()));
+          check('Readiness omits pseudo-physiological percentage', await page.locator('#readinessScore').count()===0 && !(await page.locator('#readinessCard').innerText()).includes('/100'));
           await shot('02-started-today');
           const taskTargets=await page.locator('.task-toggle:visible,.task-main:visible').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return{w:r.width,h:r.height}}));
           check('Started Today actually audits task touch targets',taskTargets.length>=6&&taskTargets.every(r=>r.w>=40&&r.h>=40));
@@ -126,6 +127,7 @@ jobs:
           await page.locator('#readinessCard').click();
           check('Readiness opens detail sheet', await visible('#readinessSheet'));
           check('Readiness detail has adaptive prescription', (await page.locator('#readinessDetail').innerText()).includes('Adaptive prescription'));
+          check('Readiness detail omits numeric score', !(await page.locator('#readinessDetail').innerText()).includes('/100'));
           await shot('03-readiness-detail');
           await page.locator('#readinessClose').click();
 
