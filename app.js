@@ -67,8 +67,8 @@ function makeSession(name,w=prescriptionWeek()){
  if(name.includes("recovery row")||name.includes("Recovery aerobic"))return{title:name,type:"Recovery",duration:"25–60 min",effort:"Very easy",why:"Support recovery while preserving aerobic rhythm.",steps:[ex("Easy row or walk","25–60 min","Continuous","Finish feeling better than you started.","Aerobic")]};
  if(name.includes("row")&&name.includes("trunk"))return{title:name,type:"Aerobic + Core",duration:"45–70 min",effort:"Easy",why:"Build aerobic capacity and trunk stiffness.",steps:[ex("Easy row","30–60 min","Continuous","Conversational effort.","Row"),ex("RKC plank","3 × 20–40 sec","60 sec","Squeeze glutes, quads and abs hard.","Core"),ex("Suitcase carry","3 rounds each side","As needed","Stay tall and breathe under control.","Carry")]};
  if(name.includes("Rowing threshold"))return{title:name,type:"Aerobic",duration:"35–60 min",effort:"Moderate / hard",why:"Develop higher aerobic power with low mechanical cost.",steps:[ex("Warm-up row","10 min","—","Easy.","Row"),ex("Controlled threshold work","20–40 min total","Variable","Use an established threshold calibration. If none is current, keep the row conversational and stay within this week’s C2 target instead of guessing at threshold.","Row"),ex("Cool-down row","5–10 min","—","Easy.","Row")]};
- if(name.includes("Long easy row + lower-leg durability"))return{title:name,type:"Aerobic + Durability",duration:"65–90 min",effort:"Easy",why:"Extend low-impact aerobic work while building lower-leg capacity before running begins.",steps:[ex("Easy row","50–70 min","Continuous","Conversational effort throughout.","Row"),ex("Tibialis raises","3 × 15–25","60 sec","Controlled full range.","Durability"),ex("Calf / soleus raises","3 × 12–20","60 sec","Use straight- and bent-knee work without bouncing.","Durability"),ex("Ankle mobility","5–8 min","—","Controlled, pain-free range.","Mobility")]};
- if(name.includes("Recovery & mobility"))return{title:name,type:"Recovery",duration:"25–45 min",effort:"Very easy",why:"Reduce fatigue while keeping the body moving and joints comfortable.",steps:[ex("Easy walk or row","20–30 min","Continuous","Very easy.","Aerobic"),ex("Ankle mobility","2 × 8–10 each side","—","Move through pain-free range.","Mobility"),ex("Hip mobility","5–10 min","—","Gentle controlled movement.","Mobility"),ex("Light trunk work","2–3 easy sets","60 sec","Plank, side plank or dead bug.","Core")]};
+ if(name.includes("Long easy row + lower-leg durability"))return{title:name,type:"Aerobic + Durability",duration:"65–90 min",effort:"Easy",why:"Extend low-impact aerobic work while building lower-leg capacity before running begins.",steps:[ex("Easy row","50–70 min","Continuous","Conversational effort throughout.","Row"),ex("Tibialis raises","3 × 15–25","60 sec","Controlled full range.","Durability"),ex("Calf / soleus raises","3 × 12–20","60 sec","Use straight- and bent-knee work without bouncing.","Durability"),ex("Mobility reminder","5–8 min","—","Use your preferred pain-free ankle and hip mobility routine.","Reminder")]};
+ if(name.includes("Recovery & mobility"))return{title:name,type:"Recovery",duration:"25–45 min",effort:"Very easy",why:"Reduce fatigue while keeping the body moving and joints comfortable.",steps:[ex("Easy walk or row","20–30 min","Continuous","Very easy.","Aerobic"),ex("Mobility reminder","5–10 min","—","Use your preferred gentle, pain-free mobility routine. The app does not prescribe a specific stretch sequence.","Reminder"),ex("Light trunk work","2–3 easy sets","60 sec","Plank, side plank or dead bug.","Core")]};
  if(name.includes("Introductory run/walk"))return{title:name,type:"Run",duration:"20–40 min",effort:"Easy",why:"Reintroduce running-specific bone, tendon and foot stress without unnecessary overload.",steps:[ex("Warm-up walk","5–10 min","—","Brisk but comfortable.","Run"),ex("Run / walk","10–25 min total","Alternate as needed","Keep it easy. Stop for focal pain or altered gait.","Run"),ex("Cool-down walk","5 min","—","Easy.","Run")]};
  if(name.includes("lower-leg durability"))return{title:name,type:"Run + Durability",duration:"45–70 min",effort:"Easy",why:"Pair controlled running with targeted shin, calf and ankle strengthening.",steps:[ex("Easy run",runDose,"Continuous","Conversational pace.","Run"),ex("Tibialis raises","3 × 20","60 sec","Control the movement.","Durability"),ex("Seated soleus raises","3 × 15–20","60–90 sec","Use moderate load.","Durability"),ex("Eccentric calf raises","3 × 12–15","60–90 sec","Lower slowly.","Durability")]};
  if(name.includes("Quality run"))return{title:name,type:"Run",duration:"45–75 min",effort:"Hard / controlled",why:"Improve sustainable speed after aerobic and tissue tolerance are established.",steps:[ex("Warm-up","15–20 min","—","Easy jog plus relaxed strides.","Run"),ex("Main quality work",qualityRunDose(w),"Variable","Use an established pace, heart-rate or lactate calibration. If none is current, do not guess at intensity; replace the quality segment with easy Concept2 work within this week’s C2 target.","Run"),ex("Cool-down","10–15 min","—","Easy jog.","Run")]};
@@ -184,12 +184,39 @@ function renderJourneyStart(){
  card.querySelector("p").textContent=base?"Your baseline is saved. Begin when you want the 56-week clock and curriculum accountability to start.":"Complete a baseline morning check-in, then begin the journey. Nothing before Day 1 can create curriculum debt.";
  card.querySelector("button").textContent=base?"Begin Journey":"Log Baseline";
 }
+const TAP_CHECKIN_FIELDS={
+ sleepQ:[["1","Very poor"],["2","Poor"],["3","Fair"],["4","Good"],["5","Excellent"]],
+ fatigue:[["1","Fresh"],["2","Mild"],["3","Noticeable"],["4","High"],["5","Exhausted"]],
+ load:Array.from({length:11},(_,i)=>[String(i),String(i)]),
+ pain:Array.from({length:11},(_,i)=>[String(i),String(i)]),
+ performance:[["YES","Normal"],["NO","Not normal"]]
+};
+function syncCheckinTapControls(){
+ for(const [id] of Object.entries(TAP_CHECKIN_FIELDS)){
+   const source=$(id),scale=source?.closest(".field")?.querySelector(".tap-scale");if(!source||!scale)continue;
+   scale.querySelectorAll("button").forEach(b=>b.classList.toggle("selected",b.dataset.value===source.value));
+ }
+}
+function enhanceCheckinTapControls(){
+ for(const [id,options] of Object.entries(TAP_CHECKIN_FIELDS)){
+   const source=$(id),host=source?.closest(".field");if(!source||!host||host.querySelector(".tap-scale"))continue;
+   source.classList.add("tap-source");
+   const scale=document.createElement("div");scale.className="tap-scale "+(options.length>6?"scrolling":"");scale.setAttribute("role","group");scale.setAttribute("aria-label",host.querySelector("span")?.textContent?.trim()||id);
+   scale.innerHTML=options.map(([value,label])=>'<button type="button" data-value="'+value+'"><strong>'+label+'</strong></button>').join("");
+   source.insertAdjacentElement("afterend",scale);
+   scale.querySelectorAll("button").forEach(b=>b.onclick=()=>{source.value=b.dataset.value;source.dispatchEvent(new Event("change",{bubbles:true}));persistInputs();requiredFields();syncCheckinTapControls()});
+   source.addEventListener("change",syncCheckinTapControls);
+ }
+ syncCheckinTapControls();
+}
+function checkinRequiredComplete(){return["hrv","rhr","sleep","sleepQ","fatigue","load","pain","performance","weight"].every(id=>String($(id)?.value||"").trim()!=="")}
 function requiredFields(){const ids=["hrv","rhr","sleep","sleepQ","fatigue","load","pain","performance","weight"];let done=0;ids.forEach(id=>{const el=$(id),ok=String(el.value).trim()!=="";done+=ok?1:0;el.closest(".field").classList.toggle("field-done",ok);el.closest(".field").classList.toggle("field-needed",!ok)});const left=ids.length-done,b=$("checkinProgress");if(left===0){b.classList.add("complete");b.querySelector(".attention-icon").textContent="✓";b.querySelector("strong").textContent="Ready to evaluate";$("checkinProgressText").textContent="Required fields complete."}else{b.classList.remove("complete");b.querySelector(".attention-icon").textContent="!";b.querySelector("strong").textContent="Needs attention";$("checkinProgressText").textContent=left+" required field"+(left===1?"":"s")+" remaining."}}
 function avg(a){const x=a.filter(Number.isFinite);return x.length?x.reduce((p,c)=>p+c,0)/x.length:null}
 function applyBaselines(){const l=logs().filter(x=>!historicalDate||new Date(x.date)<new Date(new Date(historicalDate).setHours(0,0,0,0))).sort((a,b)=>new Date(b.date)-new Date(a.date)),hb=avg(l.slice(0,28).map(x=>x.hrv)),rb=avg(l.slice(0,28).map(x=>x.rhr)),gb=avg(l.slice(0,28).map(x=>x.grip)),wa=avg(l.slice(0,7).map(x=>x.weight));if(hb!==null)$("hrvBase").value=hb.toFixed(0);if(rb!==null)$("rhrBase").value=rb.toFixed(0);if(gb!==null)$("gripBase").value=gb.toFixed(1);if(wa!==null)$("weightAvg").value=wa.toFixed(1)}
 function persistInputs(){if(historicalDate)return;["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>localStorage.setItem("input_"+id,$(id).value));localStorage.input_focal=$("focal").checked?"1":"0";localStorage.input_gait=$("gait").checked?"1":"0"}
 function evaluate(){const d=decision();[["sysStatus",d.a],["mechStatus",d.b],["fuelStatus",d.c]].forEach(x=>{$(x[0]).textContent=x[1]||"—";$(x[0]).style.color=x[1]==="GREEN"?"var(--green)":x[1]==="YELLOW"?"var(--yellow)":x[1]==="RED"?"var(--red)":""});[["runDecision",d.run],["ruckDecision",d.ruck],["c2Decision",d.row],["strengthDecision",d.strength],["intensityDecision",d.intensity],["nutritionDecision",d.nutrition]].forEach(x=>$(x[0]).textContent=x[1]);$("warningBox").textContent=d.warning;$("warningBox").classList.toggle("hidden",!d.warning);$("results").classList.remove("hidden");persistInputs()}
 function saveCheckin(){
+ if(!checkinRequiredComplete()){requiredFields();return}
  evaluate();const d=decision();if(!d.o)return;
  const l=logs(),saveDate=historicalDate?new Date(historicalDate):new Date();
  const saveWeek=historicalDate?programWeekForDate(saveDate):(localStorage.programStart?prescriptionWeek():1);
@@ -197,7 +224,7 @@ function saveCheckin(){
  l.unshift({date:saveDate.toISOString(),week:saveWeek,preJourney:!localStorage.programStart,weight:num("weight"),weightAvg:num("weightAvg"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),load:num("load"),pain:num("pain"),performance:val("performance"),focal:$("focal").checked,gait:$("gait").checked,overall:d.o,decision:d,priorWorkoutSignal:previousWorkoutSignal(saveDate)});
  localStorage.trainingLogs=JSON.stringify(l);dbSet("trainingLogs",localStorage.trainingLogs);
  if(!historicalDate){setTask("checkin",true);if(!localStorage.programStart)localStorage.baselineDate=saveDate.toISOString()}
- resetHistorical();closeCheckin();renderAll()
+ resetHistorical();closeCheckin();renderAll();if(localStorage.programStart&&typeof switchTab==="function")switchTab("today")
 }
 function previousWorkoutSignal(referenceDate=new Date()){const y=new Date(referenceDate);y.setDate(y.getDate()-1);const x=workouts().filter(w=>dayKey(w.date)===dayKey(y)&&w.completed!=="NO").sort((a,b)=>new Date(b.date)-new Date(a.date))[0];if(!x)return null;const pain=Number(x.postPain);if(Number.isFinite(pain)&&pain>=5)return{level:"RED",reason:"Yesterday’s session ended with pain "+pain+"/10."};if(Number.isFinite(pain)&&pain>=3)return{level:"YELLOW",reason:"Yesterday’s session ended with pain "+pain+"/10."};return null}
 function saveWorkout(c){
@@ -214,41 +241,33 @@ function saveWorkout(c){
  localStorage.workoutHistory=JSON.stringify(arr);dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",entry.completed==="YES");
  $("sessionFeedback").open=false;$("completionBanner").classList.remove("attention");
  $("completionBanner").textContent=status==="YES"?"Session complete ✓":status==="PARTIAL"?"Partial session saved":"Skipped session saved";
- $("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll()
+ $("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll();if(typeof switchTab==="function")switchTab("today")
 }
 const EXERCISE_DB_BASE="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
 function datasetExerciseId(name){
- const n=name.toLowerCase();
+ const n=name.toLowerCase().trim();
+ // Technique imagery is opt-in: ambiguous labels are text-only rather than paired with a misleading photo.
+ if(/mobility|stretch|reminder| or |main session|long session|main quality work/.test(n))return"";
  const map=[
-  [/back squat|squat$/,"Barbell_Full_Squat"],
-  [/romanian deadlift|hip hinge|hinge$/,"Romanian_Deadlift"],
-  [/overhead press|military press|press$/,"Standing_Military_Press"],
+  [/split squat|reverse lunge|walking lunge|lunge/,"Split_Squat_with_Dumbbells"],
+  [/back squat|^squat$/,"Barbell_Full_Squat"],
+  [/romanian deadlift|^hip hinge$|^hinge$/,"Romanian_Deadlift"],
+  [/overhead press|military press|^press$/,"Standing_Military_Press"],
   [/pull-up|pullups|pull up/,"Pullups"],
   [/push-up|pushups|push up/,"Pushups"],
-  [/split squat|reverse lunge|walking lunge|lunge/,"Split_Squat_with_Dumbbells"],
   [/soleus|seated calf/,"Seated_Calf_Raise"],
   [/calf/,"Standing_Calf_Raises"],
   [/tibialis/,"Anterior_Tibialis-SMR"],
   [/neck harness|neck resistance/,"Lying_Face_Down_Plate_Neck_Resistance"],
   [/grip work|plate pinch|hand squeeze/,"Standing_Olympic_Plate_Hand_Squeeze"],
   [/forearm roller|wrist/,"Palms-Up_Barbell_Wrist_Curl_Over_A_Bench"],
-  [/one-arm row|press \+ row|horizontal row/,"One-Arm_Dumbbell_Row"],
-  [/suitcase|farmer|loaded carry/,"Rickshaw_Carry"],
-  [/bear-hug sandbag|sandbag/,"Sandbag_Load"],
-  [/rkc plank|plank|trunk work|core/,"Plank"],
+  [/one-arm row|horizontal row/,"One-Arm_Dumbbell_Row"],
+  [/rkc plank|^plank$|light trunk work|easy trunk work/,"Plank"],
   [/sit-up|sit up/,"Sit-Up"],
   [/russian twist/,"Russian_Twist"],
-  [/ankle mobility|ankle circles/,"Ankle_Circles"],
-  [/hip mobility|mobility|stretch/,"Upward_Stretch"],
-  [/controlled threshold work/,"Rowing_Stationary"],
-  [/main quality work/,"Running_Treadmill"],
-  [/long session/,"Trail_Running_Walking"],
-  [/main session/,"Running_Treadmill"],
-  [/cool-down|cool down/,"Walking_Treadmill"],
-  [/warm-up|warmup/,"Jogging_Treadmill"],
-  [/row|rowing/,"Rowing_Stationary"],
-  [/run|running|jog/,"Running_Treadmill"],
-  [/walk|weighted-pack|ruck/,"Trail_Running_Walking"],
+  [/controlled threshold work|aerobic row|warm-up row|cool-down row|easy row|rowing/,"Rowing_Stationary"],
+  [/controlled quality run|quality run|medium run|easy run|run \/ walk|running/,"Running_Treadmill"],
+  [/weighted-pack|ruck/,"Trail_Running_Walking"],
   [/jump rope|rope jumping/,"Rope_Jumping"],
   [/step-up|step up/,"Step-up_with_Knee_Raise"],
   [/deadlift/,"Barbell_Deadlift"]
@@ -284,8 +303,8 @@ function reduceDoseText(dose){if(!dose||dose==="—")return dose;if(/\d+\s*[×x]
 function adaptiveSessionFor(name,d,w=prescriptionWeek()){
  const base=makeSession(name,w),dec=d?.decision;
  if(!d||!dec)return base;
- if(dec.b==="RED")return{title:"Mechanical Recovery Override",type:"Recovery",duration:"20–45 min",effort:"Very easy / pain-free",why:"Pain or altered movement triggered the mechanical stop rule. Impact and loaded walking are removed until the red flag resolves.",steps:[ex("Easy row or walk","20–30 min","Continuous","Only if pain-free and movement remains normal.","Recovery"),ex("Gentle mobility","10–15 min","—","Use comfortable ranges only.","Mobility")]};
- if(dec.o==="RED")return{title:"Recovery Override",type:"Recovery",duration:"25–50 min",effort:"Very easy",why:"Systemic recovery is too suppressed for the planned workload. Today prioritizes recovery while preserving routine.",steps:[ex("Easy row","20–40 min","Continuous","Conversational effort; finish fresher than you started.","Recovery"),ex("Light mobility","10 min","—","Gentle, non-fatiguing movement.","Mobility"),ex("Easy trunk work","2 light sets","60 sec","No grinding or failure.","Core")]};
+ if(dec.b==="RED")return{title:"Mechanical Recovery Override",type:"Recovery",duration:"20–45 min",effort:"Very easy / pain-free",why:"Pain or altered movement triggered the mechanical stop rule. Impact and loaded walking are removed until the red flag resolves.",steps:[ex("Easy row or walk","20–30 min","Continuous","Only if pain-free and movement remains normal.","Recovery"),ex("Mobility reminder","10–15 min","—","Use your preferred comfortable, pain-free mobility routine.","Reminder")]};
+ if(dec.o==="RED")return{title:"Recovery Override",type:"Recovery",duration:"25–50 min",effort:"Very easy",why:"Systemic recovery is too suppressed for the planned workload. Today prioritizes recovery while preserving routine.",steps:[ex("Easy row","20–40 min","Continuous","Conversational effort; finish fresher than you started.","Recovery"),ex("Mobility reminder","10 min","—","Use your preferred gentle, non-fatiguing mobility routine.","Reminder"),ex("Easy trunk work","2 light sets","60 sec","No grinding or failure.","Core")]};
  if(dec.o==="YELLOW"){
    const steps=base.steps.map(e=>{const n=e.name.toLowerCase();if(/quality|threshold|interval/.test(n))return ex("Easy aerobic substitute","20–40 min","Continuous","Replace hard work with easy aerobic work today.","Recovery");return{...e,dose:reduceDoseText(e.dose),cue:e.cue+" Keep today comfortably submaximal."}});
    return{...base,title:base.title+" · Modified",effort:"Reduced",why:"Recovery or fueling signals warrant a lower-stress version of the planned session.",steps};
@@ -329,8 +348,88 @@ function renderTodayJourney(){
  $("todayJourneyBar").style.width=progress+"%";
 }
 function sessionIncludesPrehab(det){return /mobility|durability|trunk/i.test(det.title)||det.steps.filter(e=>/Mobility|Durability/.test(e.type||"")).length>=2}
-function renderToday(){$("today").classList.toggle("pre-journey",!localStorage.programStart);renderJourneyStart();renderTodayJourney();const d=todayCheckin(),det=adaptiveSession(),record=todayWorkoutRecord(),done=record?.completed==="YES";$("todayDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});$("taskWorkoutTitle").textContent=det.title;const heroMove=det.steps?.[0]?.name;if(heroMove)$("taskWorkoutThumb").innerHTML=exerciseMedia(heroMove);$("taskWorkoutSub").textContent=done?"Completed today":record?.completed==="PARTIAL"?"Partial session recorded · review details":record?.completed==="NO"?"Skipped today · review if this changes":det.duration+" · "+det.effort;const rstate=readinessStateMeta(d?.overall);$("readinessState").textContent=rstate.badge;$("readinessStateBadge").className="readiness-state-badge "+rstate.cls;$("readinessLabel").textContent=!localStorage.programStart?(d?"Baseline ready":"Not started"):rstate.label;$("readinessLabel").style.color=d?(d.overall==="GREEN"?"var(--green)":d.overall==="YELLOW"?"var(--yellow)":"var(--red)"):"";$("readinessMessage").textContent=!localStorage.programStart?"Complete a baseline and begin the journey when you are ready.":d?(d.overall==="GREEN"?"You’re ready for the planned session.":d.overall==="YELLOW"?"Train, but reduce today’s stress.":"Recovery takes priority today."):"Log your morning metrics to personalize today’s training.";$("todayHRV").textContent=d?.hrv??"—";$("todayRHR").textContent=d?.rhr??"—";$("todaySleep").textContent=d?.sleep??"—";$("hrvDelta").textContent=d?formatDelta(d.hrv,num("hrvBase")):"baseline";$("rhrDelta").textContent=d?formatDelta(d.rhr,num("rhrBase")," bpm"):"baseline";const adapt=adaptationExplanation(d),ab=$("adaptationBanner");if(adapt){ab.classList.remove("hidden");ab.className="adaptation-banner "+(adapt.dec.o==="RED"?"red":"yellow");ab.innerHTML="<div><small>WHY TODAY CHANGED</small><strong>"+adapt.title+"</strong><span>"+adapt.copy+"</span></div><b>›</b>";ab.onclick=openReadiness}else{ab.className="adaptation-banner hidden";ab.innerHTML="";ab.onclick=null}const separateMobility=!sessionIncludesPrehab(det);$("taskMobility").classList.toggle("hidden",!separateMobility);const state={taskCheckin:!!d,taskWorkout:!!done,taskNutrition:!!getNutritionLog().saved,...(separateMobility?{taskMobility:taskDone("mobility")}:{})};Object.entries(state).forEach(([id,doneState])=>{const el=$(id);el.classList.toggle("done",doneState);el.querySelector(".task-circle").textContent=doneState?"✓":"○"});$("todayTaskCount").textContent=Object.values(state).filter(Boolean).length+"/"+Object.keys(state).length}
-function renderTrain(){const det=adaptiveSession(),c=todayCheckin(),label=!c?"CHECK IN":c.overall==="GREEN"?"PRIMARY":c.overall==="YELLOW"?"MODIFIED":"RECOVERY";$("workoutKicker").textContent="TODAY · WEEK "+prescriptionWeek()+" · "+blockForWeek(prescriptionWeek()).name.toUpperCase();$("workoutTitle").textContent=det.title;$("workoutWhy").textContent=det.why;renderWeekTargetCard(prescriptionWeek(),det);$("workoutTags").innerHTML='<span>◷ '+det.duration+'</span><span>◈ '+det.effort+'</span><span>'+det.type+'</span>';$("sessionStatus").textContent=label;$("sessionStatus").className="session-status "+(!c?"yellow":c.overall==="YELLOW"?"yellow":c.overall==="RED"?"red":"");$("exerciseCount").textContent=det.steps.length+" movements";$("workoutPrescription").innerHTML=det.steps.map((e,i)=>'<button class="exercise-card" data-i="'+i+'"><div class="exercise-thumb">'+exerciseMedia(e.name)+'</div><div class="exercise-copy"><strong>'+(i+1)+'. '+e.name+'</strong><span>'+e.dose+'</span><small>Rest: '+e.rest+'</small></div><b>›</b></button>').join("");$("workoutPrescription").querySelectorAll(".exercise-card").forEach(b=>b.onclick=()=>openExercise(det.steps[+b.dataset.i]));const record=todayWorkoutRecord(),done=record?.completed==="YES";$("completeWorkoutQuick").textContent=done?"✓ Session Complete":record?.completed==="PARTIAL"?"Partial saved · Review":record?.completed==="NO"?"Skipped · Review":"Review & Complete Session";$("completeWorkoutQuick").disabled=!!done;$("postSessionPrompt").classList.toggle("done",!!done);renderLibrary()}
+function directiveReason(d){
+ if(!d)return"Your saved check-in becomes the input for today’s training and nutrition directive.";
+ const reasons=[],pct=(v,b)=>Math.round((1-v/b)*100),dec=d.decision||decision();
+ if(Number.isFinite(d.sleep)&&d.sleep<7)reasons.push("Sleep "+d.sleep+" h");
+ if(Number.isFinite(d.grip)&&Number.isFinite(d.gripBase)&&d.gripBase>0&&d.grip<.9*d.gripBase)reasons.push("Grip "+pct(d.grip,d.gripBase)+"% below usual");
+ if(Number.isFinite(d.hrv)&&Number.isFinite(d.hrvBase)&&d.hrvBase>0&&d.hrv<.92*d.hrvBase)reasons.push("HRV "+pct(d.hrv,d.hrvBase)+"% below usual");
+ if(Number.isFinite(d.rhr)&&Number.isFinite(d.rhrBase)&&d.rhrBase>0&&d.rhr>d.rhrBase+5)reasons.push("Resting HR "+Math.round(d.rhr-d.rhrBase)+" bpm above usual");
+ if(Number.isFinite(d.pain)&&d.pain>=3)reasons.push("Pain "+d.pain+"/10");
+ if(d.priorWorkoutSignal?.reason)reasons.push(d.priorWorkoutSignal.reason.replace(/\.$/,""));
+ const prev=typeof previousNutritionSignal==="function"?previousNutritionSignal():null;
+ if(prev&&dec.c!=="GREEN")reasons.push("Recent fueling "+Math.round(prev.ratio*100)+"% of target");
+ if(reasons.length)return reasons.join(" · ");
+ return d.overall==="GREEN"?"Recovery, mechanical status and fueling support the planned session.":"Today’s saved recovery inputs call for a lower-stress prescription.";
+}
+function nutritionDayComplete(log=getNutritionLog(),meals=todayMealPlan()){
+ if(!log?.saved)return false;
+ if(log.intakeSource==="manual-deviation")return true;
+ const checked=new Set(log.meals||[]);return meals.length>0&&meals.every(m=>checked.has(m.id));
+}
+function todayFlowState(){
+ if(!localStorage.programStart)return"onboarding";
+ if(!todayCheckin())return"morning";
+ if(!todayWorkoutRecord())return"directive";
+ if(!nutritionDayComplete())return"nutrition";
+ return"evening";
+}
+function directiveTimeline(state,record,nutrition,meals){
+ const order=["morning","directive","nutrition","evening"],idx=Math.max(0,order.indexOf(state)),items=[
+  ["Check-in",state!=="morning"],
+  ["Training",!!record],
+  ["Nutrition",nutritionDayComplete(nutrition,meals)],
+  ["Day",state==="evening"]
+ ];
+ return items.map(([label,done],i)=>'<div class="'+(done?"done ":"")+(i===idx?"current":"")+'"><i>'+(done?"✓":i+1)+'</i><span>'+label+'</span></div>').join("");
+}
+function renderDailyDirective(){
+ const card=$("dailyDirective");if(!card)return;
+ if(!localStorage.programStart){card.classList.add("hidden");return}
+ const state=todayFlowState(),d=todayCheckin(),det=adaptiveSession(),record=todayWorkoutRecord(),target=todayNutritionPrescription(),meals=todayMealPlan(),nutrition=getNutritionLog(),doneMeals=new Set(nutrition.meals||[]),w=prescriptionWeek(),calendar=currentWeek(),phase=macroForWeek(w),rstate=readinessStateMeta(d?.overall);
+ card.className="daily-directive "+state;
+ $("directiveJourney").textContent=w<calendar?"Held Week "+w+" · Calendar "+calendar+" · "+phase.name:"Week "+w+" · "+phase.name;
+ $("directiveTimeline").innerHTML=directiveTimeline(state,record,nutrition,meals);
+ $("directiveWorkout").classList.toggle("hidden",state==="morning"||state==="evening");
+ $("directiveMacros").classList.toggle("hidden",state==="morning");
+ $("directivePrimary").classList.toggle("hidden",state==="evening");
+ $("directiveSecondary").classList.toggle("hidden",state==="morning"||state==="evening");
+ if(state==="morning"){
+   $("directiveStage").textContent="MORNING";$("directiveStep").textContent="STEP 1 OF 4";$("directiveState").textContent="CHECK IN";$("directiveState").className="directive-state neutral";
+   $("directiveTitle").textContent="Morning check-in";$("directiveCopy").textContent="Enter today’s measured recovery values, then tap the quick subjective checks. No narrative entry is required.";
+   $("directiveReason").innerHTML='<strong>Measured</strong><span>HRV · resting HR · sleep · grip · body weight</span><strong>Tap</strong><span>sleep quality · fatigue · yesterday’s load · pain · training feel</span>';
+   $("directivePrimary").textContent="Begin morning check-in";$("directivePrimary").onclick=openCheckin;return
+ }
+ $("directiveState").textContent=rstate.badge;$("directiveState").className="directive-state "+rstate.cls;
+ $("directiveMacros").innerHTML='<div><span>Calories</span><strong>'+target.cal.toLocaleString()+'</strong><small>kcal</small></div><div><span>Protein</span><strong>'+target.protein+'</strong><small>g</small></div><div><span>Carbs</span><strong>'+target.carbs+'</strong><small>g</small></div><div><span>Fat</span><strong>'+target.fat+'</strong><small>g</small></div>';
+ if(state==="directive"){
+   $("directiveStage").textContent="TODAY’S DIRECTIVE";$("directiveStep").textContent="STEP 2 OF 4";$("directiveTitle").textContent=det.title;
+   $("directiveCopy").textContent=d.overall==="GREEN"?"Do this session today, then record how it landed.":d.overall==="YELLOW"?"Use the modified session below. Do not add intensity back in.":"Recovery is the assignment today. Follow the recovery session below.";
+   $("directiveReason").textContent=directiveReason(d);
+   $("directiveWorkout").innerHTML='<div class="directive-workout-head"><div><small>'+det.type.toUpperCase()+'</small><strong>'+det.duration+'</strong></div><span>'+det.effort+'</span></div><div class="directive-step-list">'+det.steps.slice(0,4).map((e,i)=>'<div><i>'+(i+1)+'</i><span><strong>'+e.name+'</strong><small>'+e.dose+'</small></span></div>').join("")+'</div>'+(det.steps.some(e=>/Reminder/.test(e.type||""))?'<p class="directive-mobility-note">Mobility is a reminder only: use your preferred pain-free routine.</p>':'');
+   $("directivePrimary").textContent="Start today’s session";$("directivePrimary").onclick=()=>switchTab("workout");$("directiveSecondary").textContent="Why this prescription?";$("directiveSecondary").onclick=openReadiness;return
+ }
+ if(state==="nutrition"){
+   const status=record?.completed==="YES"?"Session completed":record?.completed==="PARTIAL"?"Partial session recorded":"Skipped session recorded";
+   $("directiveStage").textContent="FUEL & RECOVER";$("directiveStep").textContent="STEP 3 OF 4";$("directiveTitle").textContent="Finish today’s prescribed nutrition";
+   $("directiveCopy").textContent=status+". Confirm prescribed meals as you eat them; enter calories or macros only if the day differed from plan.";
+   $("directiveReason").textContent=target.adjustment?.copy||"Today’s meal target is matched to the saved readiness decision and training day.";
+   $("directiveWorkout").innerHTML='<div class="directive-meal-progress"><strong>'+doneMeals.size+' of '+meals.length+' meals confirmed</strong><span>'+status+'</span><div><i style="width:'+(meals.length?Math.round(doneMeals.size/meals.length*100):0)+'%"></i></div></div>';
+   $("directivePrimary").textContent="Continue today’s meals";$("directivePrimary").onclick=()=>switchTab("nutrition");$("directiveSecondary").textContent="Review session";$("directiveSecondary").onclick=()=>switchTab("workout");return
+ }
+ const actual=Number.isFinite(nutrition.actualCalories)?nutrition.actualCalories:null,status=record?.completed==="YES"?"completed":record?.completed==="PARTIAL"?"partial":"skipped";
+ $("directiveStage").textContent="EVENING";$("directiveStep").textContent="STEP 4 OF 4";$("directiveState").textContent="DAY COMPLETE";$("directiveState").className="directive-state complete";
+ $("directiveTitle").textContent="Today is captured";$("directiveCopy").textContent="Check-in saved · session "+status+" · intake complete. Tomorrow’s directive will use today’s response and confirmed fueling.";
+ $("directiveReason").textContent="No more input is required today.";
+ $("directiveWorkout").innerHTML="";$("directiveMacros").innerHTML='<div><span>Recorded</span><strong>'+(actual===null?"—":Math.round(actual).toLocaleString())+'</strong><small>kcal</small></div><div><span>Target</span><strong>'+target.cal.toLocaleString()+'</strong><small>kcal</small></div><div><span>Meals</span><strong>'+doneMeals.size+'/'+meals.length+'</strong><small>confirmed</small></div><div><span>Readiness</span><strong>'+rstate.label+'</strong><small>today</small></div>';
+}
+function renderToday(){$("today").classList.toggle("pre-journey",!localStorage.programStart);$("today").classList.toggle("guided-flow",!!localStorage.programStart);renderJourneyStart();renderTodayJourney();const d=todayCheckin(),det=adaptiveSession(),record=todayWorkoutRecord(),done=record?.completed==="YES";$("todayDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});$("taskWorkoutTitle").textContent=det.title;const heroMove=det.steps?.[0]?.name;if(heroMove)$("taskWorkoutThumb").innerHTML=exerciseMedia(heroMove);$("taskWorkoutSub").textContent=done?"Completed today":record?.completed==="PARTIAL"?"Partial session recorded · review details":record?.completed==="NO"?"Skipped today · review if this changes":det.duration+" · "+det.effort;const rstate=readinessStateMeta(d?.overall);$("readinessState").textContent=rstate.badge;$("readinessStateBadge").className="readiness-state-badge "+rstate.cls;$("readinessLabel").textContent=!localStorage.programStart?(d?"Baseline ready":"Not started"):rstate.label;$("readinessLabel").style.color=d?(d.overall==="GREEN"?"var(--green)":d.overall==="YELLOW"?"var(--yellow)":"var(--red)"):"";$("readinessMessage").textContent=!localStorage.programStart?"Complete a baseline and begin the journey when you are ready.":d?(d.overall==="GREEN"?"You’re ready for the planned session.":d.overall==="YELLOW"?"Train, but reduce today’s stress.":"Recovery takes priority today."):"Log your morning metrics to personalize today’s training.";$("todayHRV").textContent=d?.hrv??"—";$("todayRHR").textContent=d?.rhr??"—";$("todaySleep").textContent=d?.sleep??"—";$("hrvDelta").textContent=d?formatDelta(d.hrv,num("hrvBase")):"baseline";$("rhrDelta").textContent=d?formatDelta(d.rhr,num("rhrBase")," bpm"):"baseline";const adapt=adaptationExplanation(d),ab=$("adaptationBanner");if(adapt){ab.classList.remove("hidden");ab.className="adaptation-banner "+(adapt.dec.o==="RED"?"red":"yellow");ab.innerHTML="<div><small>WHY TODAY CHANGED</small><strong>"+adapt.title+"</strong><span>"+adapt.copy+"</span></div><b>›</b>";ab.onclick=openReadiness}else{ab.className="adaptation-banner hidden";ab.innerHTML="";ab.onclick=null}const separateMobility=!sessionIncludesPrehab(det);$("taskMobility").classList.toggle("hidden",!separateMobility);const state={taskCheckin:!!d,taskWorkout:!!done,taskNutrition:!!getNutritionLog().saved,...(separateMobility?{taskMobility:taskDone("mobility")}:{})};Object.entries(state).forEach(([id,doneState])=>{const el=$(id);el.classList.toggle("done",doneState);el.querySelector(".task-circle").textContent=doneState?"✓":"○"});$("todayTaskCount").textContent=Object.values(state).filter(Boolean).length+"/"+Object.keys(state).length;renderDailyDirective()}
+function techniqueReferenceAvailable(e){return!!datasetExerciseId(e.name)&&!/Mobility|Reminder/.test(e.type||"")}
+function trainingStepMarkup(e,i){
+ if(!techniqueReferenceAvailable(e))return'<div class="exercise-reminder"><div class="exercise-index">'+(i+1)+'</div><div><strong>'+e.name+'</strong><span>'+e.dose+'</span><small>'+(e.type==="Reminder"?e.cue:"Technique image omitted because this movement label is not specific enough for a trustworthy reference.")+'</small></div></div>';
+ return'<button class="exercise-card" data-i="'+i+'"><div class="exercise-thumb">'+exerciseMedia(e.name)+'</div><div class="exercise-copy"><strong>'+(i+1)+'. '+e.name+'</strong><span>'+e.dose+'</span><small>Rest: '+e.rest+'</small></div><b>›</b></button>';
+}
+function renderTrain(){const det=adaptiveSession(),c=todayCheckin(),label=!c?"CHECK IN":c.overall==="GREEN"?"PRIMARY":c.overall==="YELLOW"?"MODIFIED":"RECOVERY";$("workoutKicker").textContent="TODAY · WEEK "+prescriptionWeek()+" · "+blockForWeek(prescriptionWeek()).name.toUpperCase();$("workoutTitle").textContent=det.title;$("workoutWhy").textContent=det.why;renderWeekTargetCard(prescriptionWeek(),det);$("workoutTags").innerHTML='<span>◷ '+det.duration+'</span><span>◈ '+det.effort+'</span><span>'+det.type+'</span>';$("sessionStatus").textContent=label;$("sessionStatus").className="session-status "+(!c?"yellow":c.overall==="YELLOW"?"yellow":c.overall==="RED"?"red":"");$("exerciseCount").textContent=det.steps.length+" steps";$("workoutPrescription").innerHTML=det.steps.map(trainingStepMarkup).join("");$("workoutPrescription").querySelectorAll(".exercise-card").forEach(b=>b.onclick=()=>openExercise(det.steps[+b.dataset.i]));const record=todayWorkoutRecord(),done=record?.completed==="YES";$("completeWorkoutQuick").textContent=done?"✓ Session Complete":record?.completed==="PARTIAL"?"Partial saved · Review":record?.completed==="NO"?"Skipped · Review":"Review & Complete Session";$("completeWorkoutQuick").disabled=!!done;$("postSessionPrompt").classList.toggle("done",!!done);renderLibrary()}
 const LIB_META={
  "Barbell_Full_Squat":{name:"Back Squat",category:"Strength",tags:"barbell legs squat quads glutes"},
  "Romanian_Deadlift":{name:"Romanian Deadlift",category:"Strength",tags:"barbell dumbbell hinge hamstrings glutes"},
@@ -350,8 +449,6 @@ const LIB_META={
  "Plank":{name:"RKC Plank",category:"Core",tags:"plank core trunk anti extension"},
  "Sit-Up":{name:"Sit-Up",category:"Core",tags:"sit up core trunk"},
  "Russian_Twist":{name:"Russian Twist",category:"Core",tags:"rotation core trunk"},
- "Ankle_Circles":{name:"Ankle Mobility",category:"Mobility",tags:"ankle mobility range of motion"},
- "Upward_Stretch":{name:"Hip / General Mobility",category:"Mobility",tags:"hip mobility stretch warm up recovery"},
  "Rowing_Stationary":{name:"Concept2 Rowing",category:"Conditioning",tags:"rower concept2 aerobic threshold conditioning"},
  "Running_Treadmill":{name:"Running",category:"Conditioning",tags:"run running aerobic intervals threshold road"},
  "Trail_Running_Walking":{name:"Weighted-Pack Walking / Ruck",category:"Conditioning",tags:"ruck weighted pack walking endurance"},
@@ -536,7 +633,7 @@ function saveNutrition(){
  log.actualFat=Number.isFinite(enteredFat)&&enteredFat>=0?enteredFat:(fullPrescription?target.fat:null);
  log.intakeSource=hasManualDeviation?"manual-deviation":"prescribed-meals";
  log.targetCalories=target.cal;log.targetProtein=target.protein;log.targetCarbs=target.carbs;log.targetFat=target.fat;log.prescribedMeals=meals.map(m=>({...m,foods:[...m.foods]}));log.prescriptionReason=target.adjustment?.copy||target.why;
- localStorage.setItem(nutritionLogKey(),JSON.stringify(log));setTask("nutrition",true);renderNutrition();renderToday()
+ localStorage.setItem(nutritionLogKey(),JSON.stringify(log));const nutritionComplete=log.intakeSource==="manual-deviation"||meals.every(m=>(log.meals||[]).includes(m.id));setTask("nutrition",nutritionComplete);renderNutrition();renderToday();if(typeof switchTab==="function")switchTab("today")
 }
 function programWeekForDate(d){const a=new Date(programStart()),b=new Date(d);a.setHours(12,0,0,0);b.setHours(12,0,0,0);return Math.max(1,Math.min(56,Math.floor((b-a)/604800000)+1))}
 function programDayIndex(d){const a=new Date(programStart()),b=new Date(d);a.setHours(12,0,0,0);b.setHours(12,0,0,0);const days=Math.floor((b-a)/86400000);return((days%7)+7)%7}
@@ -576,9 +673,10 @@ function renderJourney(){
  $("journeyTimeline").querySelectorAll(".journey-month").forEach(b=>b.onclick=()=>{viewedWeek=+b.dataset.week;document.querySelector('[data-calview="week"]').click();renderWeek()});
 }
 function openMobilityGuide(){
- const det=makeSession(sessionName()),dur=det.steps.filter(e=>/mobility|tibialis|soleus|calf|trunk|core/i.test(e.name));
- const work=dur.length?dur:[ex("Ankle mobility","2 × 8–10 each side","—","Controlled pain-free knee-over-toe movement.","Mobility"),ex("Tibialis raises","3 × 15–20","60 sec","Control the full range.","Durability"),ex("Eccentric calf raise","2 × 12 each side","60 sec","Lower slowly and remain pain-free.","Durability"),ex("Hip mobility","5 min","—","Gentle controlled movement.","Mobility")];
- $("modalTitle").textContent="Mobility & Prehab";$("modalContent").innerHTML='<div class="mobility-guide"><p>Today’s durability work should leave you better prepared, not fatigued.</p>'+work.map((e,i)=>'<button data-mob="'+i+'"><b>'+(i+1)+'</b><div><strong>'+e.name+'</strong><small>'+e.dose+'</small></div><span>›</span></button>').join("")+'</div>';$("infoModal").classList.remove("hidden");$("modalContent").querySelectorAll("[data-mob]").forEach(b=>b.onclick=()=>openExercise(work[+b.dataset.mob]));
+ const det=adaptiveSession(),dur=det.steps.filter(e=>/tibialis|soleus|calf|trunk|core/i.test(e.name));
+ $("modalTitle").textContent="Mobility reminder";
+ $("modalContent").innerHTML='<div class="mobility-reminder-callout"><strong>Use the routine that works for you.</strong><p>Spend 5–10 minutes moving through comfortable, pain-free ranges. The app intentionally does not prescribe or illustrate generic ankle/hip stretches.</p></div>'+(dur.length?'<div class="mobility-guide"><p>Separate durability work in today’s plan:</p>'+dur.map((e,i)=>'<button data-mob="'+i+'"><b>'+(i+1)+'</b><div><strong>'+e.name+'</strong><small>'+e.dose+'</small></div><span>›</span></button>').join("")+'</div>':'');
+ $("infoModal").classList.remove("hidden");$("modalContent").querySelectorAll("[data-mob]").forEach(b=>b.onclick=()=>openExercise(dur[+b.dataset.mob]));
 }
 function renderMonth(){const base=new Date(viewedMonth.getFullYear(),viewedMonth.getMonth(),1,12),year=base.getFullYear(),month=base.getMonth();$("monthTitle").textContent=base.toLocaleDateString(undefined,{month:"long",year:"numeric"});const first=(base.getDay()+6)%7,last=new Date(year,month+1,0).getDate(),cells=[];for(let i=0;i<first;i++)cells.push('<div class="month-cell empty"></div>');for(let day=1;day<=last;day++){const d=new Date(year,month,day,12),afterStart=!localStorage.programStart||d>=new Date(programStart()),w=programWeekForDate(d),macro=macroForWeek(w),state=dateState(d),today=d.toDateString()===new Date().toDateString(),future=d>new Date();cells.push('<button class="month-cell '+(today?"today ":"")+(state.check&&state.work?"complete ":"")+(state.failed?"failed ":"")+(future?"future ":"")+'" data-date="'+d.toISOString()+'" '+(!afterStart?"disabled":"")+'><span>'+day+'</span><i style="background:'+phasePalette[macro.name]+'"></i></button>')} $("monthGrid").innerHTML=cells.join("");$("monthLegend").innerHTML=macroPhases.map(x=>'<span><i style="background:'+phasePalette[x[0]]+'"></i>'+x[0]+'</span>').join("");$("monthGrid").querySelectorAll("[data-date]").forEach(b=>b.onclick=()=>openDaySheet(new Date(b.dataset.date)))}
 function renderWeek(){const w=viewedWeek,bl=blockForWeek(w),wt=weekTarget(w),days=daysFor(bl),st=dateFor(w,0),en=dateFor(w,6);$("weekTitle").textContent="Week "+w;$("weekRange").textContent=st.toLocaleDateString(undefined,{month:"short",day:"numeric"})+" – "+en.toLocaleDateString(undefined,{month:"short",day:"numeric"});$("weekSummary").innerHTML='<div class="week-card"><div class="week-overview"><small>'+bl.name.toUpperCase()+' · '+wt.weekType+'</small><strong>'+bl.focus+'</strong><p>Run: '+wt.run+' · C2: '+wt.row+' · Ruck: '+(wt.ruck||"none")+'</p></div>'+days.map((name,i)=>{const date=dateFor(w,i),det=dateSession(date).det,is=date.toDateString()===todayKey(),state=dateState(date);return'<div class="day-row '+(state.check&&state.work?"done ":"")+(state.failed?"failed ":"")+(is?"today-row":"")+'"><button class="day-button" data-i="'+i+'"><div class="day-date"><strong>'+date.toLocaleDateString(undefined,{weekday:"short"})+'</strong><small>'+date.getDate()+'</small></div><span class="day-state">'+(state.failed?"×":state.status==="PARTIAL"?"◐":state.status==="NO"?"×":state.check&&state.work?"✓":"○")+'</span><div class="day-desc"><strong>'+det.title+'</strong><small>'+det.type+' · '+det.effort+'</small></div><span class="day-chevron">›</span></button></div>'}).join("")+'</div>';$("weekSummary").querySelectorAll(".day-button").forEach(btn=>btn.onclick=()=>openDaySheet(dateFor(w,+btn.dataset.i)))}
@@ -642,7 +740,7 @@ function renderTrends(){
  const a=[...logs().map(x=>({...x,k:"Check-in"})),...workouts().map(x=>({...x,k:"Session"}))].sort((x,y)=>new Date(y.date)-new Date(x.date)).slice(0,8);
  $("trendLogList").innerHTML=a.length?a.map(x=>'<div class="log-card"><div><strong>'+(x.k==="Session"?x.session:"Morning check-in")+'</strong><small>'+new Date(x.date).toLocaleDateString()+(Number.isInteger(x.week)?' · Week '+x.week:'')+'</small></div><small>'+(x.k==="Session"?(x.completed||""):(readinessStateMeta(x.overall).label))+'</small></div>').join(""):'<div class="log-card"><small>No activity saved yet.</small></div>';countRecords()
 }
-function openCheckin(){resetHistorical();$("checkinSheet").classList.remove("hidden");requiredFields();bindInfo($("checkinSheet"))}function closeCheckin(){resetHistorical();$("checkinSheet").classList.add("hidden")}function closeModal(){$("infoModal").classList.add("hidden")}function bindInfo(root){(root||document).querySelectorAll(".info-dot[data-term]").forEach(b=>b.onclick=e=>{e.stopPropagation();openInfo(b.dataset.term)})}
+function openCheckin(){resetHistorical();enhanceCheckinTapControls();syncCheckinTapControls();$("checkinSheet").classList.remove("hidden");requiredFields();bindInfo($("checkinSheet"))}function closeCheckin(){resetHistorical();$("checkinSheet").classList.add("hidden")}function closeModal(){$("infoModal").classList.add("hidden")}function bindInfo(root){(root||document).querySelectorAll(".info-dot[data-term]").forEach(b=>b.onclick=e=>{e.stopPropagation();openInfo(b.dataset.term)})}
 function resetViewport(){document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0)}
 function switchTab(t){
  $("headerAction").style.display=t==="today"?"grid":"none";document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));$(t).classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.target===t));
@@ -670,7 +768,7 @@ $("readinessSheet").onclick=e=>{if(e.target===$("readinessSheet"))$("readinessSh
 document.querySelectorAll(".task-toggle").forEach(b=>b.onclick=e=>{e.stopPropagation();handleTaskToggle(b.dataset.task)});
 document.querySelectorAll(".task-main").forEach(b=>b.onclick=()=>{const a=b.dataset.action;if(a==="checkin")openCheckin();if(a==="workout")switchTab("workout");if(a==="nutrition")switchTab("nutrition");if(a==="mobility")openMobilityGuide()});
 $("closeCheckin").onclick=closeCheckin;$("checkinSheet").onclick=e=>{if(e.target===$("checkinSheet"))closeCheckin()};
-$("evaluateBtn").onclick=evaluate;$("saveBtn").onclick=saveCheckin;
+$("evaluateBtn").onclick=saveCheckin;$("saveBtn").onclick=saveCheckin;
 $("completeWorkoutQuick").onclick=()=>{if(todayWorkout())return;$("sessionFeedback").open=true;$("sessionFeedback").scrollIntoView({behavior:"smooth",block:"center"});$("completed").value="YES";};$("completeWorkout").onclick=()=>saveWorkout(val("completed")||"YES");
 $("modalClose").onclick=closeModal;$("modalDone").onclick=closeModal;$("infoModal").onclick=e=>{if(e.target===$("infoModal"))closeModal()};
 document.querySelectorAll(".calendar-mode-btn").forEach(b=>b.onclick=()=>{document.querySelectorAll(".calendar-mode-btn").forEach(x=>x.classList.toggle("active",x===b));$("weekView").classList.toggle("hidden",b.dataset.calview!=="week");$("monthView").classList.toggle("hidden",b.dataset.calview!=="month");$("journeyView").classList.toggle("hidden",b.dataset.calview!=="journey");if(b.dataset.calview==="month")renderMonth();if(b.dataset.calview==="journey")renderJourney();resetViewport()});

@@ -16,7 +16,7 @@ test('meal totals stay inferred when a saved full prescription becomes partial',
  const h=harness({meals:['m1','m2']});h.context.saveNutrition();assert.equal(h.log.actualCalories,1000);assert.equal(h.log.actualProtein,100);assert.equal(h.$('actualCalories').value,'');assert.equal(h.$('actualProtein').value,'');h.buttons[1].onclick();h.context.saveNutrition();assert.equal(h.log.actualCalories,400);assert.equal(h.log.actualProtein,null);assert.equal(h.log.intakeSource,'prescribed-meals');
 });
 test('editing saved intake immediately clears completion and visible saved label',()=>{
- const h=harness({meals:['m1']});h.context.saveNutrition();assert.equal(h.task,true);assert.match(h.$('saveNutritionDay').textContent,/saved/);h.$('actualCarbs').value='80';h.$('actualCarbs').oninput();assert.equal(h.log.saved,false);assert.equal(h.task,false);assert.equal(h.log.savedAt,undefined);assert.equal(h.$('saveNutritionDay').textContent,'Save Today’s Intake');
+ const h=harness({meals:['m1','m2']});h.context.saveNutrition();assert.equal(h.task,true);assert.match(h.$('saveNutritionDay').textContent,/saved/);h.$('actualCarbs').value='80';h.$('actualCarbs').oninput();assert.equal(h.log.saved,false);assert.equal(h.task,false);assert.equal(h.log.savedAt,undefined);assert.equal(h.$('saveNutritionDay').textContent,'Save Today’s Intake');
 });
 test('legacy meal estimates remain blank; legacy explicit intake remains available',()=>{
  const h=harness({intakeSource:'prescribed-meals',actualCalories:1000,actualProtein:100,waterOz:40});assert.equal(h.$('actualCalories').value,'');assert.equal(h.$('waterActual').value,'40');
