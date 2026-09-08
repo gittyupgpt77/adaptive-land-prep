@@ -398,6 +398,13 @@ function weightTrend(referenceDate=new Date()){
  const mean=a=>a.reduce((s,x)=>s+x,0)/a.length,recentAvg=mean(recent),priorAvg=mean(prior),pct=(recentAvg-priorAvg)/priorAvg;
  return{status:"ready",recentCount:recent.length,priorCount:prior.length,recentAvg,priorAvg,pct,level:pct<=-.01?"red":pct<=-.005?"yellow":"green"}
 }
+function weightTrendHeadline(t,latest){
+ if(!Number.isFinite(latest))return"No data";
+ const weight=latest.toFixed(1)+" lb";
+ if(!t||t.status!=="ready")return weight+" · calibrating";
+ const pct=Math.abs(t.pct*100).toFixed(1),direction=t.pct<0?"down":t.pct>0?"up":"stable";
+ return direction==="stable"?weight+" · 7-day average stable":weight+" · 7-day average "+direction+" "+pct+"%";
+}
 function nutritionTrendCopy(t){
  if(!t||t.status!=="ready")return"Calibration is still learning. Log body weight on at least four days in each of two consecutive 7-day windows before the app uses weight trend as a fueling guardrail.";
  const pct=Math.abs(t.pct*100).toFixed(1);
@@ -455,7 +462,7 @@ function captureNutritionDraft(log=getNutritionLog()){
 }
 function renderNutrition(){
  const w=prescriptionWeek(),name=sessionName(),target=todayNutritionPrescription(w,name),meals=todayMealPlan(w,name),log=getNutritionLog(),done=new Set(log.meals||[]),hydr=hydrationForDay(w,name);
- $("nutritionToday").innerHTML='<div class="nutrition-dashboard"><small>'+target.phase.toUpperCase()+'</small><div class="nutrition-dashboard-top"><div><strong>'+target.cal.toLocaleString()+'</strong><span>kcal target</span></div><div class="nutrition-ring" style="--p:'+Math.round(done.size/meals.length*100)+'"><b>'+Math.round(done.size/meals.length*100)+'%</b></div></div><div class="macro-grid page-macros"><div><span>Protein</span><strong>'+target.protein+' g</strong></div><div><span>Carbs</span><strong>'+target.carbs+' g</strong></div><div><span>Fat</span><strong>'+target.fat+' g</strong></div></div><p>'+target.why+'</p>'+(target.adjustment?'<div class="nutrition-adjustment '+target.adjustment.level+'"><strong>'+target.adjustment.title+'</strong><span>'+target.adjustment.copy+'</span></div>':'')+'</div>';
+ $("nutritionToday").innerHTML='<div class="nutrition-dashboard"><small>'+target.phase.toUpperCase()+'</small><div class="nutrition-dashboard-top"><div><strong>'+target.cal.toLocaleString()+'</strong><span>program kcal target</span></div><div class="nutrition-ring" style="--p:'+Math.round(done.size/meals.length*100)+'"><b>'+Math.round(done.size/meals.length*100)+'%</b></div></div><div class="macro-grid page-macros"><div><span>Protein</span><strong>'+target.protein+' g</strong></div><div><span>Carbs</span><strong>'+target.carbs+' g</strong></div><div><span>Fat</span><strong>'+target.fat+' g</strong></div></div><p>'+target.why+'</p>'+(target.adjustment?'<div class="nutrition-adjustment '+target.adjustment.level+'"><strong>'+target.adjustment.title+'</strong><span>'+target.adjustment.copy+'</span></div>':'')+'</div>';
  $("mealProgress").textContent=done.size+"/"+meals.length;
  $("nutritionMeals").innerHTML=meals.map(m=>'<div class="meal-card '+(done.has(m.id)?"done":"")+'"><button class="meal-check" data-meal="'+m.id+'">'+(done.has(m.id)?"✓":"○")+'</button><button class="meal-main" data-mealopen="'+m.id+'"><div><small>≈ '+m.kcal+' KCAL</small><strong>'+m.name+'</strong>'+m.foods.map(f=>'<span>'+f+'</span>').join("")+'</div><b>›</b></button></div>').join("");
  $("nutritionMeals").querySelectorAll(".meal-check").forEach(b=>b.onclick=()=>{const cur=captureNutritionDraft(),set=new Set(cur.meals||[]);set.has(b.dataset.meal)?set.delete(b.dataset.meal):set.add(b.dataset.meal);cur.meals=[...set];cur.saved=false;delete cur.savedAt;localStorage.setItem(nutritionLogKey(),JSON.stringify(cur));setTask("nutrition",false);renderNutrition();renderToday()});
@@ -580,7 +587,7 @@ function setTrendState(canvasId,count,message){
 }
 function renderTrends(){
  const l=logs().slice(0,28).reverse(),map={RED:30,YELLOW:65,GREEN:90},wt=l.filter(x=>Number.isFinite(x.weight)).map(x=>x.weight);
- $("trendRecovery").textContent=l.length?l.length+" check-in"+(l.length===1?"":"s"):"No data";$("trendWeight").textContent=wt.length?wt.at(-1).toFixed(1)+" lb":"No data";
+ const weightState=typeof weightTrend==="function"?weightTrend(new Date()):null;$("trendRecovery").textContent=l.length?l.length+" check-in"+(l.length===1?"":"s"):"No data";$("trendWeight").textContent=weightTrendHeadline(weightState,wt.length?wt.at(-1):NaN);
  setTrendState("recoveryChart",l.length,l.length===1?"One check-in saved. Add one more morning check-in to begin the recovery trend.":"Complete two morning check-ins to begin the recovery trend.");
  setTrendState("weightChart",wt.length,wt.length===1?"One weigh-in saved. Add one more to begin the body-weight trend.":"Save two body-weight entries to begin the trend.");
  requestAnimationFrame(()=>{if(l.length>=2)draw("recoveryChart",l.map(x=>x.score||map[x.overall]||50));if(wt.length>=2)draw("weightChart",wt)});
