@@ -592,8 +592,7 @@ function objectiveSetsForPhase(p,stats,b){
  const runSec=parseClock(b.run4);
  const base=(name,done,progress,label)=>({name,done,progress:Math.max(0,Math.min(1,progress)),label});
  if(p.name==="Foundation")return[
-  [base("Seven-day operating rhythm",stats.checkins>=7,stats.checkins/7,stats.checkins+"/7 check-ins"),base("Eight strength sessions",stats.strength>=8,stats.strength/8,stats.strength+"/8 strength"),base("Eight aerobic sessions",stats.aerobic>=8,stats.aerobic/8,stats.aerobic+"/8 aerobic"),base("Fourteen complete days",stats.completeDays>=14,stats.completeDays/14,stats.completeDays+"/14 complete days")],
-  [base("Body fat under 18%",b.bodyFat!=null&&b.bodyFat<18,b.bodyFat==null?0:Math.min(1,28/Math.max(b.bodyFat,1)),"Current: "+(b.bodyFat??"—")+"%"),base("60 strict push-ups",(b.pushups||0)>=60,(b.pushups||0)/60,(b.pushups||0)+"/60"),base("12 strict pull-ups",(b.pullups||0)>=12,(b.pullups||0)/12,(b.pullups||0)+"/12"),base("No unresolved curriculum debt",unresolvedInPhase(p)===0,unresolvedInPhase(p)?0:1,unresolvedInPhase(p)+" unresolved")]
+  [base("Seven-day operating rhythm",stats.checkins>=7,stats.checkins/7,stats.checkins+"/7 check-ins"),base("Eight strength sessions",stats.strength>=8,stats.strength/8,stats.strength+"/8 strength"),base("Eight aerobic sessions",stats.aerobic>=8,stats.aerobic/8,stats.aerobic+"/8 aerobic"),base("Fourteen complete days",stats.completeDays>=14,stats.completeDays/14,stats.completeDays+"/14 complete days")]
  ];
  if(p.name==="Engine + Load")return[
   [base("Twenty-eight complete days",stats.completeDays>=28,stats.completeDays/28,stats.completeDays+"/28 complete days"),base("Twelve loaded-work sessions",stats.loaded>=12,stats.loaded/12,stats.loaded+"/12 loaded"),base("Sixteen aerobic sessions",stats.aerobic>=16,stats.aerobic/16,stats.aerobic+"/16 aerobic"),base("No unresolved curriculum debt",unresolvedInPhase(p)===0,unresolvedInPhase(p)?0:1,unresolvedInPhase(p)+" unresolved")],
