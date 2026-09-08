@@ -10,8 +10,8 @@ const oldBlock=` if(p.name==="Foundation")return[
 const newBlock=` if(p.name==="Foundation")return[
   [base("Seven-day operating rhythm",stats.checkins>=7,stats.checkins/7,stats.checkins+"/7 check-ins"),base("Eight strength sessions",stats.strength>=8,stats.strength/8,stats.strength+"/8 strength"),base("Eight aerobic sessions",stats.aerobic>=8,stats.aerobic/8,stats.aerobic+"/8 aerobic"),base("Fourteen complete days",stats.completeDays>=14,stats.completeDays/14,stats.completeDays+"/14 complete days")]
  ];`;
-if(!source.includes(oldBlock))throw new Error('Foundation objective block no longer matches branch');
-source=source.replace(oldBlock,newBlock);
+if(source.includes(oldBlock))source=source.replace(oldBlock,newBlock);
+else if(!source.includes(newBlock))throw new Error('Foundation objective block no longer matches branch');
 fs.writeFileSync(appPath,source);
 
 const testPath=path.join(__dirname,'../tests/phase-objective-intent.test.cjs');
@@ -53,7 +53,7 @@ test('later phases retain performance qualification when performance becomes a p
 });
 
 test('Phase 1 focus still explicitly includes fat loss without turning an arbitrary body-fat percentage into a promotion lock',()=>{
- assert.match(source,/\["Foundation",1,16,"Lose excess body fat,/);
+ assert.ok(source.includes('["Foundation",1,16,"Lose excess body fat,'));
  assert.doesNotMatch(source,/Body fat under 18%/);
 });
 `);
