@@ -29,7 +29,7 @@ jobs:
           PY
       - name: Apply product patch
         run: python3 .github/scripts/directive-flow-patch.py
-      - name: Preserve isolated test harness compatibility
+      - name: Preserve regression harnesses and new completion semantics
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -43,6 +43,11 @@ jobs:
             if s.count(old)!=1: raise SystemExit(f'compat replacement count for {old[:50]}: {s.count(old)}')
             s=s.replace(old,new,1)
           p.write_text(s)
+          t=Path('tests/nutrition-draft.test.cjs');x=t.read_text()
+          old="const h=harness({meals:['m1']});h.context.saveNutrition();assert.equal(h.task,true);"
+          new="const h=harness({meals:['m1','m2']});h.context.saveNutrition();assert.equal(h.task,true);"
+          if x.count(old)!=1: raise SystemExit(f'nutrition completion fixture count: {x.count(old)}')
+          t.write_text(x.replace(old,new,1))
           PY
       - name: Syntax and Node regressions
         run: node --check app.js && node --check service-worker.js && node --test tests/*.test.cjs
@@ -88,6 +93,6 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add index.html app.js styles.css service-worker.js tests/daily-directive-flow.test.cjs .github/workflows/ui-audit.yml
+          git add index.html app.js styles.css service-worker.js tests/daily-directive-flow.test.cjs tests/nutrition-draft.test.cjs .github/workflows/ui-audit.yml
           git commit -m "Guide the athlete through a single-card daily flow"
           git push origin HEAD:feat/intent-driven-daily-flow
