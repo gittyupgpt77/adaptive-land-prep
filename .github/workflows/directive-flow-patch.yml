@@ -17,6 +17,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Normalize patch script
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/directive-flow-patch.py')
+          s=p.read_text()
+          start=s.index('s = replace_once(\n    s,\n    "          check(\'Today shows current Journey position\'')
+          end=s.index('s = replace_once(s, "          check(\'Today distinguishes held prescription from calendar time\'')
+          p.write_text(s[:start]+s[end:])
+          PY
       - name: Apply product patch
         run: python3 .github/scripts/directive-flow-patch.py
       - name: Syntax and Node regressions
