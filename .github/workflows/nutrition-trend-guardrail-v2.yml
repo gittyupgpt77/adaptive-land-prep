@@ -1,0 +1,38 @@
+name: Nutrition Trend Guardrail v2
+
+on:
+  push:
+    branches: [feat/nutrition-trend-guardrail]
+    paths:
+      - '.github/workflows/nutrition-trend-guardrail-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/nutrition-trend-guardrail
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Apply nutrition trend guardrail
+        run: |
+          python3 scripts/apply-nutrition-trend-guardrail.py
+          python3 scripts/harden-nutrition-trend-render.py
+      - name: Verify syntax and regressions
+        run: |
+          node --check app.js
+          node --test tests/*.test.cjs
+      - name: Commit verified product change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js
+          git diff --cached --quiet && exit 1
+          git commit -m "Add body-weight trend fueling guardrail"
+          git push origin HEAD:feat/nutrition-trend-guardrail
