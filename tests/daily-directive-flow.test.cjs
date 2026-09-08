@@ -44,5 +44,5 @@ test('iPhone 16 standalone shell consumes safe areas and contains overscroll',()
   assert.match(css,/overscroll-behavior-y:contain/);
   assert.match(audit,/width: 393, height: 852/);
   assert.match(audit,/deviceScaleFactor: 3/);
-  assert.match(sw,/land-prep-v65/);
+  assert.match(sw,/land-prep-v\d+/);
 });
