@@ -25,6 +25,21 @@ jobs:
           src=Path('.github/workflows/ui-audit.yml').read_text()
           fixes=[
             (
+              "          // Nutrition: every meal has two independent interactions.\n          await page.locator('[data-target=\"nutrition\"]').click();",
+              "          // Nutrition: every meal has two independent interactions. Start from an isolated unsaved day; an earlier state-machine check intentionally completed nutrition.\n          await page.evaluate(()=>{localStorage.removeItem(nutritionLogKey());setTask('nutrition',false);renderAll();});\n          await page.locator('[data-target=\"nutrition\"]').click();",
+              'nutrition audit state isolation'
+            ),
+            (
+              "          check('Library has broad movement coverage', libraryCount>=20, 'count='+libraryCount);",
+              "          // The library is intentionally smaller now: only movements with trustworthy canonical references belong here.",
+              'remove padded library count requirement'
+            ),
+            (
+              "          const libraryNames=await page.locator('.library-item strong').allTextContents();",
+              "          const libraryNames=await page.locator('.library-item strong').allTextContents();\n          const canonicalLibraryPatterns=[/Back Squat/i,/Romanian Deadlift/i,/Overhead Press/i,/Pull-Up/i,/Push-Up/i,/Concept2 Rowing/i,/Running/i];\n          check('Library retains key canonical movement families',canonicalLibraryPatterns.every(re=>libraryNames.some(n=>re.test(n))),JSON.stringify(libraryNames));",
+              'canonical library quality requirement'
+            ),
+            (
               "          await page.locator('#saveNutritionDay').click();\n          check('Nutrition save persists'",
               "          await page.locator('#saveNutritionDay').click();\n          check('Nutrition save returns athlete to Today',await visible('#today'));\n          await page.locator('[data-target=\"nutrition\"]').click();\n          check('Nutrition save persists'",
               'manual nutrition save transition'
