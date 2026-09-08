@@ -459,7 +459,7 @@ jobs:
           });
           const backupDownload=page.waitForEvent('download');
           await page.locator('#openSettings').click();
-          await page.locator('.data-details:not(.cloud-panel) summary').click();
+          await page.getByText('Data & backup',{exact:true}).click();
           await page.locator('#exportBackup').click();
           const downloaded=await backupDownload;
           const backupPath=await downloaded.path();
