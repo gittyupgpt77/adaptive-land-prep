@@ -25,3 +25,18 @@ test('legacy meal estimates remain blank; legacy explicit intake remains availab
 test('clearing an explicit deviation restores meal inference and retains other drafts',()=>{
  const h=harness({meals:['m1','m2']});h.$('actualCalories').value='0';h.$('actualCalories').oninput();h.context.saveNutrition();assert.equal(h.log.actualCalories,0);h.$('actualCalories').value='';h.$('actualCalories').oninput();h.context.saveNutrition();assert.equal(h.log.actualCalories,1000);
 });
+test('one meal tap persists progress; only all meals complete the day',()=>{
+ const h=harness();h.buttons[0].onclick();assert.equal(h.log.saved,true);assert.equal(h.log.complete,false);assert.equal(h.log.actualCalories,400);assert.equal(h.task,false);
+ h.context.renderNutrition();assert.match(h.$('nutritionToday').innerHTML,/NEXT TO EAT/);h.buttons[1].onclick();assert.equal(h.log.complete,true);assert.equal(h.task,true);
+ h.buttons[0].onclick();assert.equal(h.log.complete,false);assert.equal(h.task,false);
+});
+test('meal taps never finalize a manual draft and macros alone cannot confirm low calories',()=>{
+ const h=harness();h.$('actualCalories').value='500';h.buttons[0].onclick();assert.equal(h.log.saved,false);assert.equal(h.log.complete,false);
+ h.context.saveNutrition();assert.equal(h.log.complete,true);
+ h.$('actualCalories').value='';h.$('actualProtein').value='60';h.context.saveNutrition();assert.equal(h.log.complete,false);
+});
+test('unfinished nutrition does not become a next-day underfueling signal',()=>{
+ const c=vm.createContext({getNutritionLog:()=>({saved:true,complete:false,actualCalories:400}),dateSession:()=>({w:1,name:'Recovery'})});
+ vm.runInContext(source.slice(source.indexOf('function previousNutritionSignal('),source.indexOf('// Raw entries are distinct')),c);
+ assert.equal(c.previousNutritionSignal(),null);
+});

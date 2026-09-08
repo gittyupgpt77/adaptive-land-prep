@@ -1,9 +1,11 @@
 name: Consumer Audit
 concurrency:
-  group: consumer-audit-main
+  group: consumer-audit-${{ github.ref }}
   cancel-in-progress: true
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
     paths:
@@ -385,6 +387,7 @@ jobs:
             await page.locator('#modalClose').click();
             await card.locator('.meal-check').click();
           }
+          check('Meal taps save a complete day without a second save',await page.evaluate(()=>getNutritionLog().saved&&getNutritionLog().complete));
           check('Meal completion updates progress',(await page.locator('#mealProgress').textContent()).startsWith(mealCount+'/'));
           await page.locator('#waterActual').fill('120');
           await page.locator('#actualCalories').fill('1525');
