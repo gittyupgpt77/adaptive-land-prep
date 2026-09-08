@@ -39,3 +39,14 @@ test('Phase 1 focus still explicitly includes fat loss without turning an arbitr
  assert.ok(source.includes('["Foundation",1,16,"Lose excess body fat,'));
  assert.doesNotMatch(source,/Body fat under 18%/);
 });
+
+
+test('final qualification cannot pass unknown mechanics or unfinished nutrition',()=>{
+ const c=objectiveContext();let checkin=null,food={saved:true,complete:false};
+ c.todayCheckin=()=>checkin;c.getNutritionLog=()=>food;
+ const final=()=>c.objectiveSetsForPhase({name:'Taper'},stats,{})[1];
+ assert.equal(final()[0].done,false);assert.equal(final()[1].done,false);
+ checkin={overall:'GREEN',decision:{b:'YELLOW'}};assert.equal(final()[0].done,false);
+ checkin={overall:'GREEN',decision:{b:'GREEN'}};assert.equal(final()[0].done,true);
+ food={saved:true,complete:true};assert.equal(final()[1].done,true);
+});

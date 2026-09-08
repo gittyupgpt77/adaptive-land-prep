@@ -163,15 +163,15 @@ jobs:
           await page.locator('[data-target="today"]').click();
 
           // Saved intake must be judged against its original prescription, including zero.
-          await page.evaluate(()=>{const y=new Date();y.setDate(y.getDate()-1);localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:1000,targetCalories:2000,meals:[]}))});
+          await page.evaluate(()=>{const y=new Date();y.setDate(y.getDate()-1);localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,complete:true,actualCalories:1000,targetCalories:2000,meals:[]}))});
           check('Fueling uses the saved target',await page.evaluate(()=>previousNutritionSignal().ratio===0.5));
-          await page.evaluate(()=>{const y=new Date();y.setDate(y.getDate()-1);localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:0,targetCalories:2000,meals:['m1','m2','m3','m4']}))});
+          await page.evaluate(()=>{const y=new Date();y.setDate(y.getDate()-1);localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,complete:true,actualCalories:0,targetCalories:2000,meals:['m1','m2','m3','m4']}))});
           check('Explicit zero intake overrides meal completion',await page.evaluate(()=>previousNutritionSignal().ratio===0));
 
           // Nutrition causality: under-fueling yesterday must affect today's saved prescription.
           await page.evaluate(()=>{
             const y=new Date();y.setDate(y.getDate()-1);
-            localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:650,targetCalories:1450,meals:['m1'],savedAt:y.toISOString()}));
+            localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,complete:true,actualCalories:650,targetCalories:1450,meals:['m1'],savedAt:y.toISOString()}));
           });
           await page.evaluate(()=>openCheckin());
           await page.locator('#sleep').fill('8');
@@ -211,7 +211,7 @@ jobs:
           // Restore the under-fueling scenario before testing its downstream prescription/nutrition outputs.
           await page.evaluate(()=>{
             const y=new Date();y.setDate(y.getDate()-1);
-            localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:650,targetCalories:1450,meals:['m1'],savedAt:y.toISOString()}));
+            localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,complete:true,actualCalories:650,targetCalories:1450,meals:['m1'],savedAt:y.toISOString()}));
             localStorage.workoutHistory='[]';
           });
           await page.evaluate(()=>openCheckin());
@@ -433,7 +433,7 @@ jobs:
           if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           await page.locator('[data-target="nutrition"]').click();
-          check('Full prescribed plan inherits prescribed macros without manual duplication',await page.evaluate(()=>{const n=JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}');return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein===n.targetProtein&&n.actualCarbs===n.targetCarbs&&n.actualFat===n.targetFat;}));
+          check('Meal confirmations preserve targets without inventing actual macros',await page.evaluate(()=>{const n=JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}');return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein===null&&n.actualCarbs===null&&n.actualFat===null&&n.targetProtein>0;}));
           check('Inferred totals never populate deviation fields',(await page.locator('#actualCalories').inputValue())===''&&(await page.locator('#actualProtein').inputValue())==='');
           await page.locator('.meal-check').first().click();
           if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
