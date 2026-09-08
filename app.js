@@ -532,7 +532,7 @@ const LIB_META={
  "Barbell_Deadlift":{name:"Deadlift",category:"Strength",tags:"barbell deadlift hinge posterior chain"}
 };
 const GEAR_LIBRARY=[
- ["Tibialis raises","Durability","tib device shin","Keep heels planted. Lift the forefoot toward the shin, then lower slowly."],
+ ["Tibialis raises","Durability","tib device shin ankle","Keep heels planted. Lift the forefoot toward the shin, then lower slowly."],
  ["Sandbag bear-hug carry","Carry","sandbag trunk","Hug the bag close, stand tall and walk without leaning backward."],
  ["Suitcase carry","Carry","dumbbell weights grip","Carry one weight at your side. Keep shoulders level and avoid leaning."],
  ["Dumbbell biceps curl","Strength","dumbbell bicep arms","Keep elbows near your sides; curl without swinging, then lower under control."],
