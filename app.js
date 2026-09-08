@@ -111,7 +111,39 @@ function renderWeekTargetCard(w,det){
  renderSessionMetricFields(det)
 }
 function taskDone(k){return localStorage.getItem("task_"+k+"_"+todayKey())==="1"}function setTask(k,v){localStorage.setItem("task_"+k+"_"+todayKey(),v?"1":"0")}
-function systemic(){const sl=num("sleep"),q=num("sleepQ"),f=num("fatigue"),h=num("hrv"),hb=num("hrvBase"),r=num("rhr"),rb=num("rhrBase"),g=num("grip"),gb=num("gripBase"),p=val("performance");if([sl,q,f,h,r].every(x=>x===null)&&!p)return"";if((sl!==null&&sl<6)||(q!==null&&q<=2)||(f!==null&&f>=4)||(hb&&h!==null&&h<.85*hb)||(rb&&r!==null&&r>rb+8)||p==="NO")return"RED";if((sl!==null&&sl<7)||q===3||f===3||(hb&&h!==null&&h<.92*hb)||(rb&&r!==null&&r>rb+5)||(gb&&g!==null&&g<.9*gb))return"YELLOW";return"GREEN"}
+function systemicDomainsFromRecord(x,phaseOne){
+ const metric=v=>v===null||v===undefined||v===""?null:Number(v),out={},set=(key,level)=>{if(level==="RED"||out[key]!=="RED")out[key]=level};
+ const sl=metric(x?.sleep),q=metric(x?.sleepQ),f=metric(x?.fatigue),h=metric(x?.hrv),hb=metric(x?.hrvBase),r=metric(x?.rhr),rb=metric(x?.rhrBase),g=metric(x?.grip),gb=metric(x?.gripBase),p=String(x?.performance||"");
+ if((sl!==null&&sl<6)||(q!==null&&q<=2))set("sleep","RED");else if((sl!==null&&sl<7)||q===3)set("sleep","YELLOW");
+ if(f!==null&&f>=4)set("fatigue","RED");else if(f===3)set("fatigue","YELLOW");
+ if((hb&&h!==null&&h<.85*hb)||(rb&&r!==null&&r>rb+8))set("autonomic","RED");else if((hb&&h!==null&&h<.92*hb)||(rb&&r!==null&&r>rb+5))set("autonomic","YELLOW");
+ if(gb&&g!==null&&g<.9*gb)set("neuromuscular","YELLOW");
+ // Phase 1 deliberately accepts some performance suppression while fat loss is prioritized.
+ // A poor performance report is therefore context, not an isolated recovery stop signal.
+ if(p==="NO")set("performance",phaseOne?"YELLOW":"RED");
+ return out
+}
+function recentSystemicRecords(referenceDate=new Date(),limit=3){
+ const end=new Date(referenceDate);end.setHours(0,0,0,0);
+ return logs().filter(x=>{const d=new Date(x.date);return !Number.isNaN(d.getTime())&&d<end}).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,limit)
+}
+function previousSessionStrain(referenceDate=new Date()){
+ const y=new Date(referenceDate);y.setDate(y.getDate()-1);const x=workouts().filter(w=>dayKey(w.date)===dayKey(y)&&w.completed!=="NO").sort((a,b)=>new Date(b.date)-new Date(a.date))[0];if(!x)return null;
+ const rpe=Number(x.rpe);return Number.isFinite(rpe)&&rpe>=9?{level:"YELLOW",reason:"Yesterday’s session was rated "+rpe+"/10 effort."}:null
+}
+function systemic(){
+ const current={sleep:num("sleep"),sleepQ:num("sleepQ"),fatigue:num("fatigue"),hrv:num("hrv"),hrvBase:num("hrvBase"),rhr:num("rhr"),rhrBase:num("rhrBase"),grip:num("grip"),gripBase:num("gripBase"),performance:val("performance")};
+ const hasInput=[current.sleep,current.sleepQ,current.fatigue,current.hrv,current.rhr,current.grip].some(Number.isFinite)||!!current.performance;if(!hasInput)return"";
+ const referenceDate=historicalDate||new Date(),w=historicalDate?programWeekForDate(referenceDate):prescriptionWeek(),phaseOne=w<=16,domains=systemicDomainsFromRecord(current,phaseOne),strain=previousSessionStrain(referenceDate);
+ if(strain)domains.sessionStrain="YELLOW";
+ const prior=recentSystemicRecords(referenceDate).map(x=>systemicDomainsFromRecord(x,phaseOne)),red=Object.keys(domains).filter(k=>domains[k]==="RED"),yellow=Object.keys(domains).filter(k=>domains[k]==="YELLOW");
+ // These are product guardrails, not validated diagnostic cutoffs: strong intervention requires
+ // corroboration across domains or persistence of the same abnormal domain across check-ins.
+ const repeatedRed=red.some(k=>prior.some(d=>d[k]==="RED")),repeatedYellow=yellow.some(k=>prior.some(d=>d[k]==="YELLOW"||d[k]==="RED"));
+ if(red.length>=2||repeatedRed)return"RED";
+ if(red.length||yellow.length>=2||repeatedYellow)return"YELLOW";
+ return"GREEN"
+}
 function mechanical(){const p=num("pain"),prev=typeof previousWorkoutSignal==="function"?previousWorkoutSignal(historicalDate||new Date()):null;if(p===null&&!$("focal").checked&&!$("gait").checked){return prev?.level||""}if($("focal").checked||$("gait").checked||(p!==null&&p>=5)||prev?.level==="RED")return"RED";if((p!==null&&p>=3)||prev?.level==="YELLOW")return"YELLOW";return"GREEN"}
 function fueling(){const l=num("load"),prev=typeof previousNutritionSignal==="function"?previousNutritionSignal(historicalDate||new Date()):null;if(l===null){if(prev&&prev.ratio<.7)return"YELLOW";return""}if(prev&&prev.ratio<.65&&l>=6)return"RED";if(prev&&prev.ratio<.8&&l>=4)return"YELLOW";return"GREEN"}
 function decision(){const a=systemic(),b=mechanical(),c=fueling(),o=!a&&!b&&!c?"":(a==="RED"||b==="RED"?"RED":(a==="YELLOW"||b==="YELLOW"||c==="RED"?"YELLOW":"GREEN"));let score=92;if(a==="YELLOW")score-=18;if(a==="RED")score-=42;if(b==="YELLOW")score-=18;if(b==="RED")score-=55;if(c==="YELLOW")score-=8;if(c==="RED")score-=16;score=Math.max(15,Math.min(98,score));let run="Full phase plan",ruck="Full phase plan",row="Phase plan",strength="Full plan",intensity="Planned",nutrition="Follow phase target",warning="";if(!o)return{a,b,c,o,score:0,run:"Complete check-in",ruck:"Complete check-in",row:"Complete check-in",strength:"Complete check-in",intensity:"Complete check-in",nutrition:"Complete check-in",warning:""};if(b==="RED"){run="No running";ruck="No weighted-pack walking";row="Easy row if pain-free";strength="Non-aggravating only";intensity="No hard training";warning="Mechanical override: favorable recovery metrics do not justify impact or loaded walking."}else if(o==="RED"){run="Row or walk only";ruck="No loaded walking";row="Recovery row";strength="Reduce about 50%";intensity="No hard training"}else if(o==="YELLOW"){run="Reduce about 25–40%; keep easy";ruck="Reduce distance/load";row="Prefer easy rowing";strength="Reduce about 30%";intensity="No hard intervals"}if(c==="RED")nutrition="Add energy/carbohydrate; review deficit";else if(c==="YELLOW")nutrition="Hold intake; add carbohydrate around training";return{a,b,c,o,score,run,ruck,row,strength,intensity,nutrition,warning}}
@@ -167,7 +199,7 @@ function saveCheckin(){
  if(!historicalDate){setTask("checkin",true);if(!localStorage.programStart)localStorage.baselineDate=saveDate.toISOString()}
  resetHistorical();closeCheckin();renderAll()
 }
-function previousWorkoutSignal(referenceDate=new Date()){const y=new Date(referenceDate);y.setDate(y.getDate()-1);const x=workouts().filter(w=>dayKey(w.date)===dayKey(y)&&w.completed!=="NO").sort((a,b)=>new Date(b.date)-new Date(a.date))[0];if(!x)return null;const pain=Number(x.postPain),rpe=Number(x.rpe);if(Number.isFinite(pain)&&pain>=5)return{level:"RED",reason:"Yesterday’s session ended with pain "+pain+"/10."};if((Number.isFinite(pain)&&pain>=3)||(Number.isFinite(rpe)&&rpe>=9))return{level:"YELLOW",reason:Number.isFinite(pain)&&pain>=3?"Yesterday’s session ended with pain "+pain+"/10.":"Yesterday’s session was rated "+rpe+"/10 effort."};return null}
+function previousWorkoutSignal(referenceDate=new Date()){const y=new Date(referenceDate);y.setDate(y.getDate()-1);const x=workouts().filter(w=>dayKey(w.date)===dayKey(y)&&w.completed!=="NO").sort((a,b)=>new Date(b.date)-new Date(a.date))[0];if(!x)return null;const pain=Number(x.postPain);if(Number.isFinite(pain)&&pain>=5)return{level:"RED",reason:"Yesterday’s session ended with pain "+pain+"/10."};if(Number.isFinite(pain)&&pain>=3)return{level:"YELLOW",reason:"Yesterday’s session ended with pain "+pain+"/10."};return null}
 function saveWorkout(c){
  if(!localStorage.programStart){beginJourney();return}
  const status=c||"YES",rpe=num("sessionRPE"),postPain=num("postPain"),needsFeedback=status==="YES"||status==="PARTIAL";
@@ -277,7 +309,7 @@ function adaptationExplanation(d){
  else if(dec.a==="YELLOW")reasons.push("recovery markers are mildly suppressed");
  if(dec.b==="RED")reasons.push(d.priorWorkoutSignal?.level==="RED"?d.priorWorkoutSignal.reason.replace(/\.$/,""):"pain or movement quality triggered a mechanical stop rule");
  else if(dec.b==="YELLOW")reasons.push(d.priorWorkoutSignal?.level==="YELLOW"?d.priorWorkoutSignal.reason.replace(/\.$/,""):"mechanical symptoms warrant reduced loading");
- if(dec.c==="RED")reasons.push("recent fueling and body-weight trend suggest meaningful under-fueling");
+ if(dec.c==="RED")reasons.push("confirmed recent intake suggests meaningful under-fueling");
  else if(dec.c==="YELLOW")reasons.push("recent fueling is below the preferred range for the current workload");
  if(!reasons.length)return null;
  return{title:dec.o==="RED"?"Today is a recovery-priority day":"Today’s plan has been modified",copy:reasons.join("; ")+".",dec};
@@ -560,8 +592,7 @@ function objectiveSetsForPhase(p,stats,b){
  const runSec=parseClock(b.run4);
  const base=(name,done,progress,label)=>({name,done,progress:Math.max(0,Math.min(1,progress)),label});
  if(p.name==="Foundation")return[
-  [base("Seven-day operating rhythm",stats.checkins>=7,stats.checkins/7,stats.checkins+"/7 check-ins"),base("Eight strength sessions",stats.strength>=8,stats.strength/8,stats.strength+"/8 strength"),base("Eight aerobic sessions",stats.aerobic>=8,stats.aerobic/8,stats.aerobic+"/8 aerobic"),base("Fourteen complete days",stats.completeDays>=14,stats.completeDays/14,stats.completeDays+"/14 complete days")],
-  [base("Body fat under 18%",b.bodyFat!=null&&b.bodyFat<18,b.bodyFat==null?0:Math.min(1,28/Math.max(b.bodyFat,1)),"Current: "+(b.bodyFat??"—")+"%"),base("60 strict push-ups",(b.pushups||0)>=60,(b.pushups||0)/60,(b.pushups||0)+"/60"),base("12 strict pull-ups",(b.pullups||0)>=12,(b.pullups||0)/12,(b.pullups||0)+"/12"),base("No unresolved curriculum debt",unresolvedInPhase(p)===0,unresolvedInPhase(p)?0:1,unresolvedInPhase(p)+" unresolved")]
+  [base("Seven-day operating rhythm",stats.checkins>=7,stats.checkins/7,stats.checkins+"/7 check-ins"),base("Eight strength sessions",stats.strength>=8,stats.strength/8,stats.strength+"/8 strength"),base("Eight aerobic sessions",stats.aerobic>=8,stats.aerobic/8,stats.aerobic+"/8 aerobic"),base("Fourteen complete days",stats.completeDays>=14,stats.completeDays/14,stats.completeDays+"/14 complete days")]
  ];
  if(p.name==="Engine + Load")return[
   [base("Twenty-eight complete days",stats.completeDays>=28,stats.completeDays/28,stats.completeDays+"/28 complete days"),base("Twelve loaded-work sessions",stats.loaded>=12,stats.loaded/12,stats.loaded+"/12 loaded"),base("Sixteen aerobic sessions",stats.aerobic>=16,stats.aerobic/16,stats.aerobic+"/16 aerobic"),base("No unresolved curriculum debt",unresolvedInPhase(p)===0,unresolvedInPhase(p)?0:1,unresolvedInPhase(p)+" unresolved")],
