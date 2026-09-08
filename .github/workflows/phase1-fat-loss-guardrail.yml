@@ -5,6 +5,7 @@ on:
     branches: [fix/phase1-fat-loss-guardrail]
     paths:
       - '.github/workflows/phase1-fat-loss-guardrail.yml'
+      - 'scripts/apply-phase1-fat-loss-guardrail.py'
 
 permissions:
   contents: write
@@ -20,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Apply Phase 1 guardrail correction
+      - name: Apply established 14-day Phase 1 guardrail correction
         run: python3 scripts/apply-phase1-fat-loss-guardrail.py
       - name: Verify syntax and regressions
         run: |
@@ -30,7 +31,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app.js tests/nutrition-trend-guardrail.test.cjs
+          git add app.js tests/nutrition-trend-guardrail.test.cjs tests/calibration-transparency.test.cjs
           git diff --cached --quiet && exit 1
-          git commit -m "Tune Phase 1 fat-loss guardrail"
+          git commit -m "Use established 14-day trend for Phase 1 fat-loss guardrail"
           git push origin HEAD:fix/phase1-fat-loss-guardrail
