@@ -195,7 +195,7 @@ jobs:
           });
           await page.evaluate(()=>openCheckin());
           await page.locator('#sleep').fill('8');await page.locator('#sleepQ').selectOption('5',{force:true});await page.locator('#fatigue').selectOption('1',{force:true});await page.locator('#pain').selectOption('0',{force:true});await page.locator('#load').selectOption('2',{force:true});
-          await page.locator('#evaluateBtn').click();await page.locator('#saveBtn').click();await page.waitForTimeout(60);
+          await page.locator('#evaluateBtn').click();await page.waitForTimeout(60);
           check('Stale session feedback does not suppress current readiness',await page.evaluate(()=>JSON.parse(localStorage.trainingLogs||'[]')[0]?.priorWorkoutSignal==null));
           check('Repeated same-day check-ins replace rather than duplicate',await page.evaluate(()=>{const l=JSON.parse(localStorage.trainingLogs||'[]');const k=new Date().toDateString();return l.filter(x=>new Date(x.date).toDateString()===k).length===1;}));
           // Restore the under-fueling scenario before testing its downstream prescription/nutrition outputs.
