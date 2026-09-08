@@ -1,0 +1,572 @@
+name: Consumer Audit
+concurrency:
+  group: consumer-audit-main
+  cancel-in-progress: true
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'styles.css'
+      - 'app.js'
+      - 'cloud*.js'
+      - 'autosave-core.js'
+      - 'firestore*'
+      - 'firebase.json'
+      - 'src/firebase.js'
+      - 'vendor/**'
+      - 'package*.json'
+      - 'service-worker.js'
+      - 'manifest.webmanifest'
+      - 'tests/**'
+      - '.github/workflows/ui-audit.yml'
+jobs:
+  firebase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - run: npm ci
+      - run: npm run build:firebase && git diff --exit-code -- vendor/firebase.js
+      - run: npm run test:firebase
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check
+        run: node --check app.js && node --check service-worker.js && node --check cloud.js && node --check cloud-core.js && node --check autosave-core.js
+      - name: Persistence regression tests
+        run: node --test tests/*.test.cjs
+      - run: npm ci && npm install --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps webkit
+      - name: Start local app
+        run: python3 -m http.server 8080 >/tmp/server.log 2>&1 &
+      - name: Run consumer simulation
+        run: |
+          cat > audit.mjs <<'JS'
+          import { webkit } from 'playwright';
+          import fs from 'fs';
+
+          const browser = await webkit.launch();
+          const page = await browser.newPage({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3 });
+          const report = { assertions: [], errors: [], counts: {}, notes: [] };
+          const check = (name, value, detail='') => { report.assertions.push({name, pass:!!value, detail}); return !!value; };
+          page.on('pageerror', e => report.errors.push({type:'pageerror', message:e.message}));
+          page.on('console', m => { if(m.type()==='error') report.errors.push({type:'console', message:m.text()}); });
+          const visible = async sel => await page.locator(sel).isVisible().catch(()=>false);
+          const inViewport = async sel => { const box=await page.locator(sel).boundingBox().catch(()=>null); return !!box && box.y < 852 && box.y+box.height > 0 && box.x < 393 && box.x+box.width > 0; };
+          const shot = async (name,reset=true) => { if(reset)await page.evaluate(()=>{document.documentElement.style.scrollBehavior='auto';document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0)}); await page.waitForTimeout(20); return page.screenshot({path:name+'.png',fullPage:false}); };
+
+          await page.goto('http://127.0.0.1:8080',{waitUntil:'networkidle'});
+          await page.evaluate(()=>localStorage.clear());
+          await page.reload({waitUntil:'networkidle'});
+
+          // Fresh-install semantics.
+          check('Fresh install has no program start', await page.evaluate(()=>!localStorage.programStart));
+          check('Begin Journey card visible', await visible('#journeyStartCard'));
+          check('No curriculum debt before Day 1', !(await visible('#missedDayBanner')));
+          check('Fresh install stays focused on onboarding', !(await visible('#readinessCard')) && !(await visible('#todayPlanHeader')));
+          await shot('01-fresh-today');
+
+          // An older baseline must not backdate Day 1 when Journey begins later.
+          await page.evaluate(()=>{
+            const old=new Date();old.setDate(old.getDate()-3);
+            localStorage.trainingLogs=JSON.stringify([{date:old.toISOString(),week:1,weight:170,hrv:62,rhr:54,grip:52,sleep:8,overall:'GREEN',score:92}]);
+            localStorage.baselineDate=old.toISOString();
+            localStorage.removeItem('programStart');
+          });
+          await page.reload({waitUntil:'networkidle'});
+          await page.evaluate(()=>beginJourney());
+          check('Begin Journey uses today as Day 1 even with older baseline',await page.evaluate(()=>{const s=new Date(localStorage.programStart);const n=new Date();return s.toDateString()===n.toDateString();}));
+          check('Older baseline does not create immediate curriculum debt',!(await visible('#missedDayBanner')));
+          await page.locator('[data-target="program"]').click();
+          check('Pre-Journey baseline does not count toward qualification',(await page.locator('#phaseMilestones').innerText()).includes('0/7 check-ins'));
+          await page.locator('[data-target="today"]').click();
+          await page.evaluate(()=>localStorage.clear());
+          await page.reload({waitUntil:'networkidle'});
+
+          // Baseline and Day 1 are two separate user decisions.
+          await page.locator('#beginJourneyBtn').click();
+          check('Log Baseline opens check-in', await visible('#checkinSheet'));
+          const fields = {hrv:'62',rhr:'54',sleep:'8',sleepQ:'5',fatigue:'1',grip:'52',load:'2',pain:'0',performance:'YES',weight:'170'};
+          for(const [id,v] of Object.entries(fields)){
+            const el=page.locator('#'+id);
+            if(await el.evaluate(n=>n.tagName)==='SELECT') await el.selectOption(v,{force:true}); else await el.fill(v);
+          }
+          await page.locator('#evaluateBtn').click();
+          check('One-tap check-in saves baseline', await page.evaluate(()=>logs().length===1));
+          await page.waitForTimeout(120);
+          check('Saving baseline alone does not start Journey', await page.evaluate(()=>!localStorage.programStart));
+          check('Baseline state offers explicit Begin Journey',(await page.locator('#beginJourneyBtn').innerText()).includes('Begin Journey'));
+          await page.locator('#beginJourneyBtn').click();
+          await page.waitForTimeout(100);
+          check('Explicit Begin Journey creates Day 1', await page.evaluate(()=>!!localStorage.programStart));
+          check('Journey onboarding disappears', !(await visible('#journeyStartCard')));
+          check('Started Journey reveals one directive card', await visible('#dailyDirective') && !(await visible('#todayPlanHeader')) && !(await visible('.plan-list')));
+          check('Directive uses categorical state', ['ON PLAN','ADJUST','RECOVERY'].includes((await page.locator('#directiveState').innerText()).trim()));
+          check('Directive omits pseudo-physiological percentage', !(await page.locator('#dailyDirective').innerText()).includes('/100'));
+          check('Directive contains the generated session and macro target',(await page.locator('#directiveWorkout').innerText()).length>20&&(await page.locator('#directiveMacros').innerText()).includes('Protein'));
+          await shot('02-started-today');
+          const directiveTargets=await page.locator('#directivePrimary:visible,#directiveSecondary:visible').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return{w:r.width,h:r.height}}));
+          check('Directive actions are finger-friendly',directiveTargets.length>=1&&directiveTargets.every(r=>r.w>=40&&r.h>=44));
+
+          // Directive explanation is actually interactive.
+          await page.locator('#directiveSecondary').click();
+          check('Readiness opens detail sheet', await visible('#readinessSheet'));
+          check('Readiness detail has adaptive prescription', (await page.locator('#readinessDetail').innerText()).includes('Adaptive prescription'));
+          check('Readiness detail omits numeric score', !(await page.locator('#readinessDetail').innerText()).includes('/100'));
+          await shot('03-readiness-detail');
+          await page.locator('#readinessClose').click();
+
+          // Saved readiness must be immutable until a new check-in is explicitly saved.
+          const savedReadinessLabel=(await page.locator('#directiveState').innerText()).trim();
+          const savedWorkoutTitle=(await page.locator('#directiveTitle').innerText()).trim();
+          await page.evaluate(()=>openCheckin());
+          await page.locator('#sleep').fill('5');
+          await page.locator('#closeCheckin').click();
+          check('Unsaved check-in edits do not change saved readiness',(await page.locator('#directiveState').innerText()).trim()===savedReadinessLabel);
+          check('Unsaved check-in edits do not change saved prescription',(await page.locator('#directiveTitle').innerText()).trim()===savedWorkoutTitle);
+
+          // A deliberately saved yellow state must transform the actual session.
+          await page.evaluate(()=>openCheckin());
+          await page.locator('#sleep').fill('6.5');
+          await page.locator('#sleepQ').selectOption('3',{force:true});
+          await page.locator('#fatigue').selectOption('3',{force:true});
+          await page.locator('#evaluateBtn').click();
+          await page.waitForTimeout(120);
+          check('Saved yellow state surfaces adaptation explanation',(await page.locator('#directiveReason').innerText()).length>8&&(await page.locator('#directiveState').innerText()).trim()==='ADJUST');
+          await page.locator('[data-target="workout"]').click();
+          check('Saved yellow state changes session title',/Modified|Recovery/i.test((await page.locator('#workoutTitle').innerText())));
+          check('Saved yellow state changes actual prescription',(await page.locator('#workoutPrescription').innerText()).includes('70%')||(await page.locator('#workoutPrescription').innerText()).includes('Easy aerobic substitute'));
+          await page.locator('[data-target="today"]').click();
+
+          // Saved intake must be judged against its original prescription, including zero.
+          await page.evaluate(()=>{const y=new Date();y.setDate(y.getDate()-1);localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:1000,targetCalories:2000,meals:[]}))});
+          check('Fueling uses the saved target',await page.evaluate(()=>previousNutritionSignal().ratio===0.5));
+          await page.evaluate(()=>{const y=new Date();y.setDate(y.getDate()-1);localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:0,targetCalories:2000,meals:['m1','m2','m3','m4']}))});
+          check('Explicit zero intake overrides meal completion',await page.evaluate(()=>previousNutritionSignal().ratio===0));
+
+          // Nutrition causality: under-fueling yesterday must affect today's saved prescription.
+          await page.evaluate(()=>{
+            const y=new Date();y.setDate(y.getDate()-1);
+            localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:650,targetCalories:1450,meals:['m1'],savedAt:y.toISOString()}));
+          });
+          await page.evaluate(()=>openCheckin());
+          await page.locator('#sleep').fill('8');
+          await page.locator('#sleepQ').selectOption('5',{force:true});
+          await page.locator('#fatigue').selectOption('1',{force:true});
+          await page.locator('#pain').selectOption('0',{force:true});
+          await page.locator('#load').selectOption('6',{force:true});
+          await page.locator('#evaluateBtn').click();
+          await page.waitForTimeout(120);
+          check('Under-fueling changes saved fueling state',await page.evaluate(()=>{const l=JSON.parse(localStorage.trainingLogs||'[]');return l[0]?.decision?.c==='YELLOW'||l[0]?.decision?.c==='RED';}));
+          check('Under-fueling is explained on Today',(await page.locator('#directiveReason').innerText()).toLowerCase().includes('fuel'));
+          await page.evaluate(()=>{
+            const y=new Date();y.setDate(y.getDate()-1);
+            localStorage.removeItem('nutrition_'+y.toDateString());
+            localStorage.workoutHistory=JSON.stringify([{date:y.toISOString(),week:1,session:'Easy aerobic row',rpe:8,postPain:4,completed:'YES'}]);
+          });
+          await page.evaluate(()=>openCheckin());
+          await page.locator('#sleep').fill('8');
+          await page.locator('#sleepQ').selectOption('5',{force:true});
+          await page.locator('#fatigue').selectOption('1',{force:true});
+          await page.locator('#pain').selectOption('0',{force:true});
+          await page.locator('#load').selectOption('2',{force:true});
+          await page.locator('#evaluateBtn').click();
+          await page.waitForTimeout(80);
+          check('Yesterday session response changes saved mechanical state',await page.evaluate(()=>JSON.parse(localStorage.trainingLogs||'[]')[0]?.decision?.b==='YELLOW'));
+          check('Yesterday session response is preserved in readiness snapshot',await page.evaluate(()=>JSON.parse(localStorage.trainingLogs||'[]')[0]?.priorWorkoutSignal?.level==='YELLOW'));
+          check('Today explains prior-session pain',(await page.locator('#directiveReason').innerText()).includes('Yesterday'));
+          await page.evaluate(()=>{
+            const old=new Date();old.setDate(old.getDate()-4);
+            localStorage.workoutHistory=JSON.stringify([{date:old.toISOString(),week:1,session:'Old hard row',rpe:10,postPain:6,completed:'YES'}]);
+          });
+          await page.evaluate(()=>openCheckin());
+          await page.locator('#sleep').fill('8');await page.locator('#sleepQ').selectOption('5',{force:true});await page.locator('#fatigue').selectOption('1',{force:true});await page.locator('#pain').selectOption('0',{force:true});await page.locator('#load').selectOption('2',{force:true});
+          await page.locator('#evaluateBtn').click();await page.waitForTimeout(60);
+          check('Stale session feedback does not suppress current readiness',await page.evaluate(()=>JSON.parse(localStorage.trainingLogs||'[]')[0]?.priorWorkoutSignal==null));
+          check('Repeated same-day check-ins replace rather than duplicate',await page.evaluate(()=>{const l=JSON.parse(localStorage.trainingLogs||'[]');const k=new Date().toDateString();return l.filter(x=>new Date(x.date).toDateString()===k).length===1;}));
+          // Restore the under-fueling scenario before testing its downstream prescription/nutrition outputs.
+          await page.evaluate(()=>{
+            const y=new Date();y.setDate(y.getDate()-1);
+            localStorage.setItem('nutrition_'+y.toDateString(),JSON.stringify({saved:true,actualCalories:650,targetCalories:1450,meals:['m1'],savedAt:y.toISOString()}));
+            localStorage.workoutHistory='[]';
+          });
+          await page.evaluate(()=>openCheckin());
+          await page.locator('#sleep').fill('8');
+          await page.locator('#sleepQ').selectOption('5',{force:true});
+          await page.locator('#fatigue').selectOption('1',{force:true});
+          await page.locator('#pain').selectOption('0',{force:true});
+          await page.locator('#load').selectOption('6',{force:true});
+          await page.locator('#evaluateBtn').click();
+          await page.waitForTimeout(80);
+          check('Under-fueling scenario is restored',await page.evaluate(()=>['YELLOW','RED'].includes(JSON.parse(localStorage.trainingLogs||'[]')[0]?.decision?.c)));
+          await page.locator('[data-target="workout"]').click();
+          check('Under-fueling modifies actual training prescription',/Modified|Recovery/i.test(await page.locator('#workoutTitle').innerText()));
+          // Completion must capture athlete response; yesterday's response must affect tomorrow's mechanical state.
+          await page.locator('#completeWorkoutQuick').click();
+          check('Completion opens response capture',await page.locator('#sessionFeedback').evaluate(n=>n.open));
+          await page.locator('#completeWorkout').click();
+          check('Empty completion response is rejected',await page.evaluate(()=>JSON.parse(localStorage.workoutHistory||'[]').length===0));
+          check('Missing response explains what is needed',(await page.locator('#completionBanner').innerText()).includes('effort'));
+          check('Session CTAs retain readable contrast',await page.evaluate(()=>['completeWorkoutQuick','completeWorkout'].every(id=>getComputedStyle(document.getElementById(id)).color==='rgb(255, 255, 255)')));
+          await shot('03b-session-response',false);
+          await page.locator('#sessionRPE').selectOption('9');
+          await page.locator('#postPain').selectOption('4');
+          await page.locator('#completed').selectOption('YES');
+          await page.locator('#completeWorkout').click();
+          check('Workout response persists',await page.evaluate(()=>{const w=JSON.parse(localStorage.workoutHistory||'[]')[0];return w?.rpe===9&&w?.postPain===4&&w?.completed==='YES';}));
+          check('Workout task completes only from saved session',await page.locator('#taskWorkout').evaluate(n=>n.classList.contains('done')));
+          await page.locator('[data-target="nutrition"]').click();
+          check('Red fueling signal raises today nutrition target',(await page.locator('#nutritionToday').innerText()).includes('1,650'));
+          check('Red fueling signal adds explicit recovery carbohydrate food',(await page.locator('#nutritionMeals').innerText()).includes('Recovery Carbohydrate Add-On'));
+          await page.locator('[data-target="today"]').click();
+
+          // Today state machine: one next action at a time, tabs remain escape hatches.
+          await page.locator('[data-target="today"]').click();
+          check('Legacy Today checklist is hidden in guided mode',!(await visible('#todayPlanHeader'))&&!(await visible('.plan-list')));
+          check('After a recorded session the directive advances to nutrition',(await page.locator('#directiveStage').innerText()).includes('FUEL'));
+          check('Nutrition directive is the single primary action',(await page.locator('#directivePrimary').innerText()).includes('meals'));
+          await page.locator('#directivePrimary').click();
+          check('Directive advances athlete to Nutrition',await visible('#nutrition'));
+          check('Directive navigation does not fabricate saved intake',await page.evaluate(()=>!getNutritionLog().saved));
+          await page.locator('[data-target="today"]').click();
+          await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();n.saved=true;n.savedAt=new Date().toISOString();n.intakeSource='prescribed-meals';n.meals=meals.map(m=>m.id);n.actualCalories=todayNutritionPrescription().cal;localStorage.setItem(nutritionLogKey(),JSON.stringify(n));renderAll();switchTab('today')});
+          check('Saved complete nutrition advances Today to evening summary',(await page.locator('#directiveStage').innerText()).includes('EVENING')&&(await page.locator('#directiveState').innerText()).includes('DAY COMPLETE'));
+          check('Evening summary has no compulsory next-action button',!(await visible('#directivePrimary')));
+          check('Directive retains Journey context',(await page.locator('#directiveJourney').innerText()).includes('Week'));
+          await page.locator('[data-target="program"]').click();
+          check('Escape-hatch navigation still opens Program',await visible('#program'));
+          await page.locator('[data-target="today"]').click();
+
+          // Header calendar icon is a real navigation control.
+          await page.locator('#headerAction').click();
+          check('Header calendar opens Calendar',await visible('#week'));
+          await page.locator('[data-target="today"]').click();
+
+          // Primary navigation.
+          const tabs=['today','workout','week','nutrition','program'];
+          for(const t of tabs){
+            await page.locator('[data-target="'+t+'"]').click();
+            check('Tab opens '+t, await visible('#'+t));
+            await page.waitForTimeout(20);check('Tab '+t+' resets scroll', (await page.evaluate(()=>Math.max(window.scrollY,document.documentElement.scrollTop,document.body.scrollTop)))===0);
+          }
+
+          // Train: every current-session exercise.
+          await page.locator('[data-target="workout"]').click();
+          check('Mobility and ambiguous steps never receive fake technique images',await page.locator('.exercise-reminder img').count()===0);
+          const sessionCount=await page.locator('.exercise-card').count(); report.counts.sessionExercises=sessionCount;
+          for(let i=0;i<sessionCount;i++){
+            await page.locator('.exercise-card').nth(i).click();
+            check('Session exercise '+(i+1)+' opens detail', await visible('#infoModal'));
+            await page.locator('#modalDone').click();
+          }
+
+          // Library search + every library exercise.
+          await page.locator('[data-trainview="library"]').click();
+          await page.locator('#librarySearch').fill('plank');
+          check('Library search filters', (await page.locator('.library-item').count())>0);
+          await page.locator('#librarySearch').fill('');
+          const libraryCount=await page.locator('.library-item').count(); report.counts.libraryExercises=libraryCount;
+          check('Library has broad movement coverage', libraryCount>=20, 'count='+libraryCount);
+          const libraryThumbBox=await page.locator('.library-thumb').first().boundingBox();
+          check('Library imagery is large enough to teach',!!libraryThumbBox&&libraryThumbBox.width>=64&&libraryThumbBox.height>=64,JSON.stringify(libraryThumbBox));
+          const libraryNames=await page.locator('.library-item strong').allTextContents();
+          const normalizedNames=libraryNames.map(n=>n.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim());
+          const duplicateNames=normalizedNames.filter((n,i,a)=>a.indexOf(n)!==i);
+          report.duplicateLibraryNames=[...new Set(duplicateNames)];
+          check('Library contains no duplicate exercise names',report.duplicateLibraryNames.length===0,JSON.stringify(report.duplicateLibraryNames));
+          const librarySources=await page.locator('.library-item img').evaluateAll(imgs=>imgs.map(i=>i.getAttribute('src')||'').filter(Boolean));
+          const duplicateSources=librarySources.filter((src,i,a)=>a.indexOf(src)!==i);
+          report.duplicateLibraryImages=[...new Set(duplicateSources)];
+          check('Library contains no duplicate canonical movement imagery',report.duplicateLibraryImages.length===0,JSON.stringify(report.duplicateLibraryImages));
+          check('Library contains no scheduler-only labels',!libraryNames.some(n=>/main session|main run|quality work|warm-up|cool-down|long session|threshold work|mobility|stretch/i.test(n)),JSON.stringify(libraryNames));
+          const filterButtons=page.locator('.library-filter');const filterCount=await filterButtons.count();report.counts.libraryFilters=filterCount;check('Library exposes useful category filters',filterCount>=6,'count='+filterCount);
+          for(let fi=0;fi<filterCount;fi++){
+            const filter=filterButtons.nth(fi),label=(await filter.innerText()).trim();
+            await filter.click();await page.waitForTimeout(40);
+            check('Library filter '+label+' produces results',(await page.locator('.library-item').count())>0);
+          }
+          await page.locator('.library-filter[data-libfilter="All"]').click();
+          await page.locator('#librarySearch').fill('barbell');
+          check('Equipment search finds relevant movements',(await page.locator('.library-item').count())>0);
+          await page.locator('#librarySearch').fill('ankle');
+          check('Purpose/body-region search finds relevant movements',(await page.locator('.library-item').count())>0);
+          await page.locator('#librarySearch').fill('');
+          let loadedPhotos=0, visualFallbacks=0; const failedImageDetails=[];
+          for(let i=0;i<libraryCount;i++){
+            const item=page.locator('.library-item').nth(i);
+            await item.scrollIntoViewIfNeeded();await page.waitForTimeout(12);
+            const img=item.locator('img');
+            if(await img.count()){
+              const state=await img.evaluate(n=>({loaded:n.complete&&n.naturalWidth>0,src:n.currentSrc||n.src}));
+              if(state.loaded)loadedPhotos++; else failedImageDetails.push({name:(await item.innerText()).split('\n')[0],src:state.src});
+            } else if(await item.locator('.exercise-photo-missing').count()){visualFallbacks++;failedImageDetails.push({name:(await item.innerText()).split('\n')[0],src:null});}
+          }
+          const libSamples=[0,Math.floor(libraryCount/2),libraryCount-1].filter((x,i,a)=>x>=0&&a.indexOf(x)===i);
+          for(const i of libSamples){
+            const item=page.locator('.library-item').nth(i);await item.scrollIntoViewIfNeeded();await item.click();
+            check('Representative library exercise '+(i+1)+' opens detail',await visible('#infoModal'));await page.locator('#modalDone').click();
+          }
+          report.counts.loadedExercisePhotos=loadedPhotos;report.counts.visualFallbacks=visualFallbacks;report.failedImages=failedImageDetails;
+          const coverage=libraryCount?loadedPhotos/libraryCount:0;report.counts.realImageCoverage=Math.round(coverage*100);
+          check('Real exercise image coverage is high',coverage>=.85,'coverage='+Math.round(coverage*100)+'%, fallbacks='+visualFallbacks);
+          await shot('04-library');
+          check('Library visual capture starts at search/filter controls',await inViewport('#librarySearch')&&await inViewport('#libraryFilters'));
+
+          // Calendar Week: every day; both day tabs.
+          await page.locator('[data-target="week"]').click();
+          const days=await page.locator('.day-button').count(); report.counts.weekDays=days; check('Week exposes seven days',days===7);
+          check('Week 1 remains running-free',!/run\/walk|easy run|quality run|long run/i.test(await page.locator('#weekSummary').innerText()));
+          await page.locator('#nextWeek').click();await page.locator('#nextWeek').click();
+          check('Week 3 introduces controlled run/walk',/run\/walk/i.test(await page.locator('#weekSummary').innerText()));
+          await page.locator('#prevWeek').click();await page.locator('#prevWeek').click();
+          for(let i=0;i<days;i++){
+            await page.locator('.day-button').nth(i).click();
+            check('Day '+(i+1)+' opens',await visible('#daySheet'));
+            await page.locator('[data-daytab="nutrition"]').click();
+            check('Day nutrition tab renders macros',(await page.locator('#daySheetBody').innerText()).includes('Protein'));
+            await page.locator('[data-daytab="training"]').click();
+            check('Day training tab renders session',(await page.locator('#daySheetBody').innerText()).length>40);
+            await page.locator('#daySheetClose').click();
+          }
+
+          // Calendar Month: click every enabled date.
+          await page.locator('[data-calview="month"]').click();
+          const monthDates=page.locator('.month-cell[data-date]:not([disabled])');
+          const monthCount=await monthDates.count();report.counts.monthDates=monthCount;check('Month has interactive dates',monthCount>0);
+          const monthSamples=[0,Math.floor(monthCount/2),monthCount-1].filter((x,i,a)=>x>=0&&a.indexOf(x)===i);
+          for(const i of monthSamples){
+            await monthDates.nth(i).click();
+            check('Representative month date '+(i+1)+' opens day',await visible('#daySheet'));
+            await page.locator('#daySheetClose').click();
+          }
+          await shot('05-month');
+
+          // Journey: click every month-level segment.
+          await page.locator('[data-calview="journey"]').click();
+          const journeyCount=await page.locator('.journey-month').count();report.counts.journeyMonths=journeyCount;
+          check('Journey exposes long-range roadmap',journeyCount>=12,'count='+journeyCount);
+          check('Journey shows all five macro phases',(await page.locator('.journey-phase-card').count())===5);
+          const journeySamples=[0,Math.floor(journeyCount/2),journeyCount-1].filter((x,i,a)=>x>=0&&a.indexOf(x)===i);
+          for(const i of journeySamples){
+            await page.locator('[data-calview="journey"]').click();
+            const item=page.locator('.journey-month').nth(i);
+            if(await item.count()){await item.click();check('Representative Journey month '+(i+1)+' returns to Week',await visible('#weekView'));}
+          }
+          await page.locator('[data-calview="journey"]').click();
+          await shot('06-journey');
+          check('Journey visual capture starts at roadmap summary',await inViewport('.journey-overview-head')&&await inViewport('#journeyPhaseMap'));
+
+          // Nutrition: every meal has two independent interactions.
+          await page.locator('[data-target="nutrition"]').click();
+          check('Hydration avoids forced fixed-volume prescription',!/\b(120|160|180)\s*oz\b/i.test(await page.locator('#hydrationCard').innerText()));
+          check('Hydration strategy is individualized',/thirst|sweat-rate|individualized/i.test(await page.locator('#hydrationCard').innerText()));
+          const mealCount=await page.locator('.meal-card').count();report.counts.meals=mealCount;check('Nutrition shows actual meals',mealCount>=4);
+          for(let i=0;i<mealCount;i++){
+            const card=page.locator('.meal-card').nth(i);
+            await card.locator('.meal-main').click();
+            check('Meal '+(i+1)+' opens food detail',await visible('#infoModal'));
+            await page.locator('#modalClose').click();
+            await card.locator('.meal-check').click();
+          }
+          check('Meal completion updates progress',(await page.locator('#mealProgress').textContent()).startsWith(mealCount+'/'));
+          await page.locator('#waterActual').fill('120');
+          await page.locator('#actualCalories').fill('1525');
+          await page.locator('#actualProtein').fill('181');
+          await page.locator('#actualCarbs').fill('112');
+          await page.locator('#actualFat').fill('42');
+          await page.locator('.meal-check').first().click();
+          check('Meal changes preserve unsaved intake and hydration',(await page.locator('#actualCalories').inputValue())==='1525'&&(await page.locator('#actualProtein').inputValue())==='181'&&(await page.locator('#waterActual').inputValue())==='120');
+          await page.locator('.meal-check').first().click();
+          await page.locator('[data-target="today"]').click();
+          await page.locator('[data-target="nutrition"]').click();
+          check('Nutrition drafts survive navigation',(await page.locator('#actualCarbs').inputValue())==='112'&&(await page.locator('#actualFat').inputValue())==='42'&&(await page.locator('#waterActual').inputValue())==='120');
+          await page.locator('#saveNutritionDay').click();
+          check('Nutrition save persists',await page.evaluate(()=>getNutritionLog().saved===true));
+          check('Actual intake persists exactly',await page.evaluate(()=>{const n=JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}');return n.actualCalories===1525&&n.actualProtein===181&&n.actualCarbs===112&&n.actualFat===42;}));
+          await page.locator('#waterActual').fill('121');
+          check('Editing saved intake immediately clears its saved label',!(await page.locator('#saveNutritionDay').innerText()).includes('✓'));
+          check('Editing saved intake immediately clears Today completion',await page.locator('#taskNutrition').evaluate(n=>!n.classList.contains('done')));
+          check('Edited intake remains a draft',await page.evaluate(()=>!getNutritionLog().saved&&getNutritionLog().draft.waterActual==='121'));
+          await page.evaluate(()=>{localStorage.removeItem('nutrition_'+new Date().toDateString())});
+          await page.locator('[data-target="nutrition"]').click();
+          const mealsForAuto=page.locator('.meal-check');for(let i=0;i<await mealsForAuto.count();i++)await mealsForAuto.nth(i).click();
+          await page.locator('#saveNutritionDay').click();
+          check('Full prescribed plan inherits prescribed macros without manual duplication',await page.evaluate(()=>{const n=JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}');return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein===n.targetProtein&&n.actualCarbs===n.targetCarbs&&n.actualFat===n.targetFat;}));
+          check('Inferred totals never populate deviation fields',(await page.locator('#actualCalories').inputValue())===''&&(await page.locator('#actualProtein').inputValue())==='');
+          await page.locator('.meal-check').first().click();
+          await page.locator('#saveNutritionDay').click();
+          check('Partial meals recompute intake without stale full-plan overrides',await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();return n.intakeSource==='prescribed-meals'&&n.actualCalories===meals.filter(m=>n.meals.includes(m.id)).reduce((sum,m)=>sum+m.kcal,0)&&n.actualProtein===null;}));
+          await page.locator('.meal-check').first().click();
+          await page.locator('#saveNutritionDay').click();
+          await page.locator('[data-target="today"]').click();
+          check('Nutrition Today task requires saved intake',await page.locator('#taskNutrition').evaluate(n=>n.classList.contains('done')));
+          await page.locator('[data-target="nutrition"]').click();
+          check('Nutrition visual state active before capture',await visible('#nutrition'));
+          await shot('07-nutrition');
+          check('Nutrition visual capture starts at daily target',await inViewport('#nutritionToday'));
+
+          // Program qualification + Insights.
+          await page.locator('[data-target="program"]').click();
+          check('Program objectives visible',(await page.locator('.quest').count())===4);
+          await page.locator('#openBenchmarks').click();
+          check('Benchmark sheet opens',await visible('#benchmarkSheet'));
+          await page.locator('#benchPushups').fill('60');
+          await page.locator('#benchPullups').fill('12');
+          await page.locator('#benchBodyFat').fill('17.5');
+          await page.locator('#saveBenchmarks').click();
+          check('Benchmarks persist',await page.evaluate(()=>JSON.parse(localStorage.benchmarks||'{}').pushups===60));
+          check('Qualification objectives refresh',(await page.locator('.quest').count())===4);
+
+          // Backup must preserve the complete athlete model, not only workouts/check-ins.
+          await page.evaluate(()=>{
+            localStorage.failedDays=JSON.stringify(['audit-missed-day']);
+            localStorage.setItem('task_mobility_audit','1');
+            localStorage.setItem('input_hrv','61');
+          });
+          const backupDownload=page.waitForEvent('download');
+          await page.locator('#openTrends').click();
+          await page.locator('.data-details:not(.cloud-panel) summary').click();
+          await page.locator('#exportBackup').click();
+          const downloaded=await backupDownload;
+          const backupPath=await downloaded.path();
+          const backup=JSON.parse(fs.readFileSync(backupPath,'utf8'));
+          check('Backup uses complete-state format',backup.formatVersion>=3);
+          check('Backup preserves nutrition history',Object.keys(backup.data||{}).some(k=>k.startsWith('nutrition_')));
+          check('Backup preserves qualification benchmarks',typeof backup.data?.benchmarks==='string');
+          check('Backup preserves missed-day state',typeof backup.data?.failedDays==='string'&&backup.data.failedDays.includes('audit-missed-day'));
+          check('Backup preserves task completion',backup.data?.task_mobility_audit==='1');
+          check('Backup preserves check-in inputs',backup.data?.input_hrv==='61');
+          await page.locator('[data-target="program"]').click();
+          await shot('08-program');
+          check('Program visual capture starts at current phase',await inViewport('#currentPhaseCard'));
+
+          // Cloud is opt-in: opening auth never uploads or replaces athlete data.
+          await page.locator('[data-target="program"]').click();
+          await page.locator('#openTrends').click();
+          const beforeCloud=await page.evaluate(()=>JSON.stringify(collectBackupData()));
+          await page.locator('#cloudPanel summary').click();
+          check('Private cloud account controls are visible',await visible('#cloudAuth'));
+          check('Cloud setup requires sign-in',await page.locator('#cloudEnable').count()===1&&!(await visible('#cloudEnable')));
+          check('Cloud backup has no routine save button',await page.locator('#cloudSave').count()===0);
+          check('Opening cloud preserves all local data',beforeCloud===await page.evaluate(()=>JSON.stringify(collectBackupData())));
+          check('Auth tokens are excluded from backup',await page.evaluate(()=>{localStorage.setItem('alp-cloud-auth','test-token');const safe=!Object.hasOwn(collectBackupData(),'alp-cloud-auth');localStorage.removeItem('alp-cloud-auth');return safe}));
+          check('Cloud has no horizontal overflow',await page.locator('#cloudPanel').evaluate(n=>n.scrollWidth<=n.clientWidth+1));
+
+          // A calendar-advanced athlete without earned standards should be prescription-locked.
+          await page.evaluate(()=>{
+            const d=new Date();d.setDate(d.getDate()-18*7);
+            localStorage.programStart=d.toISOString();
+            localStorage.trainingLogs=JSON.stringify([{date:d.toISOString(),week:1,weight:170,hrv:62,rhr:54,grip:52,sleep:8,overall:'GREEN',score:92}]);
+            localStorage.workoutHistory='[]';
+            localStorage.failedDays='[]';
+            localStorage.benchmarks='{}';
+          });
+          await page.reload({waitUntil:'networkidle'});
+          await page.locator('[data-target="program"]').click();
+          check('Unqualified phase advancement is locked',(await page.locator('#currentPhaseCard').innerText()).includes('Phase promotion locked'));
+          await page.evaluate(()=>{localStorage.benchmarks=JSON.stringify({pushups:100,pullups:20,situps:90,run4:'21:30',bodyFat:12,ruckMiles:12,ruckWeight:35,ruckComfortable:'YES',peakPainFree:'YES'})});
+          await page.reload({waitUntil:'networkidle'});
+          await page.locator('[data-target="program"]').click();
+          check('Later benchmark success cannot skip earlier qualification set',(await page.locator('#currentPhaseCard').innerText()).includes('Phase promotion locked'));
+          check('Program progress count describes visible qualification set',(await page.locator('#milestoneCount').innerText()).match(/^\d\/4$/));
+          await page.locator('[data-target="today"]').click();
+          check('Today distinguishes held prescription from calendar time',(await page.locator('#directiveJourney').innerText()).includes('Held Week'));
+          await page.locator('[data-target="program"]').click();
+          await page.locator('#openTrends').click();
+          check('Insights opens trends',await visible('#trends'));
+          await shot('09-insights');
+
+          // Missed-day recovery state.
+          await page.evaluate(()=>{
+            const start=new Date();start.setDate(start.getDate()-3);
+            localStorage.programStart=start.toISOString();
+            localStorage.trainingLogs=JSON.stringify([{date:start.toISOString(),week:1,weight:170,hrv:62,rhr:54,grip:52,sleep:8,overall:'GREEN',score:92}]);
+            localStorage.workoutHistory='[]';localStorage.failedDays='[]';
+          });
+          await page.reload({waitUntil:'networkidle'});
+          check('Missed-day debt appears only after a started journey',await visible('#missedDayBanner'));
+          check('Missed-day offers reconstruction',await visible('#resolveMissed'));
+          check('Missed-day offers explicit failure',await visible('#failMissed'));
+          await page.evaluate(()=>{document.getElementById('weight').value='170';persistInputs()});
+          await page.locator('#resolveMissed').click();
+          check('Retrospective check-in opens',await visible('#checkinSheet'));
+          check('Retrospective sheet is labeled',(await page.locator('#checkinSheet').innerText()).includes('RETROSPECTIVE'));
+          await page.locator('#weight').fill('160');
+          await page.evaluate(()=>evaluate());
+          check('Historical evaluation preserves current saved draft',await page.evaluate(()=>localStorage.input_weight==='170'));
+          await page.locator('#closeCheckin').click();
+          check('Closing historical entry restores current form',await page.locator('#weight').inputValue()==='170');
+          await shot('09-missed-day');
+
+          // Inventory all currently visible button-like controls on major states.
+          await page.evaluate(()=>localStorage.clear());await page.reload({waitUntil:'networkidle'});
+          const inventory={};
+          for(const t of tabs){
+            await page.locator('[data-target="'+t+'"]').click();
+            inventory[t]=await page.locator('button:visible,[role="button"]:visible,summary:visible').evaluateAll(els=>els.map((e,i)=>({i,text:(e.innerText||e.getAttribute('aria-label')||'').trim().slice(0,80),id:e.id||'',cls:e.className||''})));
+          }
+          report.inventory=inventory;
+          report.counts.totalVisibleControls=Object.values(inventory).reduce((n,a)=>n+a.length,0);
+          // Touch ergonomics: critical controls should not require precision tapping.
+          await page.locator('[data-target="today"]').click();
+          const criticalSelectors=['#headerAction','#directivePrimary','#directiveSecondary','.tab'];
+          const undersized=[];
+          for(const sel of criticalSelectors){
+            const els=page.locator(sel+':visible'),n=await els.count();
+            for(let i=0;i<n;i++){const box=await els.nth(i).boundingBox();if(box&&(box.width<40||box.height<40))undersized.push({sel,i,w:Math.round(box.width),h:Math.round(box.height)});}
+          }
+          report.undersizedCriticalControls=undersized;
+          check('Critical touch targets are finger-friendly',undersized.length===0,JSON.stringify(undersized));
+
+          await page.evaluate(()=>{
+            for(const key of Object.keys(localStorage))if(key.startsWith('input_session_'))localStorage.removeItem(key);
+            localStorage.workoutHistory=JSON.stringify([{date:new Date().toISOString(),week:1,session:'Easy row',rpe:7,postPain:0,duration:35,completed:'PARTIAL',note:'Stopped early'}]);
+          });
+          await page.reload({waitUntil:'networkidle'});
+          check('Recovered partial session restores feedback',await page.locator('#sessionRPE').inputValue()==='7'&&await page.locator('#postPain').inputValue()==='0'&&await page.locator('#completed').inputValue()==='PARTIAL');
+          check('Recovered session restores duration and note',await page.locator('#sessionDuration').inputValue()==='35'&&await page.locator('#sessionNote').inputValue()==='Stopped early');
+          check('No runtime errors',report.errors.length===0,JSON.stringify(report.errors));
+          const failed=report.assertions.filter(x=>!x.pass);
+          report.summary={total:report.assertions.length,passed:report.assertions.length-failed.length,failed:failed.length,runtimeErrors:report.errors.length};
+          fs.writeFileSync('consumer-report.json',JSON.stringify(report,null,2));
+          console.log('CONSUMER_AUDIT_SUMMARY '+JSON.stringify(report.summary));
+          await browser.close();
+          if(failed.length||report.errors.length){console.error(JSON.stringify({failed,errors:report.errors},null,2));process.exitCode=1;}
+          JS
+          node audit.mjs
+      - name: Firebase browser recovery regression
+        run: npm run test:firebase-browser
+      - name: Automatic cloud browser regression
+        run: node tests/cloud-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consumer-audit
+          path: |
+            consumer-report.json
+            audit-cloud/
+            01-fresh-today.png
+            02-started-today.png
+            03-readiness-detail.png
+            03b-session-response.png
+            04-library.png
+            05-month.png
+            06-journey.png
+            07-nutrition.png
+            08-program.png
+            09-insights.png
+            09-missed-day.png
