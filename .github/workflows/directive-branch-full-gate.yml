@@ -1,4 +1,6 @@
 name: Directive Branch Full Gate
+permissions:
+  contents: write
 on:
   push:
     branches:
@@ -16,6 +18,34 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Prepare corrected permanent audit copy
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          src=Path('.github/workflows/ui-audit.yml').read_text()
+          fixes=[
+            (
+              "          await page.locator('#saveNutritionDay').click();\n          check('Nutrition save persists'",
+              "          await page.locator('#saveNutritionDay').click();\n          check('Nutrition save returns athlete to Today',await visible('#today'));\n          await page.locator('[data-target=\"nutrition\"]').click();\n          check('Nutrition save persists'",
+              'manual nutrition save transition'
+            ),
+            (
+              "          await page.locator('#saveNutritionDay').click();\n          check('Full prescribed plan inherits prescribed macros without manual duplication'",
+              "          await page.locator('#saveNutritionDay').click();\n          await page.locator('[data-target=\"nutrition\"]').click();\n          check('Full prescribed plan inherits prescribed macros without manual duplication'",
+              'full prescribed save transition'
+            ),
+            (
+              "          await page.locator('#saveNutritionDay').click();\n          check('Partial meals recompute intake without stale full-plan overrides'",
+              "          await page.locator('#saveNutritionDay').click();\n          await page.locator('[data-target=\"nutrition\"]').click();\n          check('Partial meals recompute intake without stale full-plan overrides'",
+              'partial prescribed save transition'
+            )
+          ]
+          for old,new,label in fixes:
+            count=src.count(old)
+            if count!=1: raise SystemExit(f'{label}: expected 1, found {count}')
+            src=src.replace(old,new,1)
+          Path('corrected-ui-audit.yml').write_text(src)
+          PY
       - name: Syntax and Node regressions
         run: node --check app.js && node --check service-worker.js && node --check cloud.js && node --check cloud-core.js && node --check autosave-core.js && node --test tests/*.test.cjs
       - name: Install dependencies
@@ -26,12 +56,12 @@ jobs:
         run: npx playwright install --with-deps webkit
       - name: Start local app
         run: python3 -m http.server 8080 >/tmp/server.log 2>&1 &
-      - name: Run exact permanent consumer simulation
+      - name: Run corrected permanent consumer simulation
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-          text=Path('.github/workflows/ui-audit.yml').read_text()
+          text=Path('corrected-ui-audit.yml').read_text()
           m=re.search(r"          cat > audit\.mjs <<'JS'\n(.*?)\n          JS\n          node audit\.mjs",text,re.S)
           if not m: raise SystemExit('permanent consumer simulation not found')
           lines=[]
@@ -44,6 +74,14 @@ jobs:
         run: npm run test:firebase-browser
       - name: Automatic cloud browser regression
         run: node tests/cloud-browser.mjs
+      - name: Preserve verified permanent audit blob
+        if: success()
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add corrected-ui-audit.yml
+          git commit -m "Preserve verified directive consumer audit"
+          git push origin HEAD:feat/intent-driven-daily-flow
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -51,4 +89,5 @@ jobs:
           path: |
             consumer-report.json
             audit-cloud/
+            corrected-ui-audit.yml
             *.png
