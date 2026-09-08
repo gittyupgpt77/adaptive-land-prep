@@ -143,7 +143,7 @@
       <label><span>Carbs · g</span><input id="actualCarbs" type="number" inputmode="decimal" placeholder="g"></label>
       <label><span>Fat · g</span><input id="actualFat" type="number" inputmode="decimal" placeholder="g"></label>
     </div>
-    <small class="actual-help">If you ate the prescribed meals, the app already knows the planned intake. Use these fields only to override calories or macros when the day differed from prescription.</small>
+    <small class="actual-help">Meal taps save automatically. If you ate differently, enter full-day totals here, including everything eaten—not just the difference. Calories are needed before a different day can inform recovery. Save when you have finished eating.</small>
   </div>
   <div class="section-row"><h2>Intake & Recovery</h2></div>
   <div id="nutritionInfluence" class="nutrition-page-card"></div>
@@ -157,14 +157,18 @@
   <div class="trend-card"><canvas id="weightChart" height="160"></canvas></div>
   <div class="section-row"><h2>Recent Activity</h2></div>
   <div id="trendLogList"></div>
-  <details class="data-details">
-    <summary>Data & backup</summary>
-    <div class="data-row"><div><strong>On-device storage</strong><small id="dbStatus">Initializing…</small></div><span id="persistBadge">Checking</span></div>
-    <div class="data-row"><div><strong>Last backup</strong><small id="lastBackup">Never</small></div><span id="recordCount">0 records</span></div>
-    <div class="backup-grid"><button id="exportBackup">Export Backup</button><label>Restore Backup<input id="importBackup" type="file" accept="application/json,.json"></label></div>
-  </details>
+
+</section>
+
+<section id="settings" class="screen">
+  <div class="section-row"><h2>Journey</h2><span id="settingsJourneyStatus">Not started</span></div>
+  <div class="data-details">
+    <div class="data-row"><div><strong>Day 1</strong><small id="settingsJourneyStart">Not set</small></div></div>
+    <div class="data-row"><div><strong>Current position</strong><small id="settingsJourneyPosition">Your journey begins when you choose Day 1.</small></div></div>
+    <p class="actual-help">Your start stays fixed. Missed days and recovery changes are handled within this journey; you do not need to start over.</p>
+  </div>
   <details class="data-details cloud-panel" id="cloudPanel">
-    <summary>Private cloud backup</summary>
+    <summary>Account & private backup</summary>
     <p id="cloudStatus" role="status" aria-live="polite">Your entries stay on this device. Sign in to enable automatic private backups.</p>
     <button id="cloudSetup" type="button">Set Up New Backup</button>
     <form id="cloudAuth">
@@ -176,11 +180,18 @@
     <form id="cloudNewPassword" class="hidden"><label>New password<input id="cloudReplacement" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Update Password</button></form>
     <div id="cloudSignedIn" class="hidden">
       <p id="cloudAccount"></p>
+      <button id="cloudAccountReset" type="button">Reset Password by Email</button>
       <p>After one-time setup, saved changes back up automatically while the app is open. Offline changes retry when you return online. Signing out keeps training data on this device.</p>
       <button id="cloudEnable" type="button">Enable Automatic Backup</button><button id="cloudRefresh" type="button">Browse & Recover</button><button id="cloudSignout" type="button">Sign Out</button>
       <a id="cloudLegacy" class="hidden" href="?backup=legacy">Recover an older backup</a>
       <div id="cloudVersions" aria-label="Saved cloud backups"></div><button id="cloudMore" type="button" class="hidden">Older Backups</button>
     </div>
+  </details>
+  <details class="data-details">
+    <summary>Data & backup</summary>
+    <div class="data-row"><div><strong>On-device storage</strong><small id="dbStatus">Initializing…</small></div><span id="persistBadge">Checking</span></div>
+    <div class="data-row"><div><strong>Last backup</strong><small id="lastBackup">Never</small></div><span id="recordCount">0 records</span></div>
+    <div class="backup-grid"><button id="exportBackup">Export Backup</button><label>Restore Backup<input id="importBackup" type="file" accept="application/json,.json"></label></div>
   </details>
 </section>
 
@@ -192,6 +203,7 @@
   <button id="openBenchmarks" class="benchmark-entry"><span>＋</span><div><strong>Update Qualification Benchmarks</strong><small>Push-ups, pull-ups, sit-ups, run, weighted-pack work and body composition</small></div><b>›</b></button>
   <div class="section-row"><h2>All Phases</h2></div>
   <div id="programBlocks" class="phase-list"></div>
+  <button id="openSettings" class="program-insights">Settings · Account, Backup & Journey</button>
   <button id="openTrends" class="program-insights">View Recovery & Weight Trends</button>
 </section>
 </main>

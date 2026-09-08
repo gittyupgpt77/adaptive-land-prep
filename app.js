@@ -156,7 +156,7 @@ function markMissedDay(d){const arr=JSON.parse(localStorage.failedDays||"[]"),k=
 function renderMissedBanner(){const m=missedDays(),b=$("missedDayBanner");if(!b)return;if(!m.length){b.classList.add("hidden");b.innerHTML="";return}const d=m[0];b.classList.remove("hidden");b.innerHTML='<div class="missed-icon">!</div><div><small>CURRICULUM DEBT</small><strong>Missed check-in · '+d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})+'</strong><p>Resolve this day before it can count toward phase mastery.</p><div class="missed-actions"><button id="resolveMissed">Enter remembered data</button><button id="failMissed">Mark missed</button></div></div>';$("resolveMissed").onclick=()=>openHistoricalCheckin(d);$("failMissed").onclick=()=>markMissedDay(d)}
 function migrateProductState(){
  const l=logs(),w=workouts();
- if(!l.length&&!w.length){localStorage.removeItem("programStart");localStorage.removeItem("baselineDate");localStorage.failedDays="[]";localStorage.removeItem("journeyPending");return}
+ if(!l.length&&!w.length&&!localStorage.programStart){localStorage.removeItem("programStart");localStorage.removeItem("baselineDate");localStorage.failedDays="[]";localStorage.removeItem("journeyPending");return}
  if(l.length&&!localStorage.baselineDate){const earliest=l.slice().sort((a,b)=>new Date(a.date)-new Date(b.date))[0];localStorage.baselineDate=earliest.date}
 }
 function beginJourney(){
@@ -755,8 +755,14 @@ function openCheckin(){resetHistorical();enhanceCheckinTapControls();syncCheckin
 function resetViewport(){document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0)}
 function switchTab(t){
  $("headerAction").style.display=t==="today"?"grid":"none";document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));$(t).classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.target===t));
- const titles={today:"Today",workout:"Train",week:"Calendar",nutrition:"Nutrition",program:"Program",trends:"Insights"};$("pageTitle").textContent=titles[t]||t;
+ const titles={today:"Today",workout:"Train",week:"Calendar",nutrition:"Nutrition",program:"Program",trends:"Insights",settings:"Settings"};$("pageTitle").textContent=titles[t]||t;
  $("todayDate").textContent=t==="today"?new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}):"";resetViewport();
+ if(t==="settings"){
+ const started=!!localStorage.programStart;
+ $("settingsJourneyStatus").textContent=started?"Active":"Not started";
+ $("settingsJourneyStart").textContent=started?new Date(localStorage.programStart).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"}):"Set Day 1 from Today";
+ $("settingsJourneyPosition").textContent=started?"Calendar week "+currentWeek()+" · Training week "+prescriptionWeek():"Your 56-week Journey has not begun";
+ }
  if(t==="workout")renderTrain();if(t==="week")renderWeek();if(t==="nutrition")renderNutrition();if(t==="trends")renderTrends();if(t==="program")renderProgram();
 }
 function renderAll(){applyBaselines();renderMissedBanner();renderToday();renderTrain();renderWeek();renderMonth();renderJourney();renderNutrition();renderTrends();renderProgram();requiredFields();bindInfo(document)}
@@ -790,7 +796,7 @@ $("prevWeek").onclick=()=>{viewedWeek=Math.max(1,viewedWeek-1);renderWeek()};$("
 if($("librarySearch"))$("librarySearch").addEventListener("input",e=>renderLibrary(e.target.value));
 document.querySelectorAll(".segment").forEach(b=>b.onclick=()=>{document.querySelectorAll(".segment").forEach(x=>x.classList.toggle("active",x===b));$("trainSessionView").classList.toggle("hidden",b.dataset.trainview!=="session");$("trainLibraryView").classList.toggle("hidden",b.dataset.trainview!=="library");resetViewport()});
 $("saveNutritionDay").onclick=saveNutrition;
-$("openBenchmarks").onclick=()=>{loadBenchmarkForm();$("benchmarkSheet").classList.remove("hidden")};$("benchmarkClose").onclick=()=>$("benchmarkSheet").classList.add("hidden");$("benchmarkSheet").onclick=e=>{if(e.target===$("benchmarkSheet"))$("benchmarkSheet").classList.add("hidden")};$("saveBenchmarks").onclick=saveBenchmarkData;$("openTrends").onclick=()=>switchTab("trends");
+$("openBenchmarks").onclick=()=>{loadBenchmarkForm();$("benchmarkSheet").classList.remove("hidden")};$("benchmarkClose").onclick=()=>$("benchmarkSheet").classList.add("hidden");$("benchmarkSheet").onclick=e=>{if(e.target===$("benchmarkSheet"))$("benchmarkSheet").classList.add("hidden")};$("saveBenchmarks").onclick=saveBenchmarkData;$("openTrends").onclick=()=>switchTab("trends");$("openSettings").onclick=()=>switchTab("settings");
 ["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>{const v=localStorage.getItem("input_"+id);if(v!==null)$(id).value=v;$(id).addEventListener("input",requiredFields);$(id).addEventListener("change",requiredFields)});$("focal").checked=localStorage.input_focal==="1";$("gait").checked=localStorage.input_gait==="1";
 // Remember unfinished entries without changing a confirmed readiness/session decision.
 ["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight","focal","gait"].forEach(id=>{

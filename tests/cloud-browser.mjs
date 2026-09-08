@@ -24,7 +24,7 @@ try{
  await page.goto(process.env.ALP_AUDIT_URL||'http://127.0.0.1:8080',{waitUntil:'networkidle'});
  await page.evaluate(()=>{localStorage.clear();localStorage.trainingLogs=JSON.stringify([{date:'2026-09-07',weight:170}])});
  await page.reload({waitUntil:'networkidle'});
- await page.locator('[data-target="program"]').click();await page.locator('#openTrends').click();await page.locator('#cloudPanel summary').click();
+ await page.locator('[data-target="program"]').click();await page.locator('#openSettings').click();await page.locator('#cloudPanel summary').click();
  assert.equal(await page.locator('#cloudSave').count(),0,'No manual backup action');
  assert.equal(await count(),0,'Signing in does not upload before device/account consent');
  page.on('dialog',dialog=>dialog.accept());
@@ -45,7 +45,7 @@ try{
  assert.equal(await page.locator('#sleep').inputValue(),'6.5','Unconfirmed check-in draft survives restart');
  assert.equal(await page.locator('#sessionNote').inputValue(),'Draft remembered','Unfinished session response survives restart');
  assert.equal(await page.evaluate(()=>localStorage.trainingLogs),confirmed,'Draft autosave cannot alter confirmed physiology');
- await page.locator('[data-target="program"]').click();await page.locator('#openTrends').click();await page.locator('#cloudPanel summary').click();
+ await page.locator('[data-target="program"]').click();await page.locator('#openSettings').click();await page.locator('#cloudPanel summary').click();
  await page.waitForTimeout(8000);
  await page.locator('#cloudPanel').scrollIntoViewIfNeeded();
  fs.mkdirSync('audit-cloud',{recursive:true});await page.screenshot({path:'audit-cloud/automatic-backup-iphone.png'});
