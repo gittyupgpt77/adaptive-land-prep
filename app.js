@@ -891,7 +891,7 @@ $("saveNutritionDay").onclick=saveNutrition;
 $("openBenchmarks").onclick=()=>{loadBenchmarkForm();$("benchmarkSheet").classList.remove("hidden")};$("benchmarkClose").onclick=()=>$("benchmarkSheet").classList.add("hidden");$("benchmarkSheet").onclick=e=>{if(e.target===$("benchmarkSheet"))$("benchmarkSheet").classList.add("hidden")};$("saveBenchmarks").onclick=saveBenchmarkData;$("openTrends").onclick=()=>switchTab("trends");$("openSettings").onclick=()=>switchTab("settings");
 resumeDaySession();
 // Old measurements are never silently presented as a new morning's answers.
-if(localStorage.input_morningDate!==todayKey()&&!todayCheckin()){
+if(localStorage.programStart&&localStorage.input_morningDate!==todayKey()&&!todayCheckin()){
  ["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight","focal","gait"].forEach(id=>localStorage.removeItem("input_"+id));
 }
 ["hrv","rhr","sleep","sleepQ","fatigue","grip","load","pain","performance","weight"].forEach(id=>{const v=localStorage.getItem("input_"+id);if(v!==null)$(id).value=v;$(id).addEventListener("input",requiredFields);$(id).addEventListener("change",requiredFields)});$("focal").checked=localStorage.input_focal==="1";$("gait").checked=localStorage.input_gait==="1";
