@@ -280,10 +280,12 @@ jobs:
           check('Library search filters', (await page.locator('.library-item').count())>0);
           await page.locator('#librarySearch').fill('');
           const libraryCount=await page.locator('.library-item').count(); report.counts.libraryExercises=libraryCount;
-          check('Library has broad movement coverage', libraryCount>=20, 'count='+libraryCount);
+          // The library is intentionally smaller now: only movements with trustworthy canonical references belong here.
           const libraryThumbBox=await page.locator('.library-thumb').first().boundingBox();
           check('Library imagery is large enough to teach',!!libraryThumbBox&&libraryThumbBox.width>=64&&libraryThumbBox.height>=64,JSON.stringify(libraryThumbBox));
           const libraryNames=await page.locator('.library-item strong').allTextContents();
+          const canonicalLibraryPatterns=[/Back Squat/i,/Romanian Deadlift/i,/Overhead Press/i,/Pull-Up/i,/Push-Up/i,/Concept2 Rowing/i,/Running/i];
+          check('Library retains key canonical movement families',canonicalLibraryPatterns.every(re=>libraryNames.some(n=>re.test(n))),JSON.stringify(libraryNames));
           const normalizedNames=libraryNames.map(n=>n.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim());
           const duplicateNames=normalizedNames.filter((n,i,a)=>a.indexOf(n)!==i);
           report.duplicateLibraryNames=[...new Set(duplicateNames)];
@@ -370,7 +372,8 @@ jobs:
           await shot('06-journey');
           check('Journey visual capture starts at roadmap summary',await inViewport('.journey-overview-head')&&await inViewport('#journeyPhaseMap'));
 
-          // Nutrition: every meal has two independent interactions.
+          // Nutrition: every meal has two independent interactions. Start from an isolated unsaved day; an earlier state-machine check intentionally completed nutrition.
+          await page.evaluate(()=>{localStorage.removeItem(nutritionLogKey());setTask('nutrition',false);renderAll();});
           await page.locator('[data-target="nutrition"]').click();
           check('Hydration avoids forced fixed-volume prescription',!/\b(120|160|180)\s*oz\b/i.test(await page.locator('#hydrationCard').innerText()));
           check('Hydration strategy is individualized',/thirst|sweat-rate|individualized/i.test(await page.locator('#hydrationCard').innerText()));
@@ -395,6 +398,8 @@ jobs:
           await page.locator('[data-target="nutrition"]').click();
           check('Nutrition drafts survive navigation',(await page.locator('#actualCarbs').inputValue())==='112'&&(await page.locator('#actualFat').inputValue())==='42'&&(await page.locator('#waterActual').inputValue())==='120');
           await page.locator('#saveNutritionDay').click();
+          check('Nutrition save returns athlete to Today',await visible('#today'));
+          await page.locator('[data-target="nutrition"]').click();
           check('Nutrition save persists',await page.evaluate(()=>getNutritionLog().saved===true));
           check('Actual intake persists exactly',await page.evaluate(()=>{const n=JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}');return n.actualCalories===1525&&n.actualProtein===181&&n.actualCarbs===112&&n.actualFat===42;}));
           await page.locator('#waterActual').fill('121');
@@ -405,10 +410,12 @@ jobs:
           await page.locator('[data-target="nutrition"]').click();
           const mealsForAuto=page.locator('.meal-check');for(let i=0;i<await mealsForAuto.count();i++)await mealsForAuto.nth(i).click();
           await page.locator('#saveNutritionDay').click();
+          await page.locator('[data-target="nutrition"]').click();
           check('Full prescribed plan inherits prescribed macros without manual duplication',await page.evaluate(()=>{const n=JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}');return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein===n.targetProtein&&n.actualCarbs===n.targetCarbs&&n.actualFat===n.targetFat;}));
           check('Inferred totals never populate deviation fields',(await page.locator('#actualCalories').inputValue())===''&&(await page.locator('#actualProtein').inputValue())==='');
           await page.locator('.meal-check').first().click();
           await page.locator('#saveNutritionDay').click();
+          await page.locator('[data-target="nutrition"]').click();
           check('Partial meals recompute intake without stale full-plan overrides',await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();return n.intakeSource==='prescribed-meals'&&n.actualCalories===meals.filter(m=>n.meals.includes(m.id)).reduce((sum,m)=>sum+m.kcal,0)&&n.actualProtein===null;}));
           await page.locator('.meal-check').first().click();
           await page.locator('#saveNutritionDay').click();
