@@ -18,6 +18,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Harden legacy score-field matcher
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/readiness-false-precision-patch.cjs')
+          s=p.read_text()
+          old="app=app.replace('overall:d.o,score:d.score,decision:d,','overall:d.o,decision:d,');"
+          new="app=app.replace(/score:d\\.score,/g,'');"
+          if old not in s:
+              raise SystemExit('legacy score matcher not found')
+          p.write_text(s.replace(old,new))
+          PY
       - name: Apply categorical readiness patch
         run: node scripts/readiness-false-precision-patch.cjs
       - name: Syntax check
