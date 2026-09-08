@@ -28,3 +28,15 @@ test('fresh device can recover without uploading an empty snapshot',async()=>{co
 test('failed safety upload aborts recovery before local writes',async()=>{const h=harness();h.failInsert();await assert.rejects(h.core.recover('old'));assert.equal(h.restores.length,0)});
 
 test('account switch during identity verification cannot redirect an upload',async()=>{const h=harness();h.changeDuringAuth('B');await assert.rejects(h.core.save());assert.equal(h.writes.length,0)});
+
+test('storage key ordering alone does not falsely block recovery',async()=>{
+ const h=harness();h.setData({trainingLogs:'[]',input_weight:'170'});
+ h.afterInsert(()=>h.setData({input_weight:'170',trainingLogs:'[]'}));
+ assert.equal(await h.core.recover('old'),true);assert.equal(h.restores.length,1);
+});
+test('adding or removing a device key during recovery still aborts',async()=>{
+ for(const changed of [{trainingLogs:'[]',input_weight:'170'},{}]){
+  const h=harness();h.afterInsert(()=>h.setData(changed));
+  await assert.rejects(h.core.recover('old'),/Device data changed/);assert.equal(h.restores.length,0);
+ }
+});

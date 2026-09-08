@@ -39,10 +39,12 @@
     if(!confirm('Restore the backup from '+new Date(data.created_at).toLocaleString()+'? This replaces this device’s training data. Its current data will be saved as a separate recovery backup first.'))return false;
     // Capture after confirmation; retain an immutable cloud copy before any local mutation.
     const previous=collect();
-    if(Object.keys(previous).length)await insert(owner,snapshot(),'before-restore');
+    if(Object.keys(previous).length)await insert(owner,snapshot(previous),'before-restore');
     if(store?.prepareRecovery)await store.prepareRecovery(owner.id,data);
     assertCurrent(owner.id);
-    if(JSON.stringify(collect())!==JSON.stringify(previous))throw Error('Device data changed during recovery. Please try again.');
+    // Storage enumeration order may change when unrelated account keys are written.
+    const current=collect(),keys=Object.keys(previous);
+    if(Object.keys(current).length!==keys.length||keys.some(k=>!Object.hasOwn(current,k)||current[k]!==previous[k]))throw Error('Device data changed during recovery. Please try again.');
     await restore({text:async()=>JSON.stringify(data.payload)});
     return true;
    }
