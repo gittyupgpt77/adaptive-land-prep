@@ -25,6 +25,18 @@
     <div><small>YOUR PROGRAM HAS NOT STARTED</small><h2>Set your Day 1</h2><p>Your first completed morning check-in becomes Day 1. Nothing before that date can create curriculum debt.</p><button id="beginJourneyBtn">Begin Journey</button></div>
   </div>
   <div id="missedDayBanner" class="missed-banner hidden"></div>
+  <section id="dailyDirective" class="daily-directive hidden" aria-live="polite">
+    <div class="directive-top"><span id="directiveStage">MORNING</span><span id="directiveStep">STEP 1 OF 4</span></div>
+    <div class="directive-status-row"><span id="directiveState" class="directive-state neutral">CHECK IN</span><span id="directiveJourney">Week 1 · Foundation</span></div>
+    <h2 id="directiveTitle">Morning check-in</h2>
+    <p id="directiveCopy">Enter today’s measured recovery values, then tap the quick subjective checks.</p>
+    <div id="directiveReason" class="directive-reason"></div>
+    <div id="directiveWorkout" class="directive-workout hidden"></div>
+    <div id="directiveMacros" class="directive-macros hidden"></div>
+    <div id="directiveTimeline" class="directive-timeline"></div>
+    <button id="directivePrimary" class="directive-primary">Begin morning check-in</button>
+    <button id="directiveSecondary" class="directive-secondary hidden"></button>
+  </section>
   <div id="readinessCard" class="readiness-card readiness-button" role="button" tabindex="0">
     <div class="card-heading"><span>Readiness</span><button class="info-dot" data-term="readiness">i</button></div>
     <div class="readiness-main">
@@ -208,6 +220,7 @@
   <div class="sheet">
     <div class="sheet-handle"></div><div class="sheet-head"><div><small>MORNING</small><h2>Check-In</h2></div><button id="closeCheckin">×</button></div>
     <div id="checkinProgress" class="attention-banner"><span class="attention-icon">!</span><div><strong>Needs attention</strong><small id="checkinProgressText">Complete the fields below.</small></div></div>
+    <p class="checkin-mode-note">Measured values use the keypad. Daily judgments use large tap choices—no notes required.</p>
     <div class="checkin-section"><h3>Recovery</h3><div class="input-grid">
       <label class="field"><span>HRV <button class="info-dot tiny" data-term="HRV">i</button></span><input id="hrv" type="number" inputmode="decimal" placeholder="ms"></label>
       <label class="field"><span>Your usual HRV <em>AUTO</em></span><input id="hrvBase" type="number" inputmode="decimal" placeholder="learning" readonly aria-readonly="true"></label>
@@ -230,7 +243,7 @@
       <label class="field"><span>Weight</span><input id="weight" type="number" inputmode="decimal" step=".1" placeholder="lb"></label>
       <label class="field"><span>7-day average <em>AUTO</em></span><input id="weightAvg" type="number" inputmode="decimal" step=".1" placeholder="learning" readonly aria-readonly="true"></label>
     </div></div>
-    <button class="sheet-primary" id="evaluateBtn">Evaluate Today</button>
+    <button class="sheet-primary" id="evaluateBtn">Generate Today’s Directive</button>
     <div id="results" class="sheet-results hidden">
       <div class="result-grid"><div><span>Recovery</span><strong id="sysStatus">—</strong></div><div><span>Injury risk</span><strong id="mechStatus">—</strong></div><div><span>Fueling</span><strong id="fuelStatus">—</strong></div></div>
       <div class="adaptive-list"><div><span>Run</span><strong id="runDecision">—</strong></div><div><span>Weighted pack</span><strong id="ruckDecision">—</strong></div><div><span>Rowing</span><strong id="c2Decision">—</strong></div><div><span>Strength</span><strong id="strengthDecision">—</strong></div><div><span>Intensity</span><strong id="intensityDecision">—</strong></div><div><span>Nutrition</span><strong id="nutritionDecision">—</strong></div></div>
