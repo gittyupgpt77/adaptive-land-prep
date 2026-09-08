@@ -8,6 +8,7 @@ function harness(initial={}){
  const storage={get length(){return values.size},key:i=>[...values.keys()][i],getItem:k=>values.get(k)??null,setItem(k,v){if(k===failKey){failKey=null;throw Error('quota')}values.set(k,String(v))},removeItem:k=>values.delete(k)};
  const localStorage=new Proxy(storage,{get:(target,k)=>k in target?target[k]:values.get(k)});
  const context=vm.createContext({localStorage,dbSet:async()=>{},location:{reload(){reloads++}}});
+ vm.runInContext(fs.readFileSync('training-tools.js','utf8'),context);
  vm.runInContext(source.slice(source.indexOf('const APP_STORAGE_KEYS='),source.indexOf('\n$("exportBackup").onclick')),context);
  return {values,context,fail:k=>failKey=k,get reloads(){return reloads},restore:o=>context.importBackup({text:async()=>JSON.stringify(o)})};
 }
@@ -38,4 +39,10 @@ test('restored confirmed meal snapshots retain quantities and malformed snapshot
  for(const prescribedMeals of [[null],[{id:'m1',name:'Breakfast',kcal:400,foods:'oats'}],[...log.prescribedMeals,...log.prescribedMeals]]){
   const invalid=harness(old);await assert.rejects(invalid.restore(payload({nutrition_today:JSON.stringify({...log,prescribedMeals})})));assert.deepEqual(Object.fromEntries(invalid.values),old);
  }
+});
+
+test('exercise sets survive backup restore with units and reject invalid loads',async()=>{
+ const rows=[{date:'2026-09-08T12:00:00Z',session:'Strength',completed:'YES',exerciseSets:[{name:'Squat',unit:'lb',load:40,work:8,measure:'reps'}]}];
+ const h=harness(old);await h.restore(payload({workoutHistory:JSON.stringify(rows)}));assert.deepEqual(JSON.parse(h.values.get('workoutHistory')),rows);
+ rows[0].exerciseSets[0].load=-1;const invalid=harness(old);await assert.rejects(invalid.restore(payload({workoutHistory:JSON.stringify(rows)})));assert.deepEqual(Object.fromEntries(invalid.values),old);
 });

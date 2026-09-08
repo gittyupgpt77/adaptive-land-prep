@@ -6,7 +6,7 @@ const source=fs.readFileSync(require('node:path').join(__dirname,'../app.js'),'u
 
 test('session feedback restores saved partial details but preserves newer drafts and deliberate clearing',()=>{
  const nodes={},drafts=new Map(),rows=[{date:'today',rpe:7,postPain:0,duration:35,completed:'PARTIAL',note:'Stopped early'}];
- const context=vm.createContext({dayDate:()=>new Date(),advanceDailyFlow:()=>{},$:id=>nodes[id]??={value:''},workouts:()=>rows,dayKey:x=>x,todayKey:()=> 'today',localStorage:{getItem:k=>drafts.get(k)??null}});
+ const context=vm.createContext({recordedExerciseSets:()=>[],dayDate:()=>new Date(),advanceDailyFlow:()=>{},$:id=>nodes[id]??={value:''},workouts:()=>rows,dayKey:x=>x,todayKey:()=> 'today',localStorage:{getItem:k=>drafts.get(k)??null}});
  const start=source.indexOf('function restoreSessionFeedback(){');
  vm.runInContext(source.slice(start,source.indexOf('\nrestoreSessionFeedback();',start)),context);
  context.restoreSessionFeedback();
@@ -25,7 +25,7 @@ test('completion records the prescribed session for normal, reduced and recovery
   [{o:'RED',b:'RED'},'Mechanical Recovery Override']
  ]){
   const localStorage={programStart:'2026-09-01'};
-  const context=vm.createContext({dayDate:()=>new Date(),advanceDailyFlow:()=>{},localStorage,
+  const context=vm.createContext({recordedExerciseSets:()=>[],dayDate:()=>new Date(),advanceDailyFlow:()=>{},localStorage,
    sessionName:()=> 'Full-body strength',
    makeSession:title=>({title,steps:[]}),todayCheckin:()=>({decision}),ex:()=>({}),
    num:id=>({sessionRPE:5,postPain:0,sessionDuration:30}[id]),val:()=>'',

@@ -4,7 +4,7 @@ function harness(initial={}){
  let log=initial,task=false;
  const buttons=[{dataset:{meal:'m1'}},{dataset:{meal:'m2'}}],nodes={},meals=[{id:'m1',name:'Breakfast',kcal:400,foods:[]},{id:'m2',name:'Dinner',kcal:600,foods:[]}];
  const $=id=>nodes[id]??=( {value:'',textContent:'',innerHTML:'',querySelectorAll:selector=>selector==='.meal-check'?buttons:[]} );
- const context=vm.createContext({dayDate:()=>new Date(),dayKey:d=>new Date(d).toDateString(),advanceDailyFlow:()=>{},$,getNutritionLog:()=>JSON.parse(JSON.stringify(log)),nutritionLogKey:()=> 'nutrition_today',localStorage:{programStart:'2026-09-01',setItem:(k,v)=>log=JSON.parse(v)},setTask:(k,v)=>task=v,prescriptionWeek:()=>1,sessionName:()=> 'Recovery',todayNutritionPrescription:()=>({phase:'Foundation',cal:1000,protein:100,carbs:100,fat:30,why:'Fuel today'}),todayMealPlan:()=>meals,mealPlanForTarget:()=>meals,hydrationForDay:()=>({label:'Drink to thirst',note:''}),previousNutritionSignal:()=>null,renderToday:()=>{},val:id=>$(id).value});
+ const context=vm.createContext({todayWorkoutRecord:()=>null,todayFlowState:()=>"nutrition",dayDate:()=>new Date(),dayKey:d=>new Date(d).toDateString(),advanceDailyFlow:()=>{},$,getNutritionLog:()=>JSON.parse(JSON.stringify(log)),nutritionLogKey:()=> 'nutrition_today',localStorage:{programStart:'2026-09-01',setItem:(k,v)=>log=JSON.parse(v)},setTask:(k,v)=>task=v,prescriptionWeek:()=>1,sessionName:()=> 'Recovery',todayNutritionPrescription:()=>({phase:'Foundation',cal:1000,protein:100,carbs:100,fat:30,why:'Fuel today'}),todayMealPlan:()=>meals,mealPlanForTarget:()=>meals,hydrationForDay:()=>({label:'Drink to thirst',note:''}),previousNutritionSignal:()=>null,renderToday:()=>{},val:id=>$(id).value});
  vm.runInContext(source.slice(source.indexOf('function nutritionText('),source.indexOf('function hydrationForDay('))+source.slice(source.indexOf('function nutritionDraft('),source.indexOf('function programWeekForDate(')),context);
  context.renderNutrition();
  return {context,$,buttons,get log(){return log},get task(){return task}};
@@ -36,7 +36,7 @@ test('meal taps never finalize a manual draft and macros alone cannot confirm lo
  h.$('actualCalories').value='';h.$('actualProtein').value='60';h.context.saveNutrition();assert.equal(h.log.complete,false);
 });
 test('unfinished nutrition does not become a next-day underfueling signal',()=>{
- const c=vm.createContext({getNutritionLog:()=>({saved:true,complete:false,actualCalories:400}),dateSession:()=>({w:1,name:'Recovery'})});
+ const c=vm.createContext({todayWorkoutRecord:()=>null,todayFlowState:()=>"nutrition",getNutritionLog:()=>({saved:true,complete:false,actualCalories:400}),dateSession:()=>({w:1,name:'Recovery'})});
  vm.runInContext(source.slice(source.indexOf('function previousNutritionSignal('),source.indexOf('// Raw entries are distinct')),c);
  assert.equal(c.previousNutritionSignal(),null);
 });

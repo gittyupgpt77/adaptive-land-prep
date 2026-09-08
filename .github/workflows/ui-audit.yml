@@ -12,6 +12,7 @@ on:
       - 'index.html'
       - 'styles.css'
       - 'app.js'
+      - 'training-tools.js'
       - 'cloud*.js'
       - 'autosave-core.js'
       - 'firestore*'
@@ -116,6 +117,10 @@ jobs:
           await page.waitForTimeout(100);
           check('Explicit Begin Journey creates Day 1', await page.evaluate(()=>!!localStorage.programStart));
           check('Journey onboarding disappears', !(await visible('#journeyStartCard')));
+          check('Breakfast precedes the training directive',await page.evaluate(()=>todayFlowState()==='breakfast'));
+          await page.locator('#directivePrimary').click();
+          await page.locator('#eatNextMeal').click();
+          check('Breakfast confirmation advances to training',await visible('#dailyDirective')&&await page.evaluate(()=>todayFlowState()==='directive'));
           check('Started Journey reveals one directive card', await visible('#dailyDirective') && !(await visible('#todayPlanHeader')) && !(await visible('.plan-list')));
           check('Directive uses categorical state', ['ON PLAN','ADJUST','RECOVERY'].includes((await page.locator('#directiveState').innerText()).trim()));
           check('Directive omits pseudo-physiological percentage', !(await page.locator('#dailyDirective').innerText()).includes('/100'));
@@ -236,8 +241,9 @@ jobs:
           check('Workout response persists',await page.evaluate(()=>{const w=JSON.parse(localStorage.workoutHistory||'[]')[0];return w?.rpe===9&&w?.postPain===4&&w?.completed==='YES';}));
           check('Workout task completes only from saved session',await page.locator('#taskWorkout').evaluate(n=>n.classList.contains('done')));
           await page.locator('[data-target="nutrition"]').click();
+          await page.locator('#nutritionToday summary').click();
           check('Red fueling signal raises today nutrition target',(await page.locator('#nutritionToday').innerText()).includes('1,650'));
-          check('Red fueling signal adds explicit recovery carbohydrate food',(await page.locator('#nutritionMeals').innerText()).includes('Recovery Carbohydrate Add-On'));
+          check('Red fueling signal adds remaining food after breakfast',(await page.locator('#nutritionMeals').innerText()).includes('Remaining fuel')&&await page.evaluate(()=>todayMealPlan().reduce((sum,m)=>sum+m.kcal,0)===todayNutritionPrescription().cal));
           await page.locator('[data-target="today"]').click();
 
           // Today state machine: one next action at a time, tabs remain escape hatches.
@@ -247,9 +253,9 @@ jobs:
           check('Nutrition directive is the single primary action',(await page.locator('#directivePrimary').innerText()).includes('meals'));
           await page.locator('#directivePrimary').click();
           check('Directive advances athlete to Nutrition',await visible('#nutrition'));
-          check('Directive navigation does not fabricate saved intake',await page.evaluate(()=>!getNutritionLog().saved));
+          check('Directive navigation preserves unfinished intake',await page.evaluate(()=>!getNutritionLog().complete));
           await page.locator('[data-target="today"]').click();
-          await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();n.saved=true;n.savedAt=new Date().toISOString();n.intakeSource='prescribed-meals';n.meals=meals.map(m=>m.id);n.actualCalories=todayNutritionPrescription().cal;localStorage.setItem(nutritionLogKey(),JSON.stringify(n));renderAll();switchTab('today')});
+          await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();n.saved=true;n.complete=true;n.savedAt=new Date().toISOString();n.intakeSource='prescribed-meals';n.meals=meals.map(m=>m.id);n.actualCalories=todayNutritionPrescription().cal;localStorage.setItem(nutritionLogKey(),JSON.stringify(n));renderAll();switchTab('today')});
           check('Saved complete nutrition advances Today to evening summary',(await page.locator('#directiveStage').innerText()).includes('EVENING')&&(await page.locator('#directiveState').innerText()).includes('DAY COMPLETE'));
           check('Day stays open until explicitly ended',(await page.locator('#directivePrimary').innerText())==='End day');
           await page.locator('#directivePrimary').click();
@@ -333,7 +339,9 @@ jobs:
           }
           report.counts.loadedExercisePhotos=loadedPhotos;report.counts.visualFallbacks=visualFallbacks;report.failedImages=failedImageDetails;
           const coverage=libraryCount?loadedPhotos/libraryCount:0;report.counts.realImageCoverage=Math.round(coverage*100);
-          check('Real exercise image coverage is high',coverage>=.85,'coverage='+Math.round(coverage*100)+'%, fallbacks='+visualFallbacks);
+          check('Canonical exercise photos load',loadedPhotos>=librarySources.length*.85,'loaded='+loadedPhotos+', photos='+librarySources.length);
+          check('Equipment notes do not masquerade as technique photos',await page.evaluate(()=>!datasetExerciseId('Tibialis raises')&&!datasetExerciseId('Sandbag bear-hug carry')));
+          check('Owned gear remains searchable',libraryNames.some(n=>/biceps/i.test(n))&&libraryNames.some(n=>/sandbag/i.test(n))&&libraryNames.some(n=>/sauna/i.test(n)));
           await shot('04-library');
           check('Library visual capture starts at search/filter controls',await inViewport('#librarySearch')&&await inViewport('#libraryFilters'));
 
@@ -577,13 +585,27 @@ jobs:
           await morning.reload();
           check('Same-day unfinished measurements survive reopening',await morning.locator('#hrv').inputValue()==='60');
           await morning.locator('#morningContinue').click();
-          for(const [id,value] of Object.entries({sleepQ:'4',fatigue:'1',load:'0',performance:'YES'}))await morning.locator('#'+id).locator('..').locator('button[data-value="'+value+'"]').click();
+          const choiceBounds=await morning.locator('.tap-scale.choices:visible button').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return{x:r.x,right:r.right,width:r.width}}));
+          check('Long feeling choices fit the iPhone screen',choiceBounds.length>0&&choiceBounds.every(r=>r.x>=0&&r.right<=393&&r.width>=80));
+          for(const [id,value] of Object.entries({sleepQ:'4',fatigue:'1',load:'0',performance:'NA'}))await morning.locator('#'+id).locator('..').locator('button[data-value="'+value+'"]').click();
           await morning.locator('#morningContinue').click();
           await morning.locator('#pain').locator('..').locator('button[data-value="0"]').click();
           await morning.locator('#morningContinue').click();
-          check('Confirmed morning automatically reveals the session',await morning.locator('#dailyDirective').isVisible()&&!(await morning.locator('#morningWelcome').isVisible()));
+          check('Confirmed morning opens breakfast',await morning.locator('#eatNextMeal').isVisible()&&!(await morning.locator('#morningWelcome').isVisible()));
+          await morning.locator('#eatNextMeal').click();
+          check('Breakfast leads directly to the session',await morning.locator('#dailyDirective').isVisible());
+          check('No-workout response is saved explicitly',await morning.evaluate(()=>todayCheckin().performance==='NA'));
+          await morning.locator('#flowBack').click();
+          check('Back opens saved morning values for correction',await morning.locator('#checkinSheet').isVisible()&&await morning.locator('#hrv').inputValue()==='60');
+          await morning.locator('#closeCheckin').click();
+          await morning.locator('[data-target="workout"]').click();
+          const setPanel=morning.locator('.set-record').first();await setPanel.locator('summary').first().click();
+          await setPanel.locator('.set-entry input').nth(0).fill('0');await setPanel.locator('.set-entry input').nth(1).fill('20');
+          await setPanel.locator('.set-entry button').click();
+          check('Actual exercise work saves without re-entering the session',await setPanel.locator('.recorded-set').count()===1);
           await morning.reload();
           check('Confirmed check-in survives reopening',await morning.locator('#dailyDirective').isVisible());
+          check('Exercise work survives reopening',await morning.evaluate(()=>recordedExerciseSets().length===1));
           const nextMorning=await morning.evaluate(()=>Date.now()+86400000);
           await morning.clock.install({time:nextMorning});
           await morning.reload();
