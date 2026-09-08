@@ -113,7 +113,7 @@ function renderWeekTargetCard(w,det){
 function taskDone(k){return localStorage.getItem("task_"+k+"_"+todayKey())==="1"}function setTask(k,v){localStorage.setItem("task_"+k+"_"+todayKey(),v?"1":"0")}
 function systemic(){const sl=num("sleep"),q=num("sleepQ"),f=num("fatigue"),h=num("hrv"),hb=num("hrvBase"),r=num("rhr"),rb=num("rhrBase"),g=num("grip"),gb=num("gripBase"),p=val("performance");if([sl,q,f,h,r].every(x=>x===null)&&!p)return"";if((sl!==null&&sl<6)||(q!==null&&q<=2)||(f!==null&&f>=4)||(hb&&h!==null&&h<.85*hb)||(rb&&r!==null&&r>rb+8)||p==="NO")return"RED";if((sl!==null&&sl<7)||q===3||f===3||(hb&&h!==null&&h<.92*hb)||(rb&&r!==null&&r>rb+5)||(gb&&g!==null&&g<.9*gb))return"YELLOW";return"GREEN"}
 function mechanical(){const p=num("pain"),prev=typeof previousWorkoutSignal==="function"?previousWorkoutSignal(historicalDate||new Date()):null;if(p===null&&!$("focal").checked&&!$("gait").checked){return prev?.level||""}if($("focal").checked||$("gait").checked||(p!==null&&p>=5)||prev?.level==="RED")return"RED";if((p!==null&&p>=3)||prev?.level==="YELLOW")return"YELLOW";return"GREEN"}
-function fueling(){const w=num("weight"),a=num("weightAvg"),l=num("load"),prev=typeof previousNutritionSignal==="function"?previousNutritionSignal(historicalDate||new Date()):null;if(w===null||a===null||l===null){if(prev&&prev.ratio<.7)return"YELLOW";return""}if((w<a*.985&&l>=7)||(prev&&prev.ratio<.65&&l>=6))return"RED";if((w<a*.99&&l>=5)||(prev&&prev.ratio<.8&&l>=4))return"YELLOW";return"GREEN"}
+function fueling(){const l=num("load"),prev=typeof previousNutritionSignal==="function"?previousNutritionSignal(historicalDate||new Date()):null;if(l===null){if(prev&&prev.ratio<.7)return"YELLOW";return""}if(prev&&prev.ratio<.65&&l>=6)return"RED";if(prev&&prev.ratio<.8&&l>=4)return"YELLOW";return"GREEN"}
 function decision(){const a=systemic(),b=mechanical(),c=fueling(),o=!a&&!b&&!c?"":(a==="RED"||b==="RED"?"RED":(a==="YELLOW"||b==="YELLOW"||c==="RED"?"YELLOW":"GREEN"));let score=92;if(a==="YELLOW")score-=18;if(a==="RED")score-=42;if(b==="YELLOW")score-=18;if(b==="RED")score-=55;if(c==="YELLOW")score-=8;if(c==="RED")score-=16;score=Math.max(15,Math.min(98,score));let run="Full phase plan",ruck="Full phase plan",row="Phase plan",strength="Full plan",intensity="Planned",nutrition="Follow phase target",warning="";if(!o)return{a,b,c,o,score:0,run:"Complete check-in",ruck:"Complete check-in",row:"Complete check-in",strength:"Complete check-in",intensity:"Complete check-in",nutrition:"Complete check-in",warning:""};if(b==="RED"){run="No running";ruck="No weighted-pack walking";row="Easy row if pain-free";strength="Non-aggravating only";intensity="No hard training";warning="Mechanical override: favorable recovery metrics do not justify impact or loaded walking."}else if(o==="RED"){run="Row or walk only";ruck="No loaded walking";row="Recovery row";strength="Reduce about 50%";intensity="No hard training"}else if(o==="YELLOW"){run="Reduce about 25–40%; keep easy";ruck="Reduce distance/load";row="Prefer easy rowing";strength="Reduce about 30%";intensity="No hard intervals"}if(c==="RED")nutrition="Add energy/carbohydrate; review deficit";else if(c==="YELLOW")nutrition="Hold intake; add carbohydrate around training";return{a,b,c,o,score,run,ruck,row,strength,intensity,nutrition,warning}}
 function dayKey(d){return new Date(d).toDateString()}
 function missedDays(){if(!localStorage.programStart)return[];const start=new Date(localStorage.programStart),end=new Date();start.setHours(12,0,0,0);end.setHours(12,0,0,0);end.setDate(end.getDate()-1);const resolved=new Set(logs().map(x=>dayKey(x.date))),failed=new Set(JSON.parse(localStorage.failedDays||"[]")),out=[];for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const k=d.toDateString();if(!resolved.has(k)&&!failed.has(k))out.push(new Date(d))}return out}
@@ -352,7 +352,7 @@ function isHighVolumeSession(name){return /long|quality|threshold|specific|mediu
 function nutritionForWeek(w,name){const high=isHighVolumeSession(name);if(w<=20)return{phase:"Aggressive Recomposition",cal:high?1650:1450,protein:185,carbs:high?140:90,fat:40,why:high?"Higher carbohydrate allowance for a longer or harder session.":"Lower-volume day: preserve protein while keeping energy intake conservative and carbohydrate matched to today’s training demand."};if(w<=22)return{phase:"Metabolic Pivot · Step 1",cal:1950,protein:185,carbs:190,fat:50,why:"Step calories upward before high-volume work expands."};if(w<=24)return{phase:"Metabolic Pivot · Step 2",cal:2250,protein:185,carbs:240,fat:60,why:"Second step before full performance fueling."};return{phase:"Performance Fueling",cal:high?4000:3400,protein:200,carbs:high?600:450,fat:88,why:high?"High-demand target emphasizing glycogen replacement.":"Baseline Phase B performance target."}}
 function nutritionHtml(w,name){
  const n=nutritionForWeek(w,name),meals=mealPlanForTarget(w,n);
- return '<div class="nutrition-hero"><small>'+n.phase.toUpperCase()+'</small><strong>≈ '+n.cal.toLocaleString()+' kcal</strong><p>'+n.why+'</p></div><div class="macro-grid"><div><span>Protein</span><strong>'+n.protein+' g</strong></div><div><span>Carbs</span><strong>'+n.carbs+' g</strong></div><div><span>Fat</span><strong>'+n.fat+' g</strong></div></div><div class="calendar-meal-plan">'+meals.map(m=>'<div><small>≈ '+m.kcal+' KCAL</small><strong>'+m.name+'</strong><p>'+m.foods.join(" · ")+'</p></div>').join("")+'</div><div class="nutrition-note"><strong>Adaptive rule</strong><p>Readiness and body-weight trend override an aggressive deficit when recovery or performance deteriorates.</p></div>';
+ return '<div class="nutrition-hero"><small>'+n.phase.toUpperCase()+'</small><strong>≈ '+n.cal.toLocaleString()+' kcal</strong><p>'+n.why+'</p></div><div class="macro-grid"><div><span>Protein</span><strong>'+n.protein+' g</strong></div><div><span>Carbs</span><strong>'+n.carbs+' g</strong></div><div><span>Fat</span><strong>'+n.fat+' g</strong></div></div><div class="calendar-meal-plan">'+meals.map(m=>'<div><small>≈ '+m.kcal+' KCAL</small><strong>'+m.name+'</strong><p>'+m.foods.join(" · ")+'</p></div>').join("")+'</div><div class="nutrition-note"><strong>Adaptive rule</strong><p>Body weight changes fueling only after an established 14-day trend. During Phase 1, that trend must exceed 2.7 lb/week of loss; afterward, the normal recovery guardrail applies. Recorded under-fueling remains an independent readiness signal.</p></div>';
 }
 function nutritionLogKey(d=new Date()){return"nutrition_"+dayKey(d)}
 function getNutritionLog(d=new Date()){try{return JSON.parse(localStorage.getItem(nutritionLogKey(d))||"{}")}catch(e){return{}}}
@@ -387,41 +387,52 @@ function mealPlanForTarget(w,target){
 }
 function mealPlanForWeek(w){return baseMealPlan(w)}
 function weightTrend(referenceDate=new Date()){
- const end=new Date(referenceDate);end.setHours(23,59,59,999);
- const recentStart=new Date(end);recentStart.setDate(recentStart.getDate()-6);recentStart.setHours(0,0,0,0);
- const priorEnd=new Date(recentStart);priorEnd.setMilliseconds(-1);
- const priorStart=new Date(recentStart);priorStart.setDate(priorStart.getDate()-7);
- const rows=logs().filter(x=>Number.isFinite(Number(x.weight))&&Number(x.weight)>0&&new Date(x.date)<=end);
- const inWindow=(a,b)=>rows.filter(x=>{const d=new Date(x.date);return d>=a&&d<=b}).map(x=>Number(x.weight));
- const recent=inWindow(recentStart,end),prior=inWindow(priorStart,priorEnd);
- if(recent.length<4||prior.length<4)return{status:"learning",recentCount:recent.length,priorCount:prior.length};
- const mean=a=>a.reduce((s,x)=>s+x,0)/a.length,recentAvg=mean(recent),priorAvg=mean(prior),pct=(recentAvg-priorAvg)/priorAvg;
- return{status:"ready",recentCount:recent.length,priorCount:prior.length,recentAvg,priorAvg,pct,level:pct<=-.01?"red":pct<=-.005?"yellow":"green"}
+ const end=new Date(referenceDate);end.setHours(12,0,0,0);
+ const start=new Date(end);start.setDate(start.getDate()-13);
+ const buckets=new Map();
+ for(const x of logs()){
+   const weight=Number(x.weight),d=new Date(x.date);if(!Number.isFinite(weight)||weight<=0||Number.isNaN(d.getTime()))continue;
+   d.setHours(12,0,0,0);if(d<start||d>end)continue;
+   const key=d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(),bucket=buckets.get(key)||{day:new Date(d),weights:[]};bucket.weights.push(weight);buckets.set(key,bucket)
+ }
+ const daily=[...buckets.values()].map(x=>({day:x.day,weight:x.weights.reduce((s,v)=>s+v,0)/x.weights.length})).sort((a,b)=>a.day-b.day);
+ if(daily.length<10)return{status:"learning",observations:daily.length,spanDays:daily.length?Math.round((daily.at(-1).day-daily[0].day)/86400000):0};
+ const first=daily[0].day,spanDays=Math.round((daily.at(-1).day-first)/86400000);if(spanDays<12)return{status:"learning",observations:daily.length,spanDays};
+ const points=daily.map(x=>({x:(x.day-first)/86400000,y:x.weight})),meanX=points.reduce((s,p)=>s+p.x,0)/points.length,meanY=points.reduce((s,p)=>s+p.y,0)/points.length;
+ const denom=points.reduce((s,p)=>s+(p.x-meanX)**2,0),slope=denom?points.reduce((s,p)=>s+(p.x-meanX)*(p.y-meanY),0)/denom:0,weeklyDelta=slope*7,pct=meanY?weeklyDelta/meanY:0;
+ return{status:"ready",observations:daily.length,spanDays,meanWeight:meanY,weeklyDelta,lossLbPerWeek:Math.max(0,-weeklyDelta),pct,level:pct<=-.01?"red":pct<=-.005?"yellow":"green"}
 }
 function weightTrendHeadline(t,latest){
  if(!Number.isFinite(latest))return"No data";
  const weight=latest.toFixed(1)+" lb";
- if(!t||t.status!=="ready")return weight+" · calibrating";
+ if(!t||t.status!=="ready")return weight+" · calibrating 14-day trend";
  const pct=Math.abs(t.pct*100).toFixed(1),direction=t.pct<0?"down":t.pct>0?"up":"stable";
- return direction==="stable"?weight+" · 7-day average stable":weight+" · 7-day average "+direction+" "+pct+"%";
+ return direction==="stable"?weight+" · 14-day trend stable":weight+" · 14-day trend "+direction+" "+pct+"%/wk";
 }
-function nutritionTrendCopy(t){
- if(!t||t.status!=="ready")return"Calibration is still learning. Log body weight on at least four days in each of two consecutive 7-day windows before the app uses weight trend as a fueling guardrail.";
- const pct=Math.abs(t.pct*100).toFixed(1);
- if(t.pct<=-.01)return"Your recent 7-day average is "+pct+"% below the preceding 7-day average. The app will not tighten intake; it adds recovery fuel and prioritizes training quality and recovery.";
- if(t.pct<=-.005)return"Your recent 7-day average is down "+pct+"%. This is within the app’s observation band; intake is not automatically reduced.";
- if(t.pct>=.005)return"Your recent 7-day average is up "+pct+"%. The app does not automatically cut calories from weight trend alone.";
- return"Your recent 7-day average is broadly stable versus the preceding week. The app does not automatically reduce intake from this signal.";
+function nutritionTrendCopy(t,w=prescriptionWeek()){
+ const phaseOne=w<=16;
+ if(!t||t.status!=="ready")return phaseOne?"Phase 1 prioritizes aggressive fat loss while retaining lean mass. The app waits for at least 10 weigh-ins spanning 12 or more days before using body weight to change fueling; once established, it only intervenes above 2.7 lb/week of loss.":"Body-weight calibration is still learning. The app waits for at least 10 weigh-ins spanning 12 or more days before using the 14-day trend as a fueling guardrail.";
+ const pct=Math.abs(t.pct*100).toFixed(1),loss=Math.max(0,Number(t.lossLbPerWeek)||0);
+ if(phaseOne){
+   if(loss>2.7)return"The established 14-day trend implies about "+loss.toFixed(1)+" lb/week of loss, above the Phase 1 guardrail. The app adds recovery fuel rather than pushing the deficit harder.";
+   if(loss>0)return"The established 14-day trend implies about "+loss.toFixed(1)+" lb/week of loss. Phase 1 intentionally prioritizes aggressive fat loss; body weight does not trigger a fueling increase unless the trend exceeds 2.7 lb/week.";
+   return"Phase 1 intentionally prioritizes aggressive fat loss. The established 14-day trend is not losing weight, so no weight-trend fueling increase is applied.";
+ }
+ if(t.pct<=-.01)return"The established 14-day trend implies a "+pct+"%/week decline. The normal post-Phase-1 recovery guardrail adds fuel rather than deepening the deficit.";
+ if(t.pct<=-.005)return"The established 14-day trend implies a "+pct+"%/week decline. This remains in the observation band; intake is not automatically reduced.";
+ if(t.pct>=.005)return"The established 14-day trend implies a "+pct+"%/week increase. The app does not automatically cut calories from weight trend alone.";
+ return"The established 14-day trend is broadly stable. The app does not automatically reduce intake from this signal.";
 }
 function nutritionPrescription(w,name,dec,referenceDate=new Date()){
  const base={...nutritionForWeek(w,name)},trend=weightTrend(referenceDate),out={...base,adjustment:null,trend};
- const rapidLoss=trend.status==="ready"&&trend.pct<=-.01;
+ const phaseOne=w<=16,lossLb=trend.status==="ready"?Math.max(0,Number(trend.lossLbPerWeek)||0):0;
+ const rapidLoss=trend.status==="ready"&&(phaseOne?lossLb>2.7:trend.pct<=-.01);
  if(dec?.c==="RED"||rapidLoss){
    out.cal+=200;out.carbs+=50;
-   const both=dec?.c==="RED"&&rapidLoss;
-   out.adjustment={level:"red",title:"Recovery fueling override",copy:both?"Fueling readiness is red and the 14-day body-weight trend is falling faster than the guardrail. Add energy and carbohydrate today; do not deepen the deficit until recovery and trend normalize.":rapidLoss?"The recent body-weight trend crossed the rapid-loss guardrail. Add energy and carbohydrate today; do not deepen the deficit from this signal.":"Yesterday’s intake was materially below target. Add energy and carbohydrate today and reassess the deficit before returning to aggressive restriction."};
+   const both=dec?.c==="RED"&&rapidLoss,phaseOneRapid=phaseOne&&rapidLoss;
+   out.adjustment={level:"red",title:"Recovery fueling override",copy:both?(phaseOneRapid?"Recorded under-fueling is red and the established Phase 1 trend exceeds 2.7 lb/week of loss. Add energy and carbohydrate today; do not deepen the deficit until the trend returns below the guardrail.":"Recorded under-fueling is red and the established 14-day trend is falling faster than the post-Phase-1 guardrail. Add energy and carbohydrate today; do not deepen the deficit until recovery and trend normalize."):rapidLoss?(phaseOneRapid?"The established Phase 1 trend exceeds 2.7 lb/week of loss. Add energy and carbohydrate today; do not deepen the deficit from this signal.":"The established 14-day trend crossed the post-Phase-1 rapid-loss guardrail. Add energy and carbohydrate today; do not deepen the deficit from this signal."):"Yesterday’s recorded intake was materially below target. Add energy and carbohydrate today and reassess the deficit before returning to aggressive restriction."};
  }else if(dec?.c==="YELLOW"){
-   out.adjustment={level:"yellow",title:"Carbohydrate timing emphasis",copy:"Fueling is somewhat below the preferred range. Keep daily intake near target, but place more of today’s carbohydrate before and after training."};
+   out.adjustment={level:"yellow",title:"Carbohydrate timing emphasis",copy:"Recorded fueling is somewhat below the preferred range. Keep daily intake near target, but place more of today’s carbohydrate before and after training."};
  }
  return out
 }
@@ -470,7 +481,7 @@ function renderNutrition(){
  const draft=nutritionDraft(log);
  $("hydrationTarget").textContent=hydr.label;$("hydrationCard").innerHTML='<strong>'+hydr.label+'</strong><p>'+hydr.note+'</p><label><span>Fluid consumed today</span><input id="waterActual" type="number" inputmode="decimal" placeholder="oz" value=""></label>';
  Object.entries(draft).forEach(([id,value])=>{$(id).value=value});
- const prev=previousNutritionSignal(),trendCopy=typeof nutritionTrendCopy==="function"?nutritionTrendCopy(target.trend):"";$("nutritionInfluence").innerHTML=(prev?'<strong>Yesterday’s fueling signal</strong><p>'+Math.round(prev.ratio*100)+'% of planned intake was recorded. '+(prev.ratio<.8?"Today’s readiness engine will treat this as a fueling caution when training load is high.":"No fueling penalty is currently indicated.")+'</p>':'<strong>How nutrition changes training</strong><p>Saved intake carries into tomorrow’s fueling status. Substantial under-fueling on a high-load day can downgrade the next prescription even when HRV looks favorable.</p>')+'<strong>Body-weight calibration</strong><p>'+trendCopy+'</p>';
+ const prev=previousNutritionSignal(),trendCopy=typeof nutritionTrendCopy==="function"?nutritionTrendCopy(target.trend,w):"";$("nutritionInfluence").innerHTML=(prev?'<strong>Yesterday’s fueling signal</strong><p>'+Math.round(prev.ratio*100)+'% of planned intake was recorded. '+(prev.ratio<.8?"Today’s readiness engine will treat this as a fueling caution when training load is high.":"No fueling penalty is currently indicated.")+'</p>':'<strong>How nutrition changes training</strong><p>Saved intake carries into tomorrow’s fueling status. Substantial under-fueling on a high-load day can downgrade the next prescription even when HRV looks favorable.</p>')+'<strong>Body-weight calibration</strong><p>'+trendCopy+'</p>';
  $("saveNutritionDay").textContent=log.saved?"✓ Intake saved":"Save Today’s Intake";
  ["actualCalories","actualProtein","actualCarbs","actualFat","waterActual"].forEach(id=>{const el=$(id);if(el)el.oninput=()=>{captureNutritionDraft();renderToday()}});
 }

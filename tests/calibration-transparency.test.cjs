@@ -15,10 +15,10 @@ test('weight trend headline distinguishes calibration from measured trend',()=>{
  assert.ok(start>=0&&end>start,'weight trend headline helper is present');
  const c=vm.createContext({});
  vm.runInContext(source.slice(start,end),c);
- assert.equal(c.weightTrendHeadline({status:'learning'},170),'170.0 lb · calibrating');
- assert.equal(c.weightTrendHeadline({status:'ready',pct:-.012},168),'168.0 lb · 7-day average down 1.2%');
- assert.equal(c.weightTrendHeadline({status:'ready',pct:.006},171),'171.0 lb · 7-day average up 0.6%');
- assert.equal(c.weightTrendHeadline({status:'ready',pct:0},170),'170.0 lb · 7-day average stable');
+ assert.equal(c.weightTrendHeadline({status:'learning'},170),'170.0 lb · calibrating 14-day trend');
+ assert.equal(c.weightTrendHeadline({status:'ready',pct:-.012},168),'168.0 lb · 14-day trend down 1.2%/wk');
+ assert.equal(c.weightTrendHeadline({status:'ready',pct:.006},171),'171.0 lb · 14-day trend up 0.6%/wk');
+ assert.equal(c.weightTrendHeadline({status:'ready',pct:0},170),'170.0 lb · 14-day trend stable');
  assert.equal(c.weightTrendHeadline(null,NaN),'No data');
 });
 
