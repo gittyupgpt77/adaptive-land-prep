@@ -566,6 +566,7 @@ jobs:
           await morning.reload();
           check('Greeting is immediately actionable',await morning.locator('#helloTitle').innerText()==='Hello.'&&await morning.locator('#hrv').isVisible());
           check('Yesterday values do not become today answers',await morning.locator('#hrv').inputValue()==='');
+          check('Greeting carries the Journey date and week', (await morning.locator('#helloDate').textContent()).length>8&&(await morning.locator('#helloJourney').textContent()).includes('of 56'));
           await morning.screenshot({path:'20-hello-morning.png'});
           await morning.locator('#morningContinue').click();
           check('Missing measurements keep athlete on the current step',await morning.locator('#helloTitle').innerText()==='Hello.'&&await morning.locator('#checkinError').isVisible());
@@ -580,7 +581,6 @@ jobs:
           check('Confirmed morning automatically reveals the session',await morning.locator('#dailyDirective').isVisible()&&!(await morning.locator('#morningWelcome').isVisible()));
           await morning.reload();
           check('Confirmed check-in survives reopening',await morning.locator('#dailyDirective').isVisible());
-          check('Greeting carries the Journey date and week', (await morning.locator('#helloDate').textContent()).length>8&&(await morning.locator('#helloJourney').textContent()).includes('of 56'));
           const nextMorning=await morning.evaluate(()=>Date.now()+86400000);
           await morning.clock.install({time:nextMorning});
           await morning.reload();
