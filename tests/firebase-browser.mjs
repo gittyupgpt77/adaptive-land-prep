@@ -24,7 +24,7 @@ async function device(){
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('dialog',dialog=>dialog.accept());
  await page.clock.install();return {context,page};
 }
-async function openPanel(page){await page.locator('[data-target="program"]').click();await page.locator('#openTrends').click();if(!await page.locator('#cloudPanel').evaluate(n=>n.open))await page.locator('#cloudPanel summary').click()}
+async function openPanel(page){await page.locator('[data-target="program"]').click();await page.locator('#openSettings').click();if(!await page.locator('#cloudPanel').evaluate(n=>n.open))await page.locator('#cloudPanel summary').click()}
 async function login(page,email=account.email){await page.locator('#cloudEmail').fill(email);await page.locator('#cloudPassword').fill(account.password);await page.locator('#cloudAuth button[type=submit]').click();await page.locator('#cloudSignedIn').waitFor({state:'visible'})}
 const saved=page=>page.waitForFunction(()=>document.getElementById('cloudStatus').textContent.includes('up to date'),null,{timeout:25000});
 try{

@@ -396,3 +396,5 @@ body{min-height:100dvh}
 
 /* Next-meal guidance stays above the full plan. */
 .nutrition-dashboard h2{font-size:28px;line-height:1.15;margin:12px 0}.nutrition-dashboard details{margin-top:16px}.nutrition-dashboard summary{min-height:44px;cursor:pointer;font-weight:600}.next-meal-details{display:block;min-height:44px;width:100%;background:none;border:0;color:var(--green);font:inherit}.meal-remainder{font-size:14px;line-height:1.6}
+
+#settings .data-details{background:#fff;color:var(--ink);font-size:15px}#settings .data-details summary{color:var(--ink);min-height:44px;font-size:16px;display:flex;align-items:center}#settings .data-row strong{font-size:14px}#settings .data-row small{font-size:13px;line-height:1.5}#settings button{min-height:44px}#settingsJourneyPosition{line-height:1.5}

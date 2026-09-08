@@ -448,7 +448,7 @@ jobs:
             localStorage.setItem('input_hrv','61');
           });
           const backupDownload=page.waitForEvent('download');
-          await page.locator('#openTrends').click();
+          await page.locator('#openSettings').click();
           await page.locator('.data-details:not(.cloud-panel) summary').click();
           await page.locator('#exportBackup').click();
           const downloaded=await backupDownload;
@@ -466,7 +466,7 @@ jobs:
 
           // Cloud is opt-in: opening auth never uploads or replaces athlete data.
           await page.locator('[data-target="program"]').click();
-          await page.locator('#openTrends').click();
+          await page.locator('#openSettings').click();
           const beforeCloud=await page.evaluate(()=>JSON.stringify(collectBackupData()));
           await page.locator('#cloudPanel summary').click();
           check('Private cloud account controls are visible',await visible('#cloudAuth'));

@@ -75,7 +75,7 @@
    el('cloudAccount').textContent=next?session.user.email||'Signed in':'';
    lastSaved=null;automatic.configure(next,boundOwner());status(next?(boundOwner()===next?'Automatic backup is enabled. Checking saved changes…':'Enable automatic backup to connect this device’s data to this account. You can also recover an existing backup.'):'Your entries stay on this device. Sign in to enable automatic private backups.');render();
   }
-  if(event==='PASSWORD_RECOVERY'){el('cloudNewPassword').classList.remove('hidden');panel.open=true;document.querySelector('[data-target="program"]').click();el('openTrends').click()}
+  if(event==='PASSWORD_RECOVERY'){el('cloudNewPassword').classList.remove('hidden');panel.open=true;switchTab('settings')}
  });
  el('cloudAuth').onsubmit=e=>{e.preventDefault();run(async()=>{
   const {error}=await client.auth.signInWithPassword({email:el('cloudEmail').value.trim(),password:el('cloudPassword').value});el('cloudPassword').value='';if(error)throw error;
@@ -96,6 +96,11 @@
   const {error}=await client.auth.updateUser({password:el('cloudReplacement').value});if(error)throw error;
   el('cloudReplacement').value='';el('cloudNewPassword').classList.add('hidden');status('Password updated. You can access your backups.');
  })};
+ el('cloudAccountReset').onclick=()=>run(async()=>{
+  const email=el('cloudAccount').textContent.trim();if(!owner||!email)return;
+  const id=owner,{error}=await client.auth.resetPasswordForEmail(email,{redirectTo:'https://gittyupgpt77.github.io/adaptive-land-prep/'});assertCurrent(id);if(error)throw error;
+  status('A password reset link has been sent to your account email. Your saved data is unchanged.');
+ });
  el('cloudSignout').onclick=()=>run(async()=>{const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;status('Signed out. On-device training data is still available on this device.');el('cloudNewPassword').classList.add('hidden')});
  el('cloudEnable').onclick=()=>run(async()=>{
   if(!owner)return;
@@ -110,6 +115,6 @@
  document.addEventListener('visibilitychange',()=>{if(!busy)checkBackup(true)});
  render();
  if(requested==='firebase'||requested==='legacy'){
-  document.querySelector('[data-target="program"]').click();el('openTrends').click();panel.open=true;
+  switchTab('settings');panel.open=true;
  }
 })();
