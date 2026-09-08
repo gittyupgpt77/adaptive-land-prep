@@ -1,0 +1,33 @@
+name: Fix Directive Audit Fixture
+permissions:
+  contents: write
+on:
+  push:
+    branches:
+      - feat/intent-driven-daily-flow
+jobs:
+  fix-audit:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove stale second-save click from permanent audit
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/workflows/ui-audit.yml')
+          s=p.read_text()
+          old="await page.locator('#evaluateBtn').click();await page.locator('#saveBtn').click();await page.waitForTimeout(60);"
+          new="await page.locator('#evaluateBtn').click();await page.waitForTimeout(60);"
+          if s.count(old)!=1: raise SystemExit(f'expected exactly one stale compound save, found {s.count(old)}')
+          s=s.replace(old,new,1)
+          if "page.locator('#saveBtn').click()" in s: raise SystemExit('another stale saveBtn click remains')
+          Path('generated-ui-audit-fixed.yml').write_text(s)
+          PY
+      - name: Push exact corrected audit export
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add generated-ui-audit-fixed.yml
+          git commit -m "Export corrected directive consumer audit"
+          git push origin HEAD:feat/intent-driven-daily-flow
