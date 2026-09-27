@@ -307,7 +307,11 @@ function saveWorkout(c){
  }
  const arr=workouts(),prescription=adaptiveSession(),entry={date:dayDate().toISOString(),recordedAt:new Date().toISOString(),week:prescriptionWeek(),session:prescription.title,prescription,rpe,duration:num("sessionDuration"),postPain,runMiles:num("sessionRunMiles"),ruckMiles:num("sessionRuckMiles"),rowMinutes:num("sessionRowMinutes"),packWeight:num("sessionPackWeight"),completed:status,exerciseSets:recordedExerciseSets(),note:val("sessionNote")};
  const existing=arr.findIndex(x=>dayKey(x.date)===todayKey());if(existing>=0)arr.splice(existing,1);arr.unshift(entry);
- localStorage.workoutHistory=JSON.stringify(arr);dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",entry.completed==="YES");
+ try{localStorage.workoutHistory=JSON.stringify(arr)}catch(error){
+  $("sessionFeedback").open=true;$("completionBanner").textContent="Your session could not be saved. Your entries are still here. Free some device storage and try again.";
+  $("completionBanner").classList.add("attention");$("completionBanner").classList.remove("hidden");return
+ }
+ dbSet("workoutHistory",localStorage.workoutHistory);setTask("workout",entry.completed==="YES");
  $("sessionFeedback").open=false;$("completionBanner").classList.remove("attention");
  $("completionBanner").textContent=status==="YES"?"Session complete ✓":status==="PARTIAL"?"Partial session saved":"Skipped session saved";
  $("completionBanner").classList.remove("hidden");setTimeout(()=>$("completionBanner").classList.add("hidden"),1600);renderAll();advanceDailyFlow()

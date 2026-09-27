@@ -1,5 +1,11 @@
 # Project state
 
+Latest verified production: `6891101d8ca2bd0e943892db446e295082494e61` (PR #23; exact-main Consumer Audit and Pages passed). Live synthetic browser walkthrough confirmed reduced numerical doses. Browser access is working again; earlier blocked-browser notes below are historical.
+
+Workout-recording milestone: set editing and one-tap repeat preserve actual units/work; edits and removals update an already-saved session as well as its draft, retaining completion status, pain, effort and prescription. Failed history writes roll the draft back. Session-save failures retain the current screen and show a persistent error. No automatic progression is introduced.
+
+Efficiency policy: batch related acceptance criteria into one coherent milestone PR; one focused test pass during implementation, then the required branch/main release gates. Do not ship each small UI adjustment separately. Prefer connector writes and compact machine-readable CI summaries; no browser code editing or repeated whole-repository discovery. Waiting for CI is not feature progress; avoid filling that time with unrelated work. The 68% rescue estimate is a rough checklist estimate, not measured completion or evidence of physiological safety.
+
 Reduced-dose correction: the existing yellow-day 30% reduction now resolves supported set/count and duration ranges into readable instructions (for example, 3 × 6–8 becomes 2 × 6–8). Repetitions, rest and load are not also multiplied. Weekly ceilings remain unchanged context, not invented daily prescriptions. Unsupported free-text doses remain explicitly unresolved. This is arithmetic implementation of the existing product heuristic, not a newly validated physiological threshold. GitHub connector writes are now available; use them instead of browser editing.
 
 Verified takeover production: c0fbf35ffaf3afc6150c1162811cb4c29ee6478a (PR #13), Consumer Audit and Pages successful; production app.js/index.html/styles.css/service-worker.js matched exactly.

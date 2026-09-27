@@ -4,6 +4,14 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../app.js'),'utf8');
 
+test('failed session persistence keeps feedback open and never advances the day',()=>{
+ const nodes={},storage={programStart:'2026-09-01'};let advanced=false;
+ Object.defineProperty(storage,'workoutHistory',{set(){throw Error('quota')}});
+ const ctx=vm.createContext({localStorage:storage,recordedExerciseSets:()=>[],dayDate:()=>new Date('2026-09-27'),workouts:()=>[],adaptiveSession:()=>({title:'Strength'}),prescriptionWeek:()=>1,num:()=>0,val:()=>'',advanceDailyFlow:()=>{advanced=true},$:id=>nodes[id]??={classList:{add(){},remove(){}}}});
+ vm.runInContext(source.slice(source.indexOf('function saveWorkout(c){'),source.indexOf('\nconst EXERCISE_DB_BASE=')),ctx);
+ ctx.saveWorkout('YES');assert.equal(advanced,false);assert.equal(nodes.sessionFeedback.open,true);assert.match(nodes.completionBanner.textContent,/could not be saved/);
+});
+
 test('session feedback restores saved partial details but preserves newer drafts and deliberate clearing',()=>{
  const nodes={},drafts=new Map(),rows=[{date:'today',rpe:7,postPain:0,duration:35,completed:'PARTIAL',note:'Stopped early'}];
  const context=vm.createContext({recordedExerciseSets:()=>[],dayDate:()=>new Date(),advanceDailyFlow:()=>{},$:id=>nodes[id]??={value:''},workouts:()=>rows,dayKey:x=>x,todayKey:()=> 'today',localStorage:{getItem:k=>drafts.get(k)??null}});
