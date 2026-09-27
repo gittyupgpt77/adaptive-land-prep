@@ -607,11 +607,19 @@ jobs:
           await morning.locator('[data-target="workout"]').click();
           const setPanel=morning.locator('.set-record').first();await setPanel.locator('summary').first().click();
           await setPanel.locator('.set-entry input').nth(0).fill('0');await setPanel.locator('.set-entry input').nth(1).fill('20');
-          await setPanel.locator('.set-entry button').click();
+          await setPanel.getByRole('button',{name:'Save set',exact:true}).click();
           check('Actual exercise work saves without re-entering the session',await setPanel.locator('.recorded-set').count()===1);
+          await setPanel.getByRole('button',{name:'Repeat last set',exact:true}).click();
+          check('Repeat last set preserves its actual units and work',await setPanel.locator('.recorded-set').count()===2&&await morning.evaluate(()=>recordedExerciseSets()[1].work===20));
+          await setPanel.locator('.recorded-set').first().getByRole('button',{name:/^Edit /}).click();
+          await setPanel.locator('.set-entry input').nth(1).fill('15');
+          await setPanel.getByRole('button',{name:'Save correction',exact:true}).click();
+          check('Editing changes one set rather than adding another',await morning.evaluate(()=>{const r=recordedExerciseSets();return r.length===2&&r[0].work===15&&r[1].work===20}));
+          await setPanel.locator('.recorded-set').last().getByRole('button',{name:/^Remove /}).click();
+          await morning.screenshot({path:'21-set-corrections.png'});
           await morning.reload();
           check('Confirmed check-in survives reopening',await morning.locator('#dailyDirective').isVisible());
-          check('Exercise work survives reopening',await morning.evaluate(()=>recordedExerciseSets().length===1));
+          check('Exercise correction survives reopening',await morning.evaluate(()=>recordedExerciseSets().length===1&&recordedExerciseSets()[0].work===15));
           const nextMorning=await morning.evaluate(()=>Date.now()+86400000);
           await morning.clock.install({time:nextMorning});
           await morning.reload();
@@ -649,6 +657,7 @@ jobs:
             consumer-report.json
             audit-cloud/
             20-hello-morning.png
+            21-set-corrections.png
             01-fresh-today.png
             02-started-today.png
             03-readiness-detail.png

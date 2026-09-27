@@ -8,7 +8,17 @@ function recordedExerciseSets(){
 }
 function saveExerciseSets(rows){
  if(!validExerciseSets(rows))throw new Error('Invalid sets');
- localStorage.setItem(exerciseSetKey(),JSON.stringify(rows));
+ const key=exerciseSetKey(),oldDraft=localStorage.getItem(key),history=workouts();
+ const index=history.findIndex(w=>dayKey(w.date)===dayKey(dayDate()));
+ // Completed/partial/skipped status and feedback are unchanged by a set correction.
+ // Keep the draft and the saved session consistent, rolling back if history cannot save.
+ localStorage.setItem(key,JSON.stringify(rows));
+ if(index>=0){
+  history[index]={...history[index],exerciseSets:rows};
+  try{localStorage.setItem('workoutHistory',JSON.stringify(history))}
+  catch(error){if(oldDraft===null)localStorage.removeItem(key);else localStorage.setItem(key,oldDraft);throw error}
+  if(typeof dbSet==='function')dbSet('workoutHistory',localStorage.getItem('workoutHistory'));
+ }
 }
 function exerciseMeasure(e){return /sec/.test(e.dose)?'seconds':/\bm\b|meters/.test(e.dose)?'meters':'reps'}
 function priorExerciseSets(name){
@@ -41,7 +51,7 @@ function renderTrainingRecords(steps){
  const eligible=steps.filter(e=>['Strength','Bodyweight','Core','Durability','Carry'].includes(e.type)&&!/^Mobility/.test(e.name));
  if(!eligible.length)return;
  const title=document.createElement('h3');title.textContent='Record your sets';host.append(title);
- const help=document.createElement('p');help.textContent='Record actual work. Use 0 for bodyweight; for dumbbells enter the weight of one dumbbell consistently. Entries save on this device as you add them and join your session when you save it.';host.append(help);
+ const help=document.createElement('p');help.textContent='Record actual work. Use 0 for bodyweight; for dumbbells enter the weight of one dumbbell consistently. Sets save as you go. Corrections also update an already-saved session.';host.append(help);
  eligible.forEach(e=>{
   const details=document.createElement('details');details.className='set-record';
   const summary=document.createElement('summary');summary.textContent=e.name;details.append(summary);
@@ -49,17 +59,26 @@ function renderTrainingRecords(steps){
   const prior=priorExerciseSets(e.name);
   if(prior.length){const history=document.createElement('details');const heading=document.createElement('summary');heading.textContent='Previous sessions';history.append(heading);prior.forEach(w=>{const p=document.createElement('p');p.textContent=new Date(w.date).toLocaleDateString()+': '+w.rows.map(setDescription).join(' · ');history.append(p)});details.append(history)}
   const list=document.createElement('div');details.append(list);
-  const paint=()=>{list.replaceChildren();recordedExerciseSets().forEach((r,i)=>{if(r.name!==e.name)return;const row=document.createElement('div');row.className='recorded-set';const span=document.createElement('span');span.textContent=setDescription(r);const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+e.name+' set '+(i+1));remove.onclick=()=>{try{saveExerciseSets(recordedExerciseSets().filter((_,index)=>index!==i));paint()}catch(error){errorText.textContent='Could not save. Your previous sets remain.'}};row.append(span,remove);list.append(row)})};
+  let editing=null;
+  const paint=()=>{list.replaceChildren();let count=0;recordedExerciseSets().forEach((r,i)=>{if(r.name!==e.name)return;count++;const row=document.createElement('div');row.className='recorded-set';const span=document.createElement('span');span.textContent=count+'. '+setDescription(r);
+   const actions=document.createElement('div');actions.className='set-actions';
+   const edit=document.createElement('button');edit.type='button';edit.textContent='Edit';edit.setAttribute('aria-label','Edit '+e.name+' set '+count);edit.onclick=()=>{editing=i;load.value=r.load;unit.value=r.unit;work.value=r.work;add.textContent='Save correction';cancel.hidden=false;errorText.textContent='Editing set '+row.querySelector('span').textContent;load.focus()};
+   const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+e.name+' set '+count);remove.onclick=()=>{try{saveExerciseSets(recordedExerciseSets().filter((_,index)=>index!==i));resetEdit();errorText.textContent='Set removed.';paint()}catch(error){errorText.textContent='Could not save. Your previous sets remain.'}};
+   actions.append(edit,remove);row.append(span,actions);list.append(row)});summary.textContent=e.name+(count?' · '+count+' saved':'');repeat.hidden=count===0;};
   const form=document.createElement('form');form.className='set-entry';
   const load=document.createElement('input');load.type='number';load.min='0';load.max='2000';load.step='.1';load.inputMode='decimal';load.required=true;
   const unit=document.createElement('select');['lb','kg'].forEach(u=>{const option=document.createElement('option');option.value=u;option.textContent=u;unit.append(option)});unit.setAttribute('aria-label','Load unit');
   const work=document.createElement('input');work.type='number';work.min='1';work.max='10000';work.step='1';work.inputMode='numeric';work.required=true;
   const label=(text,input)=>{const l=document.createElement('label');const span=document.createElement('span');span.textContent=text;l.append(span,input);return l};
   const add=document.createElement('button');add.type='submit';add.textContent='Save set';
+  const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cancel edit';cancel.hidden=true;cancel.className='set-secondary';
+  const resetEdit=()=>{editing=null;add.textContent='Save set';cancel.hidden=true};cancel.onclick=()=>{resetEdit();errorText.textContent='Correction cancelled. Saved sets are unchanged.'};
+  const repeat=document.createElement('button');repeat.type='button';repeat.textContent='Repeat last set';repeat.className='set-secondary';
+  repeat.onclick=()=>{const rows=recordedExerciseSets(),last=rows.filter(r=>r.name===e.name).at(-1);if(!last)return;try{saveExerciseSets([...rows,{...last}]);resetEdit();errorText.textContent='Repeated set saved.';paint()}catch(error){errorText.textContent='Could not save. Your previous sets remain.'}};
   const errorText=document.createElement('p');errorText.setAttribute('role','status');
   const last=recordedExerciseSets().filter(r=>r.name===e.name).at(-1)||prior[0]?.rows.at(-1);if(last){load.value=last.load;unit.value=last.unit;work.value=last.work}
-  form.append(label('Load',load),label('Unit',unit),label(exerciseMeasure(e),work),add);
-  form.onsubmit=event=>{event.preventDefault();const row={name:e.name,load:Number(load.value),unit:unit.value,work:Number(work.value),measure:exerciseMeasure(e)};try{saveExerciseSets([...recordedExerciseSets(),row]);errorText.textContent='Set saved.';paint()}catch(error){errorText.textContent='Could not save this set. Check the values and available storage.'}};
+  form.append(label('Load',load),label('Unit',unit),label(exerciseMeasure(e),work),add,cancel,repeat);
+  form.onsubmit=event=>{event.preventDefault();const rows=recordedExerciseSets(),old=editing===null?null:rows[editing];const row={name:e.name,load:Number(load.value),unit:unit.value,work:Number(work.value),measure:old?.measure||exerciseMeasure(e)};try{if(editing===null)rows.push(row);else{if(old?.name!==e.name)throw Error('Set changed');rows[editing]=row}saveExerciseSets(rows);errorText.textContent=editing===null?'Set saved.':'Correction saved.';resetEdit();paint()}catch(error){errorText.textContent='Could not save this set. Check the values and available storage.'}};
   details.append(form,errorText);host.append(details);paint();
  });
 }
