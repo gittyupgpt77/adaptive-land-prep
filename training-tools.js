@@ -14,7 +14,28 @@ function exerciseMeasure(e){return /sec/.test(e.dose)?'seconds':/\bm\b|meters/.t
 function priorExerciseSets(name){
  return workouts().filter(w=>w.completed!=='NO'&&dayKey(w.date)!==dayKey(dayDate())&&new Date(w.date)<dayDate()&&validExerciseSets(w.exerciseSets||[])).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(w=>({date:w.date,rows:(w.exerciseSets||[]).filter(r=>r.name===name)})).filter(w=>w.rows.length).slice(0,6);
 }
-function setDescription(r){return r.load+' '+r.unit+' × '+r.work+' '+r.measure}
+function setDescription(r){return (r.load===0?'Bodyweight':r.load+' '+r.unit)+' × '+r.work+' '+r.measure}
+function trainingHistoryRows(limit=8){
+ const grouped=new Map();
+ workouts().filter(w=>w.completed!=='NO'&&Array.isArray(w.exerciseSets)&&w.exerciseSets.length&&validExerciseSets(w.exerciseSets)).sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(w=>{
+  const session=new Map();
+  w.exerciseSets.forEach(row=>{if(!session.has(row.name))session.set(row.name,[]);session.get(row.name).push(row)});
+  for(const [name,rows] of session){if(!grouped.has(name))grouped.set(name,[]);grouped.get(name).push({date:w.date,rows})}
+ });
+ return [...grouped].map(([name,sessions])=>({name,sessions:sessions.slice(0,6)})).sort((a,b)=>new Date(b.sessions[0].date)-new Date(a.sessions[0].date)).slice(0,limit);
+}
+function renderTrainingTrends(){
+ const host=$('trainingTrendList');if(!host)return;host.replaceChildren();
+ const movements=trainingHistoryRows();
+ if(!movements.length){const empty=document.createElement('div');empty.className='training-trend-empty';empty.textContent='Saved sets will appear here after your first strength, bodyweight, carry or durability session.';host.append(empty);return}
+ const note=document.createElement('p');note.className='training-trend-note';note.textContent='Recorded work only. These comparisons do not estimate muscle gain and never increase your load automatically.';host.append(note);
+ movements.forEach(item=>{
+  const card=document.createElement('div');card.className='training-trend-card';
+  const head=document.createElement('div'),title=document.createElement('strong'),count=document.createElement('small');title.textContent=item.name;count.textContent=item.sessions.length+' recorded session'+(item.sessions.length===1?'':'s');head.append(title,count);card.append(head);
+  item.sessions.slice(0,2).forEach((session,index)=>{const row=document.createElement('p'),label=document.createElement('b'),text=document.createElement('span');label.textContent=index===0?'Latest':'Previous';text.textContent=new Date(session.date).toLocaleDateString()+' · '+session.rows.map(setDescription).join(' · ');row.append(label,text);card.append(row)});
+  host.append(card);
+ });
+}
 function renderTrainingRecords(steps){
  const host=$('trainingRecords');if(!host)return;host.replaceChildren();
  const eligible=steps.filter(e=>['Strength','Bodyweight','Core','Durability','Carry'].includes(e.type)&&!/^Mobility/.test(e.name));
