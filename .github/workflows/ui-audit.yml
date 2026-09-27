@@ -159,7 +159,13 @@ jobs:
           check('Saved yellow state surfaces adaptation explanation',(await page.locator('#directiveReason').innerText()).length>8&&(await page.locator('#directiveState').innerText()).trim()==='ADJUST');
           await page.locator('[data-target="workout"]').click();
           check('Saved yellow state changes session title',/Modified|Recovery/i.test((await page.locator('#workoutTitle').innerText())));
-          check('Saved yellow state changes actual prescription',(await page.locator('#workoutPrescription').innerText()).includes('70%')||(await page.locator('#workoutPrescription').innerText()).includes('Easy aerobic substitute'));
+          const plannedSteps=await page.evaluate(()=>makeSession(sessionName(),prescriptionWeek()).steps);
+          const renderedPrescription=await page.locator('#workoutPrescription').innerText();
+          const reducedSteps=await page.evaluate(()=>adaptiveSession().steps);
+          check('Saved yellow state changes actual prescription',reducedSteps.some((step,i)=>
+            step.name==='Easy aerobic substitute'||
+            (Number.parseInt(step.dose)<Number.parseInt(plannedSteps[i].dose)&&renderedPrescription.includes(step.dose))
+          )&&!renderedPrescription.includes('70%'));
           await page.locator('[data-target="today"]').click();
 
           // Saved intake must be judged against its original prescription, including zero.
