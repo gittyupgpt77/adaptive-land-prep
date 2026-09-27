@@ -448,3 +448,48 @@ body{min-height:100dvh}
 
 @media(max-width:370px){.tap-scale.choices{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .recorded-set>span{min-width:0;overflow-wrap:anywhere}.set-actions{display:flex;flex-shrink:0;gap:4px}.set-actions button{min-width:44px}.set-entry>button.set-secondary{background:#edf4fa;color:#1768bb}.set-entry>button[hidden]{display:none}
+
+/* Meal corrections share the daily flow's calm, readable surface. */
+.meal-correction{display:grid;gap:14px;padding-bottom:16px}
+.meal-correction label{display:grid;gap:6px;font-size:15px;font-weight:600}
+.meal-correction input,.meal-correction select{width:100%;box-sizing:border-box;min-height:48px;padding:12px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#172b3b;font:inherit}
+.meal-correction p{font-size:14px;line-height:1.5;color:#46586a}
+.meal-correction [hidden]{display:none}
+.meal-correction #mealCorrectionError{color:#a52b26}
+.meal-correction button{min-height:48px}
+.meal-entry-label{font-size:13px!important;line-height:1.5;margin:8px 0 0;color:#275940!important}
+.meal-card{background:#fff;color:#172b3b;border:1px solid #dce4eb;box-shadow:none}
+.meal-card.done{border-color:#9bc4aa}
+.meal-main{color:#172b3b;padding:14px 14px 14px 4px}
+.meal-main strong{font-size:16px}.meal-main small{font-size:11px;color:#486580}
+.meal-main span{font-size:14px;line-height:1.5;color:#526476}
+.meal-check{min-height:48px;color:#627589}.meal-card.done .meal-check{color:#267348}
+.actual-intake summary{min-height:44px;align-content:center;font-size:16px;font-weight:600;cursor:pointer}
+
+.food-entry,.meal-correction fieldset{border:1px solid #dce4eb;border-radius:14px;padding:12px;min-width:0;margin:0 0 12px;display:grid;gap:10px}
+.food-entry legend,.meal-correction legend{font-size:14px;font-weight:600;color:#486580}
+#foodMealRows{display:grid;gap:10px}#foodMealTotal{font-size:17px;font-weight:600;color:#172b3b}
+#foodMealNutrients ul{padding-left:20px;font-size:14px;line-height:1.7}
+#nutritionProfile>p{line-height:1.5;font-size:14px;color:#46586a}
+
+.strength-next-step{padding:12px;border-radius:12px;background:#eef4f8;color:#243f53;font-size:15px;line-height:1.5}
+.nutrient-coverage{padding:16px;background:#fff;border:1px solid #dce4eb;border-radius:16px;margin:12px 0}
+.nutrient-coverage summary{min-height:44px;font-weight:600;align-content:center;cursor:pointer}
+.nutrient-coverage p{font-size:14px;line-height:1.5;color:#46586a}
+.nutrient-table{overflow-x:auto}.nutrient-table table{border-collapse:collapse;width:100%;font-size:13px;text-align:left}
+.nutrient-table th,.nutrient-table td{padding:10px 8px;border-bottom:1px solid #e5ebf0}.nutrient-table th{text-transform:capitalize}
+
+/* Legible morning and food guidance on the light consumer surface. */
+#morningWelcome .hello-date,#helloCopy,#helloJourney{color:#526476}
+#morningWelcome .hello-date{font-size:12px;letter-spacing:.05em}
+.inline-checkin .field{background:#fff;border-color:#dce4eb}
+.inline-checkin .field>span{font-size:14px;color:#526476}
+.inline-checkin .field input{color:#172633}
+.inline-checkin .field input::placeholder{color:#687887;opacity:1}
+.nutrition-adjustment strong{font-size:15px}.nutrition-adjustment span{font-size:14px;line-height:1.5}
+.nutrition-adjustment.red{color:#913434;background:#fff3f3;border-color:#efcccc}
+.nutrition-adjustment.yellow{color:#765014;background:#fff8e9;border-color:#ead9b0}
+.meal-detail>small{font-size:12px;color:#526476}
+.meal-detail>div{background:#f3f6f9;padding:12px;grid-template-columns:28px 1fr}
+.meal-detail span{font-size:16px;line-height:1.5;color:#253b4c}
+.meal-detail b{font-size:12px;color:#1768bb}

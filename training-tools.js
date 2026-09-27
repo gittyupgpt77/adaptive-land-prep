@@ -25,6 +25,31 @@ function priorExerciseSets(name){
  return workouts().filter(w=>w.completed!=='NO'&&dayKey(w.date)!==dayKey(dayDate())&&new Date(w.date)<dayDate()&&validExerciseSets(w.exerciseSets||[])).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(w=>({date:w.date,rows:(w.exerciseSets||[]).filter(r=>r.name===name)})).filter(w=>w.rows.length).slice(0,6);
 }
 function setDescription(r){return (r.load===0?'Bodyweight':r.load+' '+r.unit)+' × '+r.work+' '+r.measure}
+function strengthNextStep(exercise,history,today,readiness){
+ const dose=/^(\d+)\s*[×x]\s*(\d+)(?:[–-](\d+))?(?:\s*reps)?$/i.exec(exercise.dose||'');
+ if(exercise.type!=='Strength'||!dose)return null;
+ const count=Number(dose[1]),low=Number(dose[2]),high=Number(dose[3]||dose[2]);
+ if(readiness!=='GREEN')return 'Use today’s adjusted prescription. Do not increase load on a modified day.';
+ const sessions=history.filter(w=>new Date(w.date)<today&&w.exerciseSets?.some(r=>r.name===exercise.name)).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,2);
+ if(!sessions.length)return 'Choose a manageable load for the prescribed repetitions and record each set. Keep the movement controlled; this is your starting reference.';
+ const latest=sessions[0],rows=latest.exerciseSets.filter(r=>r.name===exercise.name);
+ if(!validExerciseSets(rows)||rows.some(r=>r.measure!=='reps')||latest.completed!=='YES'||latest.postPain!==0)
+  return 'Your last record does not establish a pain-free completed session. Follow today’s prescription without increasing load.';
+ const load=rows[0].load,unit=rows[0].unit;
+ if(rows.length!==count||rows.some(r=>r.load!==load||r.unit!==unit))return 'Keep today’s prescribed sets and repetitions. The previous work used a different set count or mixed loads, so it is not a like-for-like progression reference.';
+ const oldDose=latest.prescription?.steps?.find(e=>e.name===exercise.name)?.dose;
+ const age=(today-new Date(latest.date))/86400000;
+ if(oldDose!==exercise.dose||age>21)return 'Re-establish the prescribed sets with a manageable load. The last comparable prescription is missing, changed, or more than three weeks old.';
+ const prefix=load===0?'At bodyweight':'At '+load+' '+unit;
+ if(rows.some(r=>r.work<low))return prefix+', repeat the prescribed range without increasing load. Reduce load if needed to complete controlled repetitions.';
+ if(rows.some(r=>r.work<high))return prefix+', work toward '+high+' controlled repetitions per set, staying inside today’s prescribed range.';
+ const cleanTwice=sessions.length===2&&sessions.every(w=>{
+  const r=w.exerciseSets.filter(x=>x.name===exercise.name);
+  return w.completed==='YES'&&w.postPain===0&&(today-new Date(w.date))/86400000<=21&&w.prescription?.steps?.find(e=>e.name===exercise.name)?.dose===exercise.dose&&
+   validExerciseSets(r)&&r.length===count&&r.every(x=>x.measure==='reps'&&x.unit===unit&&x.load===load&&x.work>=high);
+ });
+ return prefix+', repeat '+high+' controlled repetitions per set. '+(cleanTwice?'You have reached the top of this range in two completed, pain-free sessions. Consider a small load increase only if technique and recovery remain good; the app has not raised the load.':'Build another comparable, pain-free session before considering more load.');
+}
 function trainingHistoryRows(limit=8){
  const grouped=new Map();
  workouts().filter(w=>w.completed!=='NO'&&Array.isArray(w.exerciseSets)&&w.exerciseSets.length&&validExerciseSets(w.exerciseSets)).sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(w=>{
@@ -56,6 +81,8 @@ function renderTrainingRecords(steps){
   const details=document.createElement('details');details.className='set-record';
   const summary=document.createElement('summary');summary.textContent=e.name;details.append(summary);
   const instruction=document.createElement('p');instruction.textContent=e.dose+' · Rest '+e.rest;details.append(instruction);
+  const nextStep=strengthNextStep(e,workouts(),dayDate(),typeof savedDecision==='function'?savedDecision()?.o:null);
+  if(nextStep){const guidance=document.createElement('p');guidance.className='strength-next-step';guidance.textContent=nextStep;details.append(guidance)}
   const prior=priorExerciseSets(e.name);
   if(prior.length){const history=document.createElement('details');const heading=document.createElement('summary');heading.textContent='Previous sessions';history.append(heading);prior.forEach(w=>{const p=document.createElement('p');p.textContent=new Date(w.date).toLocaleDateString()+': '+w.rows.map(setDescription).join(' · ');history.append(p)});details.append(history)}
   const list=document.createElement('div');details.append(list);

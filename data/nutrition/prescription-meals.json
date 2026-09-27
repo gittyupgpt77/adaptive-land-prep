@@ -1,0 +1,213 @@
+{
+  "status": "Calculated meal plans; target policy remains separate",
+  "meals": [
+    {
+      "id": "m1",
+      "name": "Eggs, oats and milk",
+      "ingredients": [
+        {
+          "foodId": "egg",
+          "grams": 100
+        },
+        {
+          "foodId": "eggWhite",
+          "grams": 100,
+          "portion": {
+            "minGrams": 50,
+            "maxGrams": 250,
+            "stepGrams": 10
+          }
+        },
+        {
+          "foodId": "oats",
+          "grams": 15,
+          "portion": {
+            "minGrams": 10,
+            "maxGrams": 100,
+            "stepGrams": 5
+          }
+        },
+        {
+          "foodId": "milk",
+          "grams": 250
+        },
+        {
+          "foodId": "chia",
+          "grams": 5
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "name": "Chicken, lentils and vegetables",
+      "ingredients": [
+        {
+          "foodId": "chicken",
+          "grams": 130,
+          "portion": {
+            "minGrams": 80,
+            "maxGrams": 220,
+            "stepGrams": 10
+          }
+        },
+        {
+          "foodId": "lentils",
+          "grams": 100,
+          "portion": {
+            "minGrams": 50,
+            "maxGrams": 200,
+            "stepGrams": 10
+          }
+        },
+        {
+          "foodId": "kale",
+          "grams": 75
+        },
+        {
+          "foodId": "pepper",
+          "grams": 100
+        },
+        {
+          "foodId": "oliveOil",
+          "grams": 1,
+          "portion": {
+            "minGrams": 0.5,
+            "maxGrams": 20,
+            "stepGrams": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "id": "m3",
+      "name": "Yogurt, vanilla whey and berries",
+      "ingredients": [
+        {
+          "foodId": "yogurt",
+          "grams": 250
+        },
+        {
+          "foodId": "wheyVanilla",
+          "grams": 36
+        },
+        {
+          "foodId": "blueberry",
+          "grams": 50
+        },
+        {
+          "foodId": "sunflower",
+          "grams": 25
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "name": "Sirloin, potato and greens",
+      "ingredients": [
+        {
+          "foodId": "beef",
+          "grams": 130,
+          "portion": {
+            "minGrams": 80,
+            "maxGrams": 200,
+            "stepGrams": 10
+          }
+        },
+        {
+          "foodId": "potato",
+          "grams": 50,
+          "portion": {
+            "minGrams": 25,
+            "maxGrams": 400,
+            "stepGrams": 25
+          }
+        },
+        {
+          "foodId": "spinach",
+          "grams": 100
+        },
+        {
+          "foodId": "mushroom",
+          "grams": 100
+        },
+        {
+          "foodId": "oliveOil",
+          "grams": 1,
+          "portion": {
+            "minGrams": 0.5,
+            "maxGrams": 20,
+            "stepGrams": 0.5
+          }
+        }
+      ]
+    }
+  ],
+  "extraFuel": [
+    {
+      "id": "m5",
+      "name": "After-training fuel",
+      "ingredients": [
+        {
+          "foodId": "bread",
+          "grams": 60,
+          "portion": {
+            "minGrams": 30,
+            "maxGrams": 150,
+            "stepGrams": 5
+          }
+        },
+        {
+          "foodId": "banana",
+          "grams": 100,
+          "portion": {
+            "minGrams": 50,
+            "maxGrams": 250,
+            "stepGrams": 10
+          }
+        },
+        {
+          "foodId": "rice",
+          "grams": 100,
+          "portion": {
+            "minGrams": 50,
+            "maxGrams": 300,
+            "stepGrams": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "m6",
+      "name": "Additional fuel",
+      "ingredients": [
+        {
+          "foodId": "bread",
+          "grams": 60,
+          "portion": {
+            "minGrams": 30,
+            "maxGrams": 150,
+            "stepGrams": 5
+          }
+        },
+        {
+          "foodId": "banana",
+          "grams": 100,
+          "portion": {
+            "minGrams": 50,
+            "maxGrams": 250,
+            "stepGrams": 10
+          }
+        },
+        {
+          "foodId": "rice",
+          "grams": 100,
+          "portion": {
+            "minGrams": 50,
+            "maxGrams": 300,
+            "stepGrams": 10
+          }
+        }
+      ]
+    }
+  ]
+}

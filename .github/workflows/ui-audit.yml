@@ -13,6 +13,8 @@ on:
       - 'styles.css'
       - 'app.js'
       - 'training-tools.js'
+      - 'nutrition-*.js'
+      - 'data/nutrition/**'
       - 'cloud*.js'
       - 'autosave-core.js'
       - 'firestore*'
@@ -247,9 +249,9 @@ jobs:
           check('Workout response persists',await page.evaluate(()=>{const w=JSON.parse(localStorage.workoutHistory||'[]')[0];return w?.rpe===9&&w?.postPain===4&&w?.completed==='YES';}));
           check('Workout task completes only from saved session',await page.locator('#taskWorkout').evaluate(n=>n.classList.contains('done')));
           await page.locator('[data-target="nutrition"]').click();
-          await page.locator('#nutritionToday summary').click();
+          await page.getByText('Daily targets & timing',{exact:true}).click();
           check('Red fueling signal raises today nutrition target',(await page.locator('#nutritionToday').innerText()).includes('1,650'));
-          check('Red fueling signal adds remaining food after breakfast',(await page.locator('#nutritionMeals').innerText()).includes('Remaining fuel')&&await page.evaluate(()=>todayMealPlan().reduce((sum,m)=>sum+m.kcal,0)===todayNutritionPrescription().cal));
+          check('Red fueling signal adds remaining food after breakfast',await page.evaluate(()=>{const meals=todayMealPlan(),target=todayNutritionPrescription();return target.adjustment?.level==='red'&&Math.abs(meals.reduce((sum,m)=>sum+m.kcal,0)-target.cal)<target.cal*.05&&meals.every(m=>m.nutrients)}));
           await page.locator('[data-target="today"]').click();
 
           // Today state machine: one next action at a time, tabs remain escape hatches.
@@ -413,6 +415,7 @@ jobs:
           check('Final meal advances to the day summary',await visible('#today'));
           await page.locator('[data-target="nutrition"]').click();
           await page.locator('#waterActual').fill('120');
+          await page.locator('details:has(#actualCalories) > summary').click();
           await page.locator('#actualCalories').fill('1525');
           await page.locator('#actualProtein').fill('181');
           await page.locator('#actualCarbs').fill('112');
@@ -428,7 +431,7 @@ jobs:
           check('Nutrition save returns athlete to Today',await visible('#today'));
           await page.locator('[data-target="nutrition"]').click();
           check('Nutrition save persists',await page.evaluate(()=>getNutritionLog().saved===true));
-          check('Actual intake persists exactly',await page.evaluate(()=>{const n=JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}');return n.actualCalories===1525&&n.actualProtein===181&&n.actualCarbs===112&&n.actualFat===42;}));
+          check('Actual intake persists exactly',await page.evaluate(()=>{const n=getNutritionLog();return n.actualCalories===1525&&n.actualProtein===181&&n.actualCarbs===112&&n.actualFat===42;}));
           await page.locator('#waterActual').fill('121');
           check('Editing saved intake immediately clears its saved label',!(await page.locator('#saveNutritionDay').innerText()).includes('✓'));
           check('Editing saved intake immediately clears Today completion',await page.locator('#taskNutrition').evaluate(n=>!n.classList.contains('done')));
@@ -439,13 +442,13 @@ jobs:
           if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           await page.locator('[data-target="nutrition"]').click();
-          check('Meal confirmations preserve targets without inventing actual macros',await page.evaluate(()=>{const n=JSON.parse(localStorage.getItem('nutrition_'+new Date().toDateString())||'{}');return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein===null&&n.actualCarbs===null&&n.actualFat===null&&n.targetProtein>0;}));
+          check('Meal confirmations use source-backed actual macros and retain targets',await page.evaluate(()=>{const n=getNutritionLog();return n.saved&&n.intakeSource==='prescribed-meals'&&n.actualProtein>0&&n.actualCarbs>0&&n.actualFat>0&&n.targetProtein>0;}));
           check('Inferred totals never populate deviation fields',(await page.locator('#actualCalories').inputValue())===''&&(await page.locator('#actualProtein').inputValue())==='');
           await page.locator('.meal-check').first().click();
           if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
           await page.locator('[data-target="nutrition"]').click();
-          check('Partial meals recompute intake without stale full-plan overrides',await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();return n.intakeSource==='prescribed-meals'&&n.actualCalories===meals.filter(m=>n.meals.includes(m.id)).reduce((sum,m)=>sum+m.kcal,0)&&n.actualProtein===null;}));
+          check('Partial meals recompute intake without stale full-plan overrides',await page.evaluate(()=>{const n=getNutritionLog(),meals=todayMealPlan();return n.intakeSource==='prescribed-meals'&&n.actualCalories===meals.filter(m=>n.meals.includes(m.id)).reduce((sum,m)=>sum+m.kcal,0)&&n.actualProtein>0;}));
           await page.locator('.meal-check').first().click();
           if(!(await visible('#nutrition')))await page.locator('[data-target="nutrition"]').click();
           await page.locator('#saveNutritionDay').click();
@@ -635,6 +638,24 @@ jobs:
           check('Only a later opening after closure starts morning metrics',await morning.locator('#morningWelcome').isVisible()&&await morning.locator('#hrv').inputValue()==='');
           await morning.locator('[data-target="program"]').click();await morning.locator('#openSettings').click();
           await morning.close();
+          await page.evaluate(()=>{localStorage.clear();localStorage.programStart=new Date().toISOString()});
+          await page.reload({waitUntil:'networkidle'});
+          await page.evaluate(()=>switchTab('settings'));
+          await page.locator('#nutritionProfile > summary').click();
+          await page.locator('#compositionWeight').fill('190');await page.locator('#compositionFat').fill('25');await page.locator('#rmrKcal').fill('1800');
+          await page.locator('#nutritionProfileForm button[type=submit]').click();
+          check('Private measurements save through Settings',await page.evaluate(()=>NutritionProfile.valid(JSON.parse(localStorage.athleteNutritionProfile))));
+          await page.evaluate(()=>switchTab('nutrition'));
+          await page.locator('.meal-main').first().click();await page.locator('#changeMeal').click();await page.locator('#chooseMealFoods').click();
+          check('Editing a prescribed meal starts with its exact foods',await page.locator('[data-grams]').count()>0);
+          await page.locator('[data-grams]').first().fill('110');await page.locator('#foodMealForm button[type=submit]').click();
+          check('Weighed-food correction saves a calculated receipt',await page.evaluate(()=>getNutritionLog().mealEntries?.[0]?.kind==='ingredients'&&getNutritionLog().actualProtein>0));
+          const receipt=await page.evaluate(()=>JSON.stringify(getNutritionLog().mealEntries[0]));
+          await page.reload({waitUntil:'networkidle'});
+          check('Calculated receipt survives reopening',await page.evaluate(expected=>JSON.stringify(getNutritionLog().mealEntries[0])===expected,receipt));
+          check('New nutrition records pass the real restore validator',await page.evaluate(()=>!!validateBackup({app:'Adaptive Land Prep',formatVersion:3,data:collectBackupData()})));
+          await page.evaluate(()=>switchTab('nutrition'));await shot('22-calculated-nutrition');
+          check('Nutrition stays within the iPhone width',await page.evaluate(()=>document.documentElement.scrollWidth<=393));
           check('No runtime errors',report.errors.length===0,JSON.stringify(report.errors));
           const failed=report.assertions.filter(x=>!x.pass);
           report.summary={total:report.assertions.length,passed:report.assertions.length-failed.length,failed:failed.length,runtimeErrors:report.errors.length};
@@ -658,6 +679,7 @@ jobs:
             audit-cloud/
             20-hello-morning.png
             21-set-corrections.png
+            22-calculated-nutrition.png
             01-fresh-today.png
             02-started-today.png
             03-readiness-detail.png

@@ -2,10 +2,12 @@
 
 Existing iPhone-first 56-week PWA; never replace it. Today answers what to do next from recovery, training, nutrition and history. Preserve local data, Firebase per-user backup isolation, deliberate Day 1 and scientific integrity. Swimming is excluded; prefer rowing when impact is unnecessary.
 
-Work on branches. Keep PRs coherent. Use focused regression tests per edit, one Consumer Audit release gate, then verify Pages and Consumer Audit against exact merged SHA. WebKit simulation is not physical-iPhone testing. Do not invent training doses or ingredient macros. Distinguish incomplete nutrition logging from confirmed low intake. Preserve noisy-signal filtering and established 14-day trend guardrails.
+Work on branches. Keep PRs coherent. Latest user direction: defer routine audits/tests until all five rescue phases are implemented; before then, check only likely failures that would be difficult to reverse. Keep regression coverage updated for the final gate. Before publishing completed work, run the Consumer Audit release gate, then verify Pages and Consumer Audit against exact merged SHA. WebKit simulation is not physical-iPhone testing. Do not invent training doses or ingredient macros. Distinguish incomplete nutrition logging from confirmed low intake. Preserve noisy-signal filtering and established 14-day trend guardrails.
 
 Conserve usage by batching related fixes into a bounded acceptance milestone, not one release per small edit. Use the existing issue register instead of rediscovering the repository. Prefer GitHub connector writes and concise CI summaries. Avoid repeated full local audits and verbose polling output.
 
 App is plain app.js/index.html/styles.css, with Firebase integration in cloud.js. Tests are tests/*.test.cjs; permanent WebKit and Firebase checks are .github/workflows/ui-audit.yml. Prefer meaningful persistence/behavior tests; avoid repeated broad audits. Keep docs/PROJECT_STATE.md concise and current. Never record secrets or private athlete records.
 
 When shipping changed app.js/cloud.js/styles.css, advance their index.html query versions and matching service-worker ASSETS/cache version together. A live browser retained an old script with new HTML when assets were unversioned; verify the actual production action, not only HTTP source bytes.
+
+Nutrition preference policy: do not silently substitute a different fat-loss goal or calorie policy. Discuss conflicts between athlete preferences and evidence/assumptions before prescribing a change. Never treat agreement alone as proof of physiological safety. Keep personal measurements out of this public repository.

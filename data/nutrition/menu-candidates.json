@@ -1,0 +1,307 @@
+{
+  "status": "audit-only; not a live prescription",
+  "weighing": "Follow each food database description: cooked meat, cooked rice/lentils/potato; dry oats/chia; raw produce and egg ingredients. Milk and yogurt in grams. All foods listed are consumed, including cooking oil.",
+  "days": {
+    "salmon": [
+      {
+        "id": "breakfast",
+        "name": "Eggs and oats with banana",
+        "ingredients": [
+          {
+            "foodId": "egg",
+            "grams": 100
+          },
+          {
+            "foodId": "eggWhite",
+            "grams": 100,
+            "portion": {
+              "minGrams": 50,
+              "maxGrams": 200,
+              "stepGrams": 10
+            }
+          },
+          {
+            "foodId": "oats",
+            "grams": 40,
+            "portion": {
+              "minGrams": 30,
+              "maxGrams": 100,
+              "stepGrams": 5
+            }
+          },
+          {
+            "foodId": "milk",
+            "grams": 250
+          },
+          {
+            "foodId": "banana",
+            "grams": 100
+          },
+          {
+            "foodId": "chia",
+            "grams": 15
+          }
+        ]
+      },
+      {
+        "id": "lunch",
+        "name": "Chicken, lentils and rice",
+        "ingredients": [
+          {
+            "foodId": "chicken",
+            "grams": 120,
+            "portion": {
+              "minGrams": 60,
+              "maxGrams": 180,
+              "stepGrams": 10
+            }
+          },
+          {
+            "foodId": "lentils",
+            "grams": 100
+          },
+          {
+            "foodId": "rice",
+            "grams": 100,
+            "portion": {
+              "minGrams": 100,
+              "maxGrams": 350,
+              "stepGrams": 10
+            }
+          },
+          {
+            "foodId": "kale",
+            "grams": 50
+          },
+          {
+            "foodId": "pepper",
+            "grams": 100
+          },
+          {
+            "foodId": "oliveOil",
+            "grams": 5,
+            "portion": {
+              "minGrams": 2,
+              "maxGrams": 15,
+              "stepGrams": 1
+            }
+          }
+        ]
+      },
+      {
+        "id": "snack",
+        "name": "Yogurt, berries and vanilla shake",
+        "ingredients": [
+          {
+            "foodId": "yogurt",
+            "grams": 170
+          },
+          {
+            "foodId": "blueberry",
+            "grams": 100
+          },
+          {
+            "foodId": "almonds",
+            "grams": 35
+          },
+          {
+            "foodId": "wheyVanilla",
+            "grams": 36
+          }
+        ]
+      },
+      {
+        "id": "dinner",
+        "name": "Salmon and baked potato",
+        "ingredients": [
+          {
+            "foodId": "salmon",
+            "grams": 150,
+            "portion": {
+              "minGrams": 100,
+              "maxGrams": 180,
+              "stepGrams": 10
+            }
+          },
+          {
+            "foodId": "potato",
+            "grams": 200,
+            "portion": {
+              "minGrams": 150,
+              "maxGrams": 400,
+              "stepGrams": 25
+            }
+          },
+          {
+            "foodId": "spinach",
+            "grams": 50
+          },
+          {
+            "foodId": "mushroom",
+            "grams": 100
+          },
+          {
+            "foodId": "oliveOil",
+            "grams": 5,
+            "portion": {
+              "minGrams": 2,
+              "maxGrams": 15,
+              "stepGrams": 1
+            }
+          }
+        ]
+      }
+    ],
+    "sirloin": [
+      {
+        "id": "breakfast",
+        "name": "Eggs and oats with banana",
+        "ingredients": [
+          {
+            "foodId": "egg",
+            "grams": 100
+          },
+          {
+            "foodId": "eggWhite",
+            "grams": 100,
+            "portion": {
+              "minGrams": 50,
+              "maxGrams": 200,
+              "stepGrams": 10
+            }
+          },
+          {
+            "foodId": "oats",
+            "grams": 40,
+            "portion": {
+              "minGrams": 30,
+              "maxGrams": 100,
+              "stepGrams": 5
+            }
+          },
+          {
+            "foodId": "milk",
+            "grams": 250
+          },
+          {
+            "foodId": "banana",
+            "grams": 100
+          },
+          {
+            "foodId": "chia",
+            "grams": 15
+          }
+        ]
+      },
+      {
+        "id": "lunch",
+        "name": "Chicken, lentils and rice",
+        "ingredients": [
+          {
+            "foodId": "chicken",
+            "grams": 120,
+            "portion": {
+              "minGrams": 60,
+              "maxGrams": 180,
+              "stepGrams": 10
+            }
+          },
+          {
+            "foodId": "lentils",
+            "grams": 100
+          },
+          {
+            "foodId": "rice",
+            "grams": 100,
+            "portion": {
+              "minGrams": 100,
+              "maxGrams": 350,
+              "stepGrams": 10
+            }
+          },
+          {
+            "foodId": "kale",
+            "grams": 50
+          },
+          {
+            "foodId": "pepper",
+            "grams": 100
+          },
+          {
+            "foodId": "oliveOil",
+            "grams": 5,
+            "portion": {
+              "minGrams": 2,
+              "maxGrams": 15,
+              "stepGrams": 1
+            }
+          }
+        ]
+      },
+      {
+        "id": "snack",
+        "name": "Yogurt, berries and vanilla shake",
+        "ingredients": [
+          {
+            "foodId": "yogurt",
+            "grams": 170
+          },
+          {
+            "foodId": "blueberry",
+            "grams": 100
+          },
+          {
+            "foodId": "almonds",
+            "grams": 35
+          },
+          {
+            "foodId": "wheyVanilla",
+            "grams": 36
+          }
+        ]
+      },
+      {
+        "id": "dinner",
+        "name": "Sirloin and baked potato",
+        "ingredients": [
+          {
+            "foodId": "beef",
+            "grams": 150,
+            "portion": {
+              "minGrams": 100,
+              "maxGrams": 180,
+              "stepGrams": 10
+            }
+          },
+          {
+            "foodId": "potato",
+            "grams": 200,
+            "portion": {
+              "minGrams": 150,
+              "maxGrams": 400,
+              "stepGrams": 25
+            }
+          },
+          {
+            "foodId": "spinach",
+            "grams": 50
+          },
+          {
+            "foodId": "mushroom",
+            "grams": 100
+          },
+          {
+            "foodId": "oliveOil",
+            "grams": 5,
+            "portion": {
+              "minGrams": 2,
+              "maxGrams": 15,
+              "stepGrams": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "portionPolicy": "Draft culinary bounds, not physiological safety limits. Ingredients without bounds stay fixed. Targets outside these meals require a different menu, not unlimited portions."
+}
