@@ -493,3 +493,9 @@ body{min-height:100dvh}
 .meal-detail>div{background:#f3f6f9;padding:12px;grid-template-columns:28px 1fr}
 .meal-detail span{font-size:16px;line-height:1.5;color:#253b4c}
 .meal-detail b{font-size:12px;color:#1768bb}
+
+
+/* Light Settings cards must not inherit pale text from the legacy dark cloud panel. */
+#settings .cloud-panel{color:var(--ink)}
+#settings .cloud-panel p,#settings .cloud-panel label,#settings .cloud-panel #cloudStatus,#settings .cloud-panel #cloudAccount{color:#526476}
+#settings .cloud-panel a{color:#1768bb}
