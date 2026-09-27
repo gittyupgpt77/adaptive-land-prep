@@ -638,8 +638,8 @@ jobs:
           check('Only a later opening after closure starts morning metrics',await morning.locator('#morningWelcome').isVisible()&&await morning.locator('#hrv').inputValue()==='');
           await morning.locator('[data-target="program"]').click();await morning.locator('#openSettings').click();
           await morning.close();
-          await page.evaluate(()=>{localStorage.clear();localStorage.programStart=new Date().toISOString();location.reload()});
-          await page.waitForLoadState('networkidle');
+          await page.evaluate(()=>{localStorage.clear();localStorage.programStart=new Date().toISOString()});
+          await page.reload({waitUntil:'networkidle'});
           await page.evaluate(()=>switchTab('settings'));
           await page.locator('#nutritionProfile > summary').click();
           await page.locator('#compositionWeight').fill('190');await page.locator('#compositionFat').fill('25');await page.locator('#rmrKcal').fill('1800');
