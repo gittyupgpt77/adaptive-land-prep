@@ -2,7 +2,9 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
-const source=fs.readFileSync(require('node:path').join(__dirname,'../service-worker.js'),'utf8');
+const path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../service-worker.js'),'utf8');
+const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const assetVersion=source.match(/app\.js\?v=(\d+)/)[1];
 const currentCache=source.match(/const CACHE='([^']+)'/)[1];
 function harness(){
@@ -12,12 +14,20 @@ function harness(){
  vm.runInNewContext(source,context);
  return {handlers,removed,writes,request:async(url,authorized=false)=>{let response;handlers.fetch({request:{url,method:'GET',headers:{has:()=>authorized}},respondWith:p=>response=p});return response&&await response;}};
 }
+test('release cache and every versioned entry asset use one version',()=>{
+ const htmlVersions=[...html.matchAll(/(?:src|href)="[^"]+\?v=(\d+)"/g)].map(m=>m[1]);
+ const workerVersions=[...source.matchAll(/\?v=(\d+)/g)].map(m=>m[1]);
+ assert.ok(htmlVersions.length>0);
+ assert.ok(workerVersions.length>0);
+ assert.deepEqual([...new Set(htmlVersions)],[assetVersion]);
+ assert.deepEqual([...new Set(workerVersions)],[assetVersion]);
+ assert.equal(currentCache,'land-prep-v'+assetVersion);
+});
 test('upgrade removes only this application’s obsolete caches',async()=>{const h=harness();let done;h.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(h.removed,['land-prep-v47']);});
 test('private API and authenticated responses never enter offline cache',async()=>{const h=harness();assert.equal(await h.request('https://example.supabase.co/rest/v1/athlete'),undefined);assert.equal(await h.request('https://example.com/adaptive-land-prep/app.js?v='+assetVersion,true),undefined);assert.equal(h.writes.length,0);});
 test('application shell remains available for offline caching',async()=>{const h=harness();await h.request('https://example.com/adaptive-land-prep/app.js?v='+assetVersion);assert.equal(h.writes.length,1);});
-
 test('every versioned entry asset is cached for offline use',async()=>{
- const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8'),h=harness();
+ const h=harness();
  const assets=[...html.matchAll(/(?:src|href)="([^"?]+\?v=\d+)"/g)].map(m=>m[1]);
  assert.ok(assets.includes('nutrition-energy.js?v='+assetVersion));assert.ok(assets.includes('app.js?v='+assetVersion));
  for(const asset of assets){await h.request('https://example.com/adaptive-land-prep/'+asset);assert.ok(h.writes.includes('https://example.com/adaptive-land-prep/'+asset));}
