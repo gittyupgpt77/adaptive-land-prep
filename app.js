@@ -368,7 +368,16 @@ function openExercise(e){$("modalTitle").textContent=e.name;$("modalContent").in
 function closeModal(){$("infoModal").classList.add("hidden")}function bindInfo(root){(root||document).querySelectorAll(".info-dot[data-term]").forEach(b=>b.onclick=e=>{e.stopPropagation();openInfo(b.dataset.term)})}
 function savedDecision(){const d=todayCheckin();return d?.decision||null}
 function effectiveDecision(){return savedDecision()||decision()}
-function reduceDoseText(dose){if(!dose||dose==="—")return dose;if(/\d+\s*[×x]\s*/.test(dose))return dose.replace(/^(\d+)/,(m)=>String(Math.max(1,Math.round(Number(m)*.7))));return "≈70% of planned volume · "+dose}
+function reduceDoseText(dose){
+ if(!dose||dose==="—")return dose;
+ // Translate the existing 30% reduction into instructions, not athlete arithmetic.
+ // Weekly ceilings are context, never a daily dose to multiply.
+ if(/weekly|guardrail|ceiling/i.test(dose))return dose;
+ const match=dose.match(/^(\d+)(?:[–-](\d+))?(\s*(?:[×x]|(?:submaximal |controlled |light |easy )?sets?\b|rounds?\b|climbs?\b|minutes?\b|min\b|seconds?\b|sec\b|meters?\b|m\b))/i);
+ if(!match)return "Reduce the planned work by about 30% · "+dose;
+ const reduced=n=>Math.max(1,Math.round(Number(n)*.7)),low=reduced(match[1]),high=match[2]?reduced(match[2]):low;
+ return low+(high!==low?"–"+high:"")+dose.slice(match[1].length+(match[2]?match[2].length+1:0));
+}
 function adaptiveSessionFor(name,d,w=prescriptionWeek()){
  const base=makeSession(name,w),dec=d?.decision;
  if(!d||!dec)return base;
