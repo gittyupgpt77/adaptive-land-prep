@@ -481,8 +481,7 @@ function renderDailyDirective(){
    $("directiveCopy").textContent=dayKey(dayDate())!==dayKey(new Date())?"This day is still open. Record what you actually did; don’t repeat a session to catch up.":d.overall==="GREEN"?"Do this session today, then record how it landed.":d.overall==="YELLOW"?"Use the modified session below. Do not add intensity back in.":"Recovery is the assignment today. Follow the recovery session below.";
    const reason=directiveReason(d);
    $("directiveReason").textContent=reason==="Recovery, mechanical status and fueling support the planned session."?"":reason;
-   $("directiveWorkout").innerHTML='<div class="dfunction renderJourneyArchives
-    irective-workout-head"><div><small>'+det.type.toUpperCase()+'</small><strong>'+det.duration+'</strong></div><span>'+det.effort+'</span></div><p class="directive-session-count">'+det.steps.length+' guided steps · instructions in your session</p>';
+   $("directiveWorkout").innerHTML='<div class="directive-workout-head"><div><small>'+det.type.toUpperCase()+'</small><strong>'+det.duration+'</strong></div><span>'+det.effort+'</span></div><p class="directive-session-count">'+det.steps.length+' guided steps · instructions in your session</p>';
    $("directivePrimary").textContent="Start today’s session";$("directivePrimary").onclick=()=>switchTab("workout");$("directiveSecondary").textContent="Why this prescription?";$("directiveSecondary").onclick=openReadiness;return
  }
  if(state==="nutrition"){
