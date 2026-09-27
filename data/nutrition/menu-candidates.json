@@ -13,11 +13,21 @@
           },
           {
             "foodId": "eggWhite",
-            "grams": 100
+            "grams": 100,
+            "portion": {
+              "minGrams": 50,
+              "maxGrams": 200,
+              "stepGrams": 10
+            }
           },
           {
             "foodId": "oats",
-            "grams": 40
+            "grams": 40,
+            "portion": {
+              "minGrams": 30,
+              "maxGrams": 100,
+              "stepGrams": 5
+            }
           },
           {
             "foodId": "milk",
@@ -39,7 +49,12 @@
         "ingredients": [
           {
             "foodId": "chicken",
-            "grams": 120
+            "grams": 120,
+            "portion": {
+              "minGrams": 60,
+              "maxGrams": 180,
+              "stepGrams": 10
+            }
           },
           {
             "foodId": "lentils",
@@ -47,7 +62,12 @@
           },
           {
             "foodId": "rice",
-            "grams": 100
+            "grams": 100,
+            "portion": {
+              "minGrams": 100,
+              "maxGrams": 350,
+              "stepGrams": 10
+            }
           },
           {
             "foodId": "kale",
@@ -59,7 +79,12 @@
           },
           {
             "foodId": "oliveOil",
-            "grams": 5
+            "grams": 5,
+            "portion": {
+              "minGrams": 2,
+              "maxGrams": 15,
+              "stepGrams": 1
+            }
           }
         ]
       },
@@ -91,11 +116,21 @@
         "ingredients": [
           {
             "foodId": "salmon",
-            "grams": 150
+            "grams": 150,
+            "portion": {
+              "minGrams": 100,
+              "maxGrams": 180,
+              "stepGrams": 10
+            }
           },
           {
             "foodId": "potato",
-            "grams": 200
+            "grams": 200,
+            "portion": {
+              "minGrams": 150,
+              "maxGrams": 400,
+              "stepGrams": 25
+            }
           },
           {
             "foodId": "spinach",
@@ -107,7 +142,12 @@
           },
           {
             "foodId": "oliveOil",
-            "grams": 5
+            "grams": 5,
+            "portion": {
+              "minGrams": 2,
+              "maxGrams": 15,
+              "stepGrams": 1
+            }
           }
         ]
       }
@@ -123,11 +163,21 @@
           },
           {
             "foodId": "eggWhite",
-            "grams": 100
+            "grams": 100,
+            "portion": {
+              "minGrams": 50,
+              "maxGrams": 200,
+              "stepGrams": 10
+            }
           },
           {
             "foodId": "oats",
-            "grams": 40
+            "grams": 40,
+            "portion": {
+              "minGrams": 30,
+              "maxGrams": 100,
+              "stepGrams": 5
+            }
           },
           {
             "foodId": "milk",
@@ -149,7 +199,12 @@
         "ingredients": [
           {
             "foodId": "chicken",
-            "grams": 120
+            "grams": 120,
+            "portion": {
+              "minGrams": 60,
+              "maxGrams": 180,
+              "stepGrams": 10
+            }
           },
           {
             "foodId": "lentils",
@@ -157,7 +212,12 @@
           },
           {
             "foodId": "rice",
-            "grams": 100
+            "grams": 100,
+            "portion": {
+              "minGrams": 100,
+              "maxGrams": 350,
+              "stepGrams": 10
+            }
           },
           {
             "foodId": "kale",
@@ -169,7 +229,12 @@
           },
           {
             "foodId": "oliveOil",
-            "grams": 5
+            "grams": 5,
+            "portion": {
+              "minGrams": 2,
+              "maxGrams": 15,
+              "stepGrams": 1
+            }
           }
         ]
       },
@@ -201,11 +266,21 @@
         "ingredients": [
           {
             "foodId": "beef",
-            "grams": 150
+            "grams": 150,
+            "portion": {
+              "minGrams": 100,
+              "maxGrams": 180,
+              "stepGrams": 10
+            }
           },
           {
             "foodId": "potato",
-            "grams": 200
+            "grams": 200,
+            "portion": {
+              "minGrams": 150,
+              "maxGrams": 400,
+              "stepGrams": 25
+            }
           },
           {
             "foodId": "spinach",
@@ -217,10 +292,16 @@
           },
           {
             "foodId": "oliveOil",
-            "grams": 5
+            "grams": 5,
+            "portion": {
+              "minGrams": 2,
+              "maxGrams": 15,
+              "stepGrams": 1
+            }
           }
         ]
       }
     ]
-  }
+  },
+  "portionPolicy": "Draft culinary bounds, not physiological safety limits. Ingredients without bounds stay fixed. Targets outside these meals require a different menu, not unlimited portions."
 }

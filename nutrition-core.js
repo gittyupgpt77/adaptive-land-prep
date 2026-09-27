@@ -64,6 +64,61 @@ const NutritionCore=(()=>{
   }
   return out;
  }
- return {phaseForWeek,targets,totalIngredients,recipeSnapshot,remainingTargets};
+ // Bounded numerical fit only: success does not establish dietary adequacy.
+ function portionPlan({target,meals,confirmed=[]},catalog){
+  const keys=['kcal','protein','carbs','fat'];
+  const wanted=[target?.cal,target?.protein,target?.carbs,target?.fat];
+  if(wanted.some(v=>!Number.isFinite(v)||v<=0))throw Error('Positive finite targets required');
+  if(!Array.isArray(meals)||!meals.length||!Array.isArray(confirmed))throw Error('Meals required');
+  const ids=meals.map(m=>m.id),savedIds=confirmed.map(m=>m.id);
+  if(ids.some(id=>typeof id!=='string'||!id)||new Set(ids).size!==ids.length||
+   new Set(savedIds).size!==savedIds.length||savedIds.some(id=>!ids.includes(id)))throw Error('Ambiguous meal identity');
+  const frozen=JSON.parse(JSON.stringify(confirmed));
+  if(confirmed.some(m=>keys.some(k=>!m.nutrients?.[k]?.complete||!Number.isFinite(m.nutrients[k].known)||m.nutrients[k].known<0)))
+   return {status:'needs-known-intake',confirmed:frozen,planned:[],nutritionAdequacy:'unassessed'};
+  const pending=JSON.parse(JSON.stringify(meals.filter(m=>!savedIds.includes(m.id))));
+  const eaten=keys.map(k=>confirmed.reduce((s,m)=>s+m.nutrients[k].known,0));
+  const achieved=[...eaten],variables=[];
+  for(const meal of pending){
+   const nutrients=totalIngredients(meal.ingredients,catalog);
+   if(keys.some(k=>!nutrients[k].complete))return {status:'needs-food-data',confirmed:frozen,planned:[],nutritionAdequacy:'unassessed'};
+   keys.forEach((k,j)=>achieved[j]+=nutrients[k].known);
+   for(const item of meal.ingredients){
+    if(!item.portion)continue;
+    const {minGrams:min,maxGrams:max,stepGrams:step}=item.portion;
+    if(![min,max,step].every(Number.isFinite)||min<=0||max<min||step<=0||item.grams<min||item.grams>max)
+     throw Error('Invalid portion bounds');
+    const food=catalog.foods[item.foodId];
+    variables.push({item,min,max,step,coeff:keys.map(k=>food.nutrients[k]/food.basisGrams)});
+   }
+  }
+  // Relative tolerances are computational acceptance criteria, not safety thresholds.
+  const tolerance=wanted.map((v,j)=>v*(j===0?.05:.10));
+  const shift=(v,next)=>{const delta=next-v.item.grams;v.item.grams=next;v.coeff.forEach((c,j)=>achieved[j]+=c*delta);};
+  for(let pass=0;pass<500;pass++){
+   let movement=0;
+   for(const v of variables){
+    const denom=v.coeff.reduce((s,c,j)=>s+(c/tolerance[j])**2,0);
+    if(!denom)continue;
+    const delta=-v.coeff.reduce((s,c,j)=>s+c*(achieved[j]-wanted[j])/tolerance[j]**2,0)/denom;
+    const next=Math.max(v.min,Math.min(v.max,v.item.grams+delta));
+    movement=Math.max(movement,Math.abs(next-v.item.grams));shift(v,next);
+   }
+   if(movement<.001)break;
+  }
+  // Round within the bounded gram grid, then recompute from source data.
+  for(const v of variables){
+   const steps=Math.min(Math.floor((v.max-v.min)/v.step),Math.max(0,Math.round((v.item.grams-v.min)/v.step)));
+   v.item.grams=v.min+steps*v.step;
+  }
+  const planned=pending.map(m=>recipeSnapshot(m,catalog));
+  const totals=Object.fromEntries(keys.map((k,j)=>[k,eaten[j]+planned.reduce((s,m)=>s+m.nutrients[k].known,0)]));
+  const residual=Object.fromEntries(keys.map((k,j)=>[k,totals[k]-wanted[j]]));
+  const fits=keys.every((k,j)=>Math.abs(residual[k])<=tolerance[j]);
+  return {status:pending.length?(fits?'candidate':'cannot-fit'):'complete',confirmed:frozen,planned,
+   totals,residual,matchesTarget:fits,nutritionAdequacy:'unassessed',
+   exceededByConfirmed:keys.filter((k,j)=>eaten[j]>wanted[j])};
+ }
+ return {phaseForWeek,targets,totalIngredients,recipeSnapshot,remainingTargets,portionPlan};
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=NutritionCore;

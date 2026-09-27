@@ -50,11 +50,21 @@ The added dairy, legumes, almonds, fruit and defined vegetable portions improve 
 
 References in the audit are adult male 19–30 RDA/AI values, not personalized diagnoses or intake upper limits. Niacin is conservatively reported as preformed niacin rather than adding tryptophan equivalents. Sodium is reported without prescribing a fixed sweat-replacement dose. The audit does not yet implement upper-limit checks, iodine coverage, all essential nutrients, or supplement interactions.
 
+## Bounded portion calculation
+
+`portionPlan` connects explicit targets to candidate meals. Fixed ingredients remain fixed; only ingredients with declared gram bounds can change. Bounds are draft culinary choices, not established safety limits. The bounded least-squares calculation rounds to declared gram increments and recalculates actual food totals afterward. Acceptance tolerances are 5% for calories and 10% for each macro: numerical comparison criteria, not nutritional adequacy or physiological safety thresholds.
+
+Confirmed meals retain their full original ingredient/nutrient/source snapshots. Only unconfirmed meals are adjusted. Missing legacy intake or unknown food macros blocks calculation rather than treating them as zero. Duplicate/unknown meal identities and malformed targets/bounds are rejected. An already-completed day remains complete regardless of target fit; exceeding a target never deletes consumed food or removes remaining meals.
+
+Outputs distinguish a macro-fitting `candidate`, `cannot-fit`, missing data, and an already `complete` day. `cannot-fit` means this bounded, rounded calculation did not find an acceptable result; it is not a mathematical proof that every possible menu is infeasible. Every output leaves nutritional adequacy explicitly unassessed. Saved-source calories and 4/4/9 target energy are compared with tolerances, not forced into false equality.
+
+Twelve focused tests include a 448-case matrix (56 weeks × four workload classes × two menus), recalculated residuals, fixed-food and gram-bound checks, frozen intake, incomplete data, over-target intake and completion. Synthetic inputs demonstrate ordinary-target candidates while higher-carbohydrate demands exceed this menu architecture. These cases are software verification, not a personalized prescription. Additional meal/training-fuel design and nutrient auditing remain required before live use. No full browser audit is needed for this unconnected calculation module.
+
 ## Integration/release blockers
 
 1. Establish the private profile and energy-estimation/calibration method. Do not hardcode an athlete's RMR or body measurements into public source. The prospective model needs explicit uncertainty and trend validation, not 3,500-kcal back-calculation.
 2. Quantify workload from the prescription, with a safe unresolved state where daily doses are absent. Do not classify solely by session name or weekly ceilings. Resolve Foundation deficits against actual training and review phase-transition behavior.
-3. Portion solver: satisfy energy/macros using sensible ingredient bounds while checking nutrient coverage. Do not multiply all vegetables/protein indefinitely to meet carbohydrate demand. Freeze eaten snapshots and solve only the uneaten remainder. Include nutrition during prolonged training within daily totals.
+3. Portion solver foundation is implemented offline; higher-workload menu capacity and post-adjustment nutrient coverage remain unresolved. Satisfy energy/macros using sensible ingredient bounds while checking nutrient coverage. Do not multiply all vegetables/protein indefinitely to meet carbohydrate demand. Freeze eaten snapshots and solve only the uneaten remainder. Include nutrition during prolonged training within daily totals.
 4. Close iodine and remaining nutrient-data gaps; add upper-limit checks and product-specific supplement doses before recommendations. Do not prescribe supplements merely because a source value is missing.
 5. Connect one-tap confirmation to known meal macros; retain null for old templates. Preserve old histories, raw/cooked descriptions, Journey isolation and restore validation. No backfilling old intake with newly calculated values.
 6. Run focused integration tests and one milestone consumer/release gate only after the live feature is coherent. This offline milestone does not warrant a Pages release or browser audit.

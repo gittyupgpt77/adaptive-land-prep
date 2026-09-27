@@ -44,3 +44,64 @@ test('candidate days have calculable macros and explicitly unquantified iodine',
   assert.equal(n.iodine.complete,false);assert.ok(n.iodine.missing.length>0);
  }
 });
+test('portion planning preserves confirmed source snapshots and fixed foods',()=>{
+ const meals=structuredClone(menus.days.salmon),foods=structuredClone(catalog);
+ const breakfast=core.recipeSnapshot(meals[0],foods),before=JSON.stringify(breakfast),original=JSON.stringify(meals);
+ foods.foods.egg.nutrients.protein=900; // Today's catalog must not rewrite yesterday's saved composition.
+ const target=core.targets({week:1,weightKg:80,maintenanceKcal:2800,workload:'light'});
+ const plan=core.portionPlan({target,meals,confirmed:[breakfast]},foods);
+ assert.equal(JSON.stringify(plan.confirmed[0]),before);assert.equal(JSON.stringify(meals),original);
+ assert.equal(plan.planned.length,3);assert.ok(!plan.planned.some(m=>m.id==='breakfast'));
+ for(const meal of plan.planned){
+  const source=meals.find(m=>m.id===meal.id);
+  for(const [j,item] of meal.ingredients.entries()){
+   const initial=source.ingredients[j];
+   if(!initial.portion)assert.equal(item.grams,initial.grams);
+   else {const p=initial.portion;assert.ok(item.grams>=p.minGrams&&item.grams<=p.maxGrams);assert.equal((item.grams-p.minGrams)%p.stepGrams,0);}
+  }
+ }
+ assert.equal(plan.totals.protein,breakfast.nutrients.protein.known+plan.planned.reduce((s,m)=>s+m.nutrients.protein.known,0));
+});
+test('all-week portion matrix honestly reports fit or bounded shortfall',()=>{
+ let candidates=0,shortfalls=0;
+ for(let week=1;week<=56;week++)for(const workload of ['light','moderate','high','veryHigh'])for(const meals of Object.values(menus.days)){
+  const target=core.targets({week,weightKg:80,maintenanceKcal:2800,workload});
+  const plan=core.portionPlan({target,meals},catalog);
+  const actual=core.totalIngredients(plan.planned.flatMap(m=>m.ingredients),catalog);
+  const mapping={kcal:'cal',protein:'protein',carbs:'carbs',fat:'fat'};
+  let fits=true;
+  for(const [key,targetKey] of Object.entries(mapping)){
+   assert.ok(Math.abs(plan.totals[key]-actual[key].known)<1e-8);
+   assert.ok(Math.abs(plan.residual[key]-(actual[key].known-target[targetKey]))<1e-8);
+   fits&&=Math.abs(plan.residual[key])<=target[targetKey]*(key==='kcal'?.05:.10);
+  }
+  assert.equal(plan.matchesTarget,fits);assert.equal(plan.status,fits?'candidate':'cannot-fit');
+  assert.equal(plan.nutritionAdequacy,'unassessed');
+  if(fits)candidates++;else shortfalls++;
+ }
+ assert.ok(candidates>0,'ordinary targets can fit');assert.ok(shortfalls>0,'demanding targets need additional menu design');
+});
+test('unknown legacy intake and missing food macros block recalculation',()=>{
+ const target={cal:2400,protein:180,carbs:270,fat:65},meals=menus.days.salmon;
+ const unknown=core.portionPlan({target,meals,confirmed:[{id:'breakfast',kcal:500}]},catalog);
+ assert.equal(unknown.status,'needs-known-intake');assert.equal(unknown.planned.length,0);
+ const foods=structuredClone(catalog);foods.foods.oats.nutrients.carbs=null;
+ assert.equal(core.portionPlan({target,meals},foods).status,'needs-food-data');
+});
+test('completed and over-target meals are retained without compensatory deletion',()=>{
+ const meals=menus.days.salmon,confirmed=meals.map(m=>core.recipeSnapshot(m,catalog));
+ const target={cal:100,protein:1,carbs:1,fat:1};
+ const plan=core.portionPlan({target,meals,confirmed},catalog);
+ assert.equal(plan.status,'complete');assert.equal(plan.matchesTarget,false);assert.deepEqual(plan.planned,[]);
+ assert.deepEqual(plan.confirmed,confirmed);assert.deepEqual(plan.exceededByConfirmed,['kcal','protein','carbs','fat']);
+ const partial=core.portionPlan({target,meals,confirmed:confirmed.slice(0,1)},catalog);
+ assert.equal(partial.status,'cannot-fit');assert.equal(partial.planned.length,3);
+});
+test('ambiguous meal identity, malformed bounds and invalid targets cannot generate a plan',()=>{
+ const target={cal:2400,protein:180,carbs:270,fat:65},meals=structuredClone(menus.days.salmon);
+ assert.throws(()=>core.portionPlan({target,meals:[meals[0],meals[0]]},catalog));
+ assert.throws(()=>core.portionPlan({target,meals,confirmed:[{id:'unknown'}]},catalog));
+ assert.throws(()=>core.portionPlan({target:{...target,cal:NaN},meals},catalog));
+ meals[0].ingredients[1].portion.stepGrams=0;
+ assert.throws(()=>core.portionPlan({target,meals},catalog));
+});
