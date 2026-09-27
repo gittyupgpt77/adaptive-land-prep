@@ -16,8 +16,8 @@ function nutritionContext(){
 test('prescribed meals reconcile to the displayed calorie target across program transitions',()=>{
  const c=nutritionContext();
  const cases=[
-  [1,'Recovery',1450],[1,'Quality run',1650],[20,'Long run',1650],
-  [21,'Recovery',1950],[24,'Recovery',2250],
+  [1,'Recovery',1450],[1,'Quality run',1650],[16,'Long run',1650],[17,'Recovery',1950],[20,'Long run',1950],
+  [21,'Recovery',2250],[24,'Recovery',2250],
   [25,'Recovery',3400],[25,'Quality run',4000],[52,'Long run',4000],[56,'Recovery',3400]
  ];
  for(const [week,name,expected] of cases){

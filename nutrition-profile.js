@@ -9,6 +9,9 @@ const NutritionProfile=(()=>{
  }
  function valid(profile){
   if(!profile||profile.schemaVersion!==1||!Array.isArray(profile.assessments)||!Array.isArray(profile.rmrTests))return false;
+  if(profile.backgroundPal!=null&&![1.4,1.6,1.8].includes(profile.backgroundPal))return false;
+  if(profile.goalWeightKg!=null&&!positive(profile.goalWeightKg))return false;
+  if(profile.goalBodyFatPercent!=null&&(!positive(profile.goalBodyFatPercent)||profile.goalBodyFatPercent>=100))return false;
   if(!profile.assessments.every(a=>a&&(a.date===null||date(a.date))&&positive(a.weightKg)&&positive(a.bodyFatPercent)&&a.bodyFatPercent<100&&methods.includes(a.method)))return false;
   if(!profile.rmrTests.every(r=>r&&(r.date===null||date(r.date))&&positive(r.kcal)))return false;
   return new Set(profile.assessments.map(a=>a.date)).size===profile.assessments.length&&new Set(profile.rmrTests.map(r=>r.date)).size===profile.rmrTests.length;

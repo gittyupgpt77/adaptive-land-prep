@@ -3,12 +3,12 @@ const source=fs.readFileSync(require('node:path').join(__dirname,'../app.js'),'u
 const c=vm.createContext({});
 vm.runInContext(source.slice(source.indexOf('function baseMealPlan('),source.indexOf('function weightTrend('))+source.slice(source.indexOf('function mealPlanForLog('),source.indexOf('function hydrationForDay(')),c);
 const target=cal=>({cal});
-test('confirmed extra fuel keeps its quantity when updated recovery adds more food',()=>{
+test('started legacy day keeps its entire original prescription until day close',()=>{
  const original=c.mealPlanForTarget(1,target(1650)),log={meals:['m1','fuel-addon-1'],prescribedMeals:JSON.parse(JSON.stringify(original))};
  const next=c.mealPlanForLog(1,target(1850),log);
  assert.deepEqual(JSON.parse(JSON.stringify(next.find(m=>m.id==='fuel-addon-1'))),log.prescribedMeals.find(m=>m.id==='fuel-addon-1'));
- assert.equal(next.reduce((s,m)=>s+m.kcal,0),1850);
- assert.equal(next.find(m=>m.id==='fuel-addon-2').kcal,200);
+ assert.equal(next.reduce((s,m)=>s+m.kcal,0),1650);
+ assert.equal(next.find(m=>m.id==='fuel-addon-2'),undefined);
  // Serialize/restore before the following meal: stable IDs and portions persist.
  const restored=JSON.parse(JSON.stringify({...log,prescribedMeals:next}));
  assert.equal(JSON.stringify(c.mealPlanForLog(1,target(1850),restored)),JSON.stringify(next));
@@ -19,21 +19,21 @@ test('lower target never erases consumed fuel or assigns negative remaining food
  assert.equal(next.reduce((s,m)=>s+m.kcal,0),2050);
  assert.equal(next.filter(m=>!log.meals.includes(m.id)).length,0);
 });
-test('unconfirmed changed additions are recalculated and legacy records remain readable',()=>{
+test('legacy saved quantities remain readable without migrating during a day',()=>{
  const old=c.mealPlanForTarget(1,target(2050));
  const next=c.mealPlanForLog(1,target(1450),{meals:['m1'],prescribedMeals:old});
- assert.equal(next.length,4);assert.equal(next.reduce((s,m)=>s+m.kcal,0),1450);
+ assert.equal(next.length,5);assert.equal(next.reduce((s,m)=>s+m.kcal,0),2050);
  assert.equal(c.mealPlanForLog(1,target(1450),{meals:['m1']}).length,4);
 });
 test('base meal quantities stay fixed across a prescription-week change',()=>{
  const old=c.mealPlanForTarget(24,target(1650));
  const next=c.mealPlanForLog(25,target(3600),{meals:['m1'],prescribedMeals:old});
  assert.equal(JSON.stringify(next.find(m=>m.id==='m1')),JSON.stringify(old[0]));
- assert.equal(next.reduce((s,m)=>s+m.kcal,0),3600);
+ assert.equal(next.reduce((s,m)=>s+m.kcal,0),1650);
 });
 
 test('calendar meal history escapes restored text',()=>{
  const start=source.indexOf('function nutritionHtmlForDate('),end=source.indexOf('\nfunction renderDaySheetTab',start);
- const c=vm.createContext({getNutritionLog:()=>({saved:true,targetCalories:1450,prescriptionReason:'<img src=x>',prescribedMeals:[{id:'m1',name:'<script>bad</script>',kcal:400,foods:['<img onerror=bad>']}]}),checkinForDate:()=>null,nutritionForWeek:()=>({phase:'Foundation',protein:185,carbs:90,fat:40,why:'Fuel'}),nutritionText:value=>String(value).replaceAll('<','&lt;').replaceAll('>','&gt;')});
+ const c=vm.createContext({mealEntryLabel:()=>'',getNutritionLog:()=>({saved:true,targetCalories:1450,prescriptionReason:'<img src=x>',prescribedMeals:[{id:'m1',name:'<script>bad</script>',kcal:400,foods:['<img onerror=bad>']}]}),checkinForDate:()=>null,nutritionForWeek:()=>({phase:'Foundation',protein:185,carbs:90,fat:40,why:'Fuel'}),nutritionText:value=>String(value).replaceAll('<','&lt;').replaceAll('>','&gt;')});
  vm.runInContext(source.slice(start,end),c);const html=c.nutritionHtmlForDate(new Date(),{w:1,name:'Recovery'});assert.ok(!html.includes('<img'));assert.ok(!html.includes('<script>'));assert.ok(html.includes('&lt;script&gt;'));
 });

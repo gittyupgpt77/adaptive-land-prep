@@ -7,7 +7,7 @@ function harness(initial={}){
  const values=new Map(Object.entries(initial));let failKey=null,reloads=0;
  const storage={get length(){return values.size},key:i=>[...values.keys()][i],getItem:k=>values.get(k)??null,setItem(k,v){if(k===failKey){failKey=null;throw Error('quota')}values.set(k,String(v))},removeItem:k=>values.delete(k)};
  const localStorage=new Proxy(storage,{get:(target,k)=>k in target?target[k]:values.get(k)});
- const context=vm.createContext({localStorage,dbSet:async()=>{},location:{reload(){reloads++}}});
+ const context=vm.createContext({NutritionStorage:require('../nutrition-storage'),localStorage,dbSet:async()=>{},location:{reload(){reloads++}}});
  vm.runInContext(fs.readFileSync('training-tools.js','utf8'),context);
  vm.runInContext(source.slice(source.indexOf('const APP_STORAGE_KEYS='),source.indexOf('\n$("exportBackup").onclick')),context);
  return {values,context,fail:k=>failKey=k,get reloads(){return reloads},restore:o=>context.importBackup({text:async()=>JSON.stringify(o)})};

@@ -4,7 +4,7 @@ const source=fs.readFileSync(require('node:path').join(__dirname,'../app.js'),'u
 function harness(){
  const values=new Map([['nutrition_today',JSON.stringify({meals:[],draft:{actualCalories:''}})],['task_nutrition_today','1'],['daySession','closed']]);
  const node={textContent:''};let saveFails=false,closed=false;
- const context=vm.createContext({nutritionLogKey:()=> 'nutrition_today',todayKey:()=> 'today',$:()=>node,
+ const context=vm.createContext({NutritionStorage:require('../nutrition-storage'),nutritionLogKey:()=> 'nutrition_today',todayKey:()=> 'today',$:()=>node,
   localStorage:{getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)},
   captureNutritionDraft:()=>{values.set('daySession','open');values.set('task_nutrition_today','0');return JSON.parse(values.get('nutrition_today'))},
   saveNutrition:()=>{if(saveFails)throw Error('storage failure')},closeModal:()=>{closed=true}});

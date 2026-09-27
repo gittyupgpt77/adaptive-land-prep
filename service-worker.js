@@ -1,5 +1,5 @@
 const CACHE='land-prep-v75';
-const ASSETS=['./','./index.html','./styles.css?v=75','./app.js?v=75','./nutrition-intake.js?v=75','./nutrition-core.js?v=75','./nutrition-data.js?v=75','./nutrition-profile.js?v=75','./nutrition-ui.js?v=75','./training-tools.js?v=75','./manifest.webmanifest','./vendor/supabase.js','./cloud-core.js?v=75','./autosave-core.js','./cloud.js?v=75','./vendor/firebase.js','./firestore-backup.js'];
+const ASSETS=['./','./index.html','./styles.css?v=75','./app.js?v=75','./nutrition-intake.js?v=75','./vendor/pako.js?v=75','./nutrition-storage.js?v=75','./nutrition-core.js?v=75','./nutrition-data.js?v=75','./nutrition-profile.js?v=75','./nutrition-energy.js?v=75','./nutrition-ui.js?v=75','./nutrition-plan.js?v=75','./training-tools.js?v=75','./manifest.webmanifest','./vendor/supabase.js','./cloud-core.js?v=75','./autosave-core.js','./cloud.js?v=75','./vendor/firebase.js','./firestore-backup.js'];
 const scope=new URL(self.registration.scope);
 const shell=new Set(ASSETS.map(path=>new URL(path,scope).href));
 const exerciseImages='https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';

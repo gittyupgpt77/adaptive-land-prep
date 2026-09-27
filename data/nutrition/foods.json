@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "source": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_json_2018-04.zip",
   "retrieved": "2026-09-27",
   "units": {
@@ -835,6 +835,41 @@
         "iodine": null,
         "epa": null,
         "dha": null
+      }
+    },
+    "sunflower": {
+      "name": "Seeds, sunflower seed kernels, dried",
+      "fdcId": 170562,
+      "basisGrams": 100,
+      "source": "https://fdc.nal.usda.gov/food-details/170562/nutrients",
+      "nutrients": {
+        "kcal": 584,
+        "protein": 20.8,
+        "carbs": 20.0,
+        "fat": 51.5,
+        "fiber": 8.6,
+        "calcium": 78.0,
+        "iron": 5.25,
+        "magnesium": 325,
+        "potassium": 645,
+        "sodium": 9.0,
+        "zinc": 5.0,
+        "selenium": 53.0,
+        "vitaminA": 3.0,
+        "vitaminD": 0.0,
+        "vitaminE": 35.2,
+        "vitaminC": 1.4,
+        "thiamin": 1.48,
+        "riboflavin": 0.355,
+        "niacin": 8.34,
+        "vitaminB6": 1.34,
+        "folate": 227,
+        "vitaminB12": 0.0,
+        "choline": 55.1,
+        "vitaminK": 0.0,
+        "iodine": null,
+        "epa": 0.014,
+        "dha": 0.0
       }
     }
   }

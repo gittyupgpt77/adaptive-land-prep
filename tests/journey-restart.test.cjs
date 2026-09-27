@@ -4,7 +4,7 @@ function harness(initial={}){
  const values=new Map(Object.entries(initial));let failure;
  const storage={get length(){return values.size},key:i=>[...values.keys()][i],getItem:k=>values.get(k)??null,setItem(k,v){if(failure===k){failure=null;throw Error('quota')}values.set(k,String(v))},removeItem:k=>values.delete(k)};
  const localStorage=new Proxy(storage,{get:(t,k)=>k in t?t[k]:values.get(k)}),mirrors=[];
- const context=vm.createContext({NutritionIntake:require('../nutrition-intake'),NutritionProfile:require('../nutrition-profile'),localStorage,dbSet:(...args)=>mirrors.push(args),location:{reload(){}},Date});
+ const context=vm.createContext({NutritionStorage:require('../nutrition-storage'),NutritionIntake:require('../nutrition-intake'),NutritionProfile:require('../nutrition-profile'),localStorage,dbSet:(...args)=>mirrors.push(args),location:{reload(){}},Date});
  vm.runInContext(source.slice(source.indexOf('const APP_STORAGE_KEYS='),source.indexOf('\n$("exportBackup").onclick')),context);
  return {context,values,mirrors,fail:k=>failure=k};
 }

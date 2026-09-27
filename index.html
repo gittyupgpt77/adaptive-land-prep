@@ -89,7 +89,7 @@
       <summary>Session details & feedback</summary>
       <div class="feedback-grid">
         <label><span>Effort 1–10 · required <button class="info-dot tiny" data-term="session effort">i</button></span><select id="sessionRPE"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
-        <label><span>Duration</span><input id="sessionDuration" type="number" inputmode="numeric" placeholder="min"></label>
+        <label><span>Duration</span><input id="sessionDuration" type="number" inputmode="numeric" placeholder="min"></label><label><span>Watch active calories · optional</span><input id="sessionActiveCalories" type="number" min="0" inputmode="decimal" step="any" placeholder="Active kcal, not total kcal"></label>
         <label><span>Pain after · required</span><select id="postPain"><option value="">—</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
         <label><span>Completed</span><select id="completed"><option value="">—</option><option>YES</option><option>PARTIAL</option><option>NO</option></select></label>
       </div>
@@ -287,11 +287,15 @@
 <div id="daySheet" class="sheet-backdrop hidden"><div class="sheet day-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small id="daySheetKicker">DAY</small><h2 id="daySheetTitle">Day</h2></div><button id="daySheetClose">×</button></div><div class="day-tabs"><button class="day-tab active" data-daytab="training">Training</button><button class="day-tab" data-daytab="nutrition">Nutrition</button></div><div id="daySheetBody"></div></div></div>
 <div id="infoModal" class="sheet-backdrop hidden"><div class="sheet exercise-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small>GUIDANCE</small><h2 id="modalTitle">Exercise</h2></div><button id="modalClose">×</button></div><div id="modalContent"></div><button class="sheet-primary" id="modalDone">Got it</button></div></div>
 <script src="training-tools.js?v=75"></script>
+<script src="vendor/pako.js?v=75"></script>
+<script src="nutrition-storage.js?v=75"></script>
 <script src="nutrition-core.js?v=75"></script>
 <script src="nutrition-data.js?v=75"></script>
 <script src="nutrition-profile.js?v=75"></script>
+<script src="nutrition-energy.js?v=75"></script>
 <script src="nutrition-intake.js?v=75"></script>
 <script src="nutrition-ui.js?v=75"></script>
+<script src="nutrition-plan.js?v=75"></script>
 <script src="app.js?v=75"></script>
 <script src="vendor/supabase.js"></script>
 <script src="vendor/firebase.js"></script>
