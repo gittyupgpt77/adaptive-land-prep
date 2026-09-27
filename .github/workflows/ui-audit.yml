@@ -239,6 +239,10 @@ jobs:
           await page.locator('#completeWorkout').click();
           check('Empty completion response is rejected',await page.evaluate(()=>JSON.parse(localStorage.workoutHistory||'[]').length===0));
           check('Missing response explains what is needed',(await page.locator('#completionBanner').innerText()).includes('effort'));
+          const warningBounds=await page.locator('#completionBanner').boundingBox(),tabBounds=await page.locator('.tabbar').boundingBox();
+          check('Missing response is fully visible above fixed navigation',warningBounds&&tabBounds&&warningBounds.y+warningBounds.height<=tabBounds.y+1,JSON.stringify({warningBounds,tabBounds}));
+          await page.waitForTimeout(2300);
+          check('Missing response remains visible until corrected',await visible('#completionBanner'));
           check('Session CTAs retain readable contrast',await page.evaluate(()=>['completeWorkoutQuick','completeWorkout'].every(id=>getComputedStyle(document.getElementById(id)).color==='rgb(255, 255, 255)')));
           await shot('03b-session-response',false);
           await page.locator('#sessionRPE').selectOption('9');
@@ -504,6 +508,10 @@ jobs:
           check('Cloud backup has no routine save button',await page.locator('#cloudSave').count()===0);
           check('Opening cloud preserves all local data',beforeCloud===await page.evaluate(()=>JSON.stringify(collectBackupData())));
           check('Auth tokens are excluded from backup',await page.evaluate(()=>{localStorage.setItem('alp-cloud-auth','test-token');const safe=!Object.hasOwn(collectBackupData(),'alp-cloud-auth');localStorage.removeItem('alp-cloud-auth');return safe}));
+          check('Cloud help and account labels are readable on the light Settings surface',await page.evaluate(()=>[
+            getComputedStyle(document.getElementById('cloudStatus')).color,
+            getComputedStyle(document.getElementById('cloudEmail').closest('label')).color
+          ].every(color=>color==='rgb(82, 100, 118)')));
           check('Cloud has no horizontal overflow',await page.locator('#cloudPanel').evaluate(n=>n.scrollWidth<=n.clientWidth+1));
 
           // A calendar-advanced athlete without earned standards should be prescription-locked.
