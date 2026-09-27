@@ -50,3 +50,15 @@ test('completion records the prescribed session for normal, reduced and recovery
   assert.equal(saved.rpe,5);assert.equal(saved.postPain,0);assert.equal(saved.completed,'YES');
  }
 });
+
+
+test('missing required session response remains visible and scrolls into view',()=>{
+ const nodes={},storage={programStart:'2026-09-01'};let scrolled=false,focused=false,timeouts=0;
+ const makeNode=id=>({classList:{add(){},remove(){}},scrollIntoView(){if(id==='completionBanner')scrolled=true},focus(){if(id==='sessionRPE')focused=true}});
+ const ctx=vm.createContext({localStorage:storage,recordedExerciseSets:()=>[],workouts:()=>[],adaptiveSession:()=>({title:'Strength'}),prescriptionWeek:()=>1,
+  num:id=>['sessionRPE','postPain'].includes(id)?null:0,val:()=>'',setTimeout:()=>{timeouts++},$:id=>nodes[id]??=makeNode(id)});
+ vm.runInContext(source.slice(source.indexOf('function saveWorkout(c){'),source.indexOf('\nconst EXERCISE_DB_BASE=')),ctx);
+ ctx.saveWorkout('YES');
+ assert.equal(nodes.sessionFeedback.open,true);assert.match(nodes.completionBanner.textContent,/effort and post-session pain/);
+ assert.equal(scrolled,true);assert.equal(focused,true);assert.equal(timeouts,0);assert.equal(storage.workoutHistory,undefined);
+});
