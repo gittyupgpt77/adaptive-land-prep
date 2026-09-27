@@ -43,7 +43,17 @@ test('interrupted restart rolls back before startup and backups expose only the 
  h.values.set('alp-journey-restart-pending',JSON.stringify(before));h.values.set('journeyArchives','[]');h.values.set('journeyEpoch',now.toISOString());h.values.set('programStart',now.toISOString());h.values.delete('trainingLogs');h.values.delete('nutrition_today');
  assert.equal(JSON.stringify(h.context.collectBackupData()),JSON.stringify(before));
  h.context.recoverInterruptedJourneyRestart();assert.deepEqual(Object.fromEntries(h.values),original);
+});test('Settings presents the two most recent Journey archives before older history',()=>{
+ const archives=[
+  {id:'first',endedAt:'2026-09-01T12:00:00.000Z',data:{programStart:'2026-08-01T12:00:00.000Z'}},
+  {id:'third',endedAt:'2026-09-03T12:00:00.000Z',data:{programStart:'2026-09-02T12:00:00.000Z'}},
+  {id:'second',endedAt:'2026-09-02T12:00:00.000Z',data:{programStart:'2026-09-01T12:00:00.000Z'}}
+ ];
+ const h=harness({journeyArchives:JSON.stringify(archives)});
+ const ordered=Array.from(h.context.orderedJourneyArchives(),({archive,index})=>({id:archive.id,index}));
+ assert.deepEqual(ordered,[{id:'third',index:1},{id:'second',index:2},{id:'first',index:0}]);
 });
+
 test('insufficient space for the recovery snapshot leaves the Journey untouched',()=>{
  const h=harness(original);h.fail('alp-journey-restart-pending');assert.throws(()=>h.context.restartJourney(now));assert.deepEqual(Object.fromEntries(h.values),original);
 });

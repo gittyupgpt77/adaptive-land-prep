@@ -987,13 +987,16 @@ function exportJourneyArchive(index){
  const archive=journeyArchives()[index];if(!archive)return;
  const payload={app:"Adaptive Land Prep",formatVersion:3,exportedAt:new Date().toISOString(),data:archive.data};
  const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"})),a=document.createElement("a");
- a.href=url;a.download="adaptive-land-prep-journey-"+archive.endedAt.slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ a.href=url;a.download="adaptive-land-prep-journey-"+archive.endedAt.slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function orderedJourneyArchives(){
+ return journeyArchives().map((archive,index)=>({archive,index})).sort((a,b)=>new Date(b.archive.endedAt)-new Date(a.archive.endedAt));
 }
+
 function renderJourneyArchives(){
  const list=$("journeyArchiveList");list.replaceChildren();
- const archives=journeyArchives();let older;
+ const archives=orderedJourneyArchives();let older;
  if(archives.length>2){older=document.createElement("details");const summary=document.createElement("summary");summary.textContent="Older Journeys ("+(archives.length-2)+")";older.append(summary)}
- archives.forEach((archive,index)=>{const button=document.createElement("button");button.type="button";button.textContent="Download Journey ending "+new Date(archive.endedAt).toLocaleDateString();button.onclick=()=>exportJourneyArchive(index);(index<2?list:older).append(button)});if(older)list.append(older);
+ archives.forEach(({archive,index},position)=>{const button=document.createElement("button");button.type="button";button.textContent="Download Journey ending "+new Date(archive.endedAt).toLocaleDateString();button.onclick=()=>exportJourneyArchive(index);(position<2?list:older).append(button)});if(older)list.append(older);
  $("restartJourney").disabled=!localStorage.programStart;
 }
 function exportBackup(){const p={app:"Adaptive Land Prep",formatVersion:3,exportedAt:new Date().toISOString(),data:collectBackupData()},b=new Blob([JSON.stringify(p,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="adaptive-land-prep-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.lastBackupAt=p.exportedAt;countRecords()}
