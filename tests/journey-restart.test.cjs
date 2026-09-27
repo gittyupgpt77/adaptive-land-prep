@@ -4,7 +4,7 @@ function harness(initial={}){
  const values=new Map(Object.entries(initial));let failure;
  const storage={get length(){return values.size},key:i=>[...values.keys()][i],getItem:k=>values.get(k)??null,setItem(k,v){if(failure===k){failure=null;throw Error('quota')}values.set(k,String(v))},removeItem:k=>values.delete(k)};
  const localStorage=new Proxy(storage,{get:(t,k)=>k in t?t[k]:values.get(k)}),mirrors=[];
- const context=vm.createContext({localStorage,dbSet:(...args)=>mirrors.push(args),location:{reload(){}},Date});
+ const context=vm.createContext({NutritionIntake:require('../nutrition-intake'),NutritionProfile:require('../nutrition-profile'),localStorage,dbSet:(...args)=>mirrors.push(args),location:{reload(){}},Date});
  vm.runInContext(source.slice(source.indexOf('const APP_STORAGE_KEYS='),source.indexOf('\n$("exportBackup").onclick')),context);
  return {context,values,mirrors,fail:k=>failure=k};
 }
@@ -56,4 +56,17 @@ test('interrupted restart rolls back before startup and backups expose only the 
 
 test('insufficient space for the recovery snapshot leaves the Journey untouched',()=>{
  const h=harness(original);h.fail('alp-journey-restart-pending');assert.throws(()=>h.context.restartJourney(now));assert.deepEqual(Object.fromEntries(h.values),original);
+});
+
+// Prepared for final release gate: new records must survive backup and stay epoch-isolated.
+test('nutrition profile and weighed food receipts survive archive and restore without source recalculation',async()=>{
+ const core=require('../nutrition-core'),catalog=require('../data/nutrition/foods.json');
+ const receipt=core.recipeSnapshot({id:'breakfast',name:'Weighed oats',ingredients:[{foodId:'oats',grams:60}]},catalog);
+ const data={...original,athleteNutritionProfile:JSON.stringify({schemaVersion:1,assessments:[{date:'2026-09-01',weightKg:80,bodyFatPercent:20,method:'dexa'}],rmrTests:[{date:null,kcal:1800}]}),nutrition_today:JSON.stringify({meals:['breakfast'],prescribedMeals:[{id:'breakfast',name:'Planned breakfast',kcal:400,foods:['Original template']}],mealEntries:[{id:'breakfast',kind:'ingredients',snapshot:receipt}],actualCalories:receipt.kcal,saved:true,complete:true})};
+ const h=harness(data);h.context.restartJourney(now);
+ assert.equal(h.values.has('athleteNutritionProfile'),false);assert.equal(h.values.has('nutrition_today'),false);
+ const archive=JSON.parse(h.values.get('journeyArchives'))[0];
+ assert.equal(archive.data.athleteNutritionProfile,data.athleteNutritionProfile);assert.equal(archive.data.nutrition_today,data.nutrition_today);
+ const restored=harness({});await restored.context.importBackup({text:async()=>JSON.stringify({app:'Adaptive Land Prep',formatVersion:3,data:archive.data})});
+ assert.equal(restored.values.get('nutrition_today'),data.nutrition_today);assert.equal(restored.values.get('athleteNutritionProfile'),data.athleteNutritionProfile);
 });

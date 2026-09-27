@@ -465,3 +465,9 @@ body{min-height:100dvh}
 .meal-main span{font-size:14px;line-height:1.5;color:#526476}
 .meal-check{min-height:48px;color:#627589}.meal-card.done .meal-check{color:#267348}
 .actual-intake summary{min-height:44px;align-content:center;font-size:16px;font-weight:600;cursor:pointer}
+
+.food-entry,.meal-correction fieldset{border:1px solid #dce4eb;border-radius:14px;padding:12px;min-width:0;margin:0 0 12px;display:grid;gap:10px}
+.food-entry legend,.meal-correction legend{font-size:14px;font-weight:600;color:#486580}
+#foodMealRows{display:grid;gap:10px}#foodMealTotal{font-size:17px;font-weight:600;color:#172b3b}
+#foodMealNutrients ul{padding-left:20px;font-size:14px;line-height:1.7}
+#nutritionProfile>p{line-height:1.5;font-size:14px;color:#46586a}

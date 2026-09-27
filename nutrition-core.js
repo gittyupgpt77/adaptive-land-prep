@@ -73,7 +73,7 @@ const NutritionCore=(()=>{
  function recipeSnapshot(recipe,catalog){
   const nutrients=totalIngredients(recipe.ingredients,catalog);
   if(!nutrients.kcal.complete)throw Error('Recipe energy is unknown');
-  return {id:recipe.id,name:recipe.name,ingredients:recipe.ingredients.map(i=>({...i})),
+  return {id:recipe.id,name:recipe.name,ingredients:recipe.ingredients.map(i=>({...i,name:catalog.foods[i.foodId].name})),
    kcal:nutrients.kcal.known,nutrients,catalogVersion:catalog.schemaVersion,
    sources:[...new Set(recipe.ingredients.map(i=>catalog.foods[i.foodId].source))]};
  }

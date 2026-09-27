@@ -34,3 +34,14 @@ test('restore validation rejects orphaned, duplicate and invalid meal records',(
  assert.equal(intake.validEntry({id:'breakfast',kind:'replacement',calories:null}),false);
  assert.equal(intake.validEntry({id:'breakfast',kind:'replacement',calories:200,protein:-1}),false);
 });
+test('ingredient receipts survive catalog changes and require complete known macros',()=>{
+ const core=require('../nutrition-core'),catalog=structuredClone(require('../data/nutrition/foods.json'));
+ const snapshot=core.recipeSnapshot({id:'breakfast',name:'Chocolate shake',ingredients:[{foodId:'wheyChocolate',grams:41}]},catalog);
+ const entry={id:'breakfast',kind:'ingredients',snapshot};
+ assert.equal(intake.validEntry(entry),true);catalog.foods.wheyChocolate.nutrients.protein=0;
+ const actual=intake.summary(meals,['breakfast'],[JSON.parse(JSON.stringify(entry))]);
+ assert.equal(actual.calories,150);assert.equal(actual.protein,25);
+ const corrupt=structuredClone(entry);corrupt.snapshot.nutrients.protein.complete=false;
+ assert.equal(intake.validEntry(corrupt),false);
+ assert.equal(intake.validEntry({...entry,id:'lunch'}),false);
+});

@@ -500,9 +500,9 @@ function renderDailyDirective(){
  if(state==="nutrition"){
    const status=rawState==="breakfast"?"Breakfast before training":record?.completed==="YES"?"Session completed":record?.completed==="PARTIAL"?"Partial session recorded":"Skipped session recorded";
    $("directiveStage").textContent="FUEL & RECOVER";$("directiveStep").textContent=rawState==="breakfast"?"STEP 2 OF 5":"STEP 4 OF 5";$("directiveTitle").textContent=rawState==="breakfast"?"Start with breakfast":"Finish today’s prescribed nutrition";
-   $("directiveCopy").textContent=status+". Confirm prescribed meals as you eat them; enter calories or macros only if the day differed from plan.";
+   $("directiveCopy").textContent=status+". Record meals as you eat them. If something differs, change that meal’s foods or amount.";
    $("directiveReason").textContent=target.adjustment?.copy||"Today’s meal target is matched to the saved readiness decision and training day.";
-   $("directiveWorkout").innerHTML='<div class="directive-meal-progress"><strong>'+doneMeals.size+' of '+meals.length+' meals confirmed</strong><span>'+status+'</span><div><i style="width:'+(meals.length?Math.round(doneMeals.size/meals.length*100):0)+'%"></i></div></div>';
+   $("directiveWorkout").innerHTML='<div class="directive-meal-progress"><strong>'+doneMeals.size+' of '+meals.length+' meals recorded</strong><span>'+status+'</span><div><i style="width:'+(meals.length?Math.round(doneMeals.size/meals.length*100):0)+'%"></i></div></div>';
    $("directivePrimary").textContent="Continue today’s meals";$("directivePrimary").onclick=()=>switchTab("nutrition");$("directiveSecondary").textContent="Review session";$("directiveSecondary").onclick=()=>switchTab("workout");return
  }
  const actual=Number.isFinite(nutrition.actualCalories)?nutrition.actualCalories:null,status=record?.completed==="YES"?"completed":record?.completed==="PARTIAL"?"partial":"skipped";
@@ -739,13 +739,29 @@ function captureNutritionDraft(log=getNutritionLog()){
 }
 function mealEntryLabel(log,id){
  const entry=(log.mealEntries||[]).find(e=>e.id===id);if(!entry)return "";
- const label=entry.kind==="skipped"?"Recorded as skipped":entry.kind==="portion"?Math.round(entry.fraction*100)+"% of this meal recorded":"Different meal · "+Math.round(entry.calories)+" kcal recorded";
+ const label=entry.kind==="ingredients"?entry.snapshot.name+" · "+Math.round(entry.snapshot.kcal)+" kcal recorded":entry.kind==="skipped"?"Recorded as skipped":entry.kind==="portion"?Math.round(entry.fraction*100)+"% of this meal recorded":"Different meal · "+Math.round(entry.calories)+" kcal recorded";
  return '<p class="meal-entry-label">'+nutritionText(label)+(entry.note?' · '+nutritionText(entry.note):'')+'</p>';
 }
-function openMealCorrection(meal,meals){
- const entry=(getNutritionLog().mealEntries||[]).find(e=>e.id===meal.id),kind=entry?.kind||"portion";
+function commitMealCorrection(meal,meals,next,errorId,editContext){
+  if(!editContext||nutritionLogKey()!==editContext.key||localStorage.getItem(editContext.key)!==editContext.raw){$(errorId).textContent="This day’s records changed while the editor was open. Close it and reopen the meal before saving.";return}
+  const storageKey=nutritionLogKey(),keys=[storageKey,"task_nutrition_"+todayKey(),"daySession"],before=Object.fromEntries(keys.map(k=>[k,localStorage.getItem(k)]));
+  try{
+   const cur=captureNutritionDraft();cur.meals=[...new Set([...(cur.meals||[]),meal.id])];
+   cur.mealEntries=[...(cur.mealEntries||[]).filter(e=>e.id!==meal.id),next];
+   cur.prescribedMeals=meals.map(m=>({...m,foods:[...m.foods]}));
+   localStorage.setItem(storageKey,JSON.stringify(cur));saveNutrition(false);closeModal();
+  }catch(error){
+   try{for(const k of keys){if(before[k]===null)localStorage.removeItem(k);else localStorage.setItem(k,before[k])}}catch(restoreError){}
+   $(errorId).textContent="This meal could not be saved. Your entries are still here; free device storage and try again.";
+  }
+}
+function openMealCorrection(meal,meals,forceManual=false,editContext=null){
+ editContext=editContext||{key:nutritionLogKey(),raw:localStorage.getItem(nutritionLogKey())};
+ const entry=(getNutritionLog().mealEntries||[]).find(e=>e.id===meal.id),kind=entry?.kind==="ingredients"?"replacement":entry?.kind||"portion";
+ if(entry?.kind==="ingredients"&&!forceManual){openFoodMeal(meal,meals,editContext);return}
  $("modalTitle").textContent="What did you eat?";
- $("modalContent").innerHTML='<form id="mealCorrection" class="meal-correction"><p>'+nutritionText(meal.name)+'</p><label>Record<select id="mealKind"><option value="portion">A portion of the planned meal</option><option value="replacement">Something different</option><option value="skipped">I skipped this meal</option></select></label><div id="portionFields"><label>Amount eaten · %<input id="mealPercent" type="number" min="1" max="200" step="any" inputmode="decimal" required></label><p>Use this only when you ate the same proportion of every ingredient.</p></div><div id="replacementFields"><p>Enter totals for this meal only. Leave unknown macros blank. Any full-day totals entered below your meal list will still override meal totals.</p>'+["calories","protein","carbs","fat"].map(k=>'<label>'+({calories:"Calories · kcal",protein:"Protein · g",carbs:"Carbohydrate · g",fat:"Fat · g"}[k])+'<input id="meal-'+k+'" type="number" min="0" step="any" inputmode="decimal"></label>').join("")+'</div><label>Note · optional<input id="mealNote" maxlength="500" type="text" placeholder="What changed?"></label><p id="mealCorrectionError" role="alert"></p><button class="nutrition-save" type="submit">Save meal & continue</button><button id="cancelMealCorrection" type="button">Cancel</button></form>';
+ $("modalContent").innerHTML='<form id="mealCorrection" class="meal-correction"><button type="button" id="chooseMealFoods">Choose foods & amounts</button><p>'+nutritionText(meal.name)+'</p><label>Record<select id="mealKind"><option value="portion">A portion of the planned meal</option><option value="replacement">Something different</option><option value="skipped">I skipped this meal</option></select></label><div id="portionFields"><label>Amount eaten · %<input id="mealPercent" type="number" min="1" max="200" step="any" inputmode="decimal" required></label><p>Use this only when you ate the same proportion of every ingredient.</p></div><div id="replacementFields"><p>Enter totals for this meal only. Leave unknown macros blank. Any full-day totals entered below your meal list will still override meal totals.</p>'+["calories","protein","carbs","fat"].map(k=>'<label>'+({calories:"Calories · kcal",protein:"Protein · g",carbs:"Carbohydrate · g",fat:"Fat · g"}[k])+'<input id="meal-'+k+'" type="number" min="0" step="any" inputmode="decimal"></label>').join("")+'</div><label>Note · optional<input id="mealNote" maxlength="500" type="text" placeholder="What changed?"></label><p id="mealCorrectionError" role="alert"></p><button class="nutrition-save" type="submit">Save meal & continue</button><button id="cancelMealCorrection" type="button">Cancel</button></form>';
+ $("chooseMealFoods").onclick=()=>openFoodMeal(meal,meals,editContext);
  $("mealKind").value=kind;$("mealPercent").value=(entry?.fraction??1)*100;$("mealNote").value=entry?.note||"";
  for(const key of ["calories","protein","carbs","fat"])$("meal-"+key).value=entry?.[key]??"";
  const changeKind=()=>{const portion=$("mealKind").value==="portion",replacement=$("mealKind").value==="replacement";$("portionFields").hidden=!portion;$("replacementFields").hidden=!replacement;$("mealPercent").disabled=!portion;for(const key of ["calories","protein","carbs","fat"])$("meal-"+key).disabled=!replacement;$("meal-calories").required=replacement};
@@ -756,23 +772,14 @@ function openMealCorrection(meal,meals){
   if(next.kind==="portion")next.fraction=Number($("mealPercent").value)/100;
   if(next.kind==="replacement")for(const key of ["calories","protein","carbs","fat"]){const raw=$("meal-"+key).value.trim();next[key]=raw===""?null:Number(raw)}
   if(!NutritionIntake.validEntry(next)){$("mealCorrectionError").textContent="Enter a valid amount. A different meal needs its calories; other macros can stay blank.";return}
-  const storageKey=nutritionLogKey(),keys=[storageKey,"task_nutrition_"+todayKey(),"daySession"],before=Object.fromEntries(keys.map(k=>[k,localStorage.getItem(k)]));
-  try{
-   const cur=captureNutritionDraft();cur.meals=[...new Set([...(cur.meals||[]),meal.id])];
-   cur.mealEntries=[...(cur.mealEntries||[]).filter(e=>e.id!==meal.id),next];
-   cur.prescribedMeals=meals.map(m=>({...m,foods:[...m.foods]}));
-   localStorage.setItem(storageKey,JSON.stringify(cur));saveNutrition(false);closeModal();
-  }catch(error){
-   try{for(const k of keys){if(before[k]===null)localStorage.removeItem(k);else localStorage.setItem(k,before[k])}}catch(restoreError){}
-   $("mealCorrectionError").textContent="This meal could not be saved. Your entries are still here; free device storage and try again.";
-  }
+  commitMealCorrection(meal,meals,next,"mealCorrectionError",editContext);
  };
 }
 function renderNutrition(){
  const w=prescriptionWeek(),name=sessionName(),target=todayNutritionPrescription(w,name),meals=todayMealPlan(w,name),log=getNutritionLog(),done=new Set(log.meals||[]),hydr=hydrationForDay(w,name);
  const intake=NutritionIntake.summary(meals,[...done],log.mealEntries||[]);
  const confirmed=meals.filter(m=>done.has(m.id)),next=meals.find(m=>!done.has(m.id)),planned=intake.calories,remaining=meals.filter(m=>!done.has(m.id)).reduce((sum,m)=>sum+m.kcal,0);
- $("nutritionToday").innerHTML='<div class="nutrition-dashboard"><small>'+(dayKey(dayDate())!==dayKey(new Date())?"RECORD THIS DAY’S MEALS":next?"NEXT TO EAT":"MEALS CONFIRMED")+'</small><h2>'+(next?nutritionText(next.name):"You’ve recorded every meal")+'</h2>'+(next?'<ul class="next-meal-ingredients">'+next.foods.map(f=>'<li>'+nutritionText(f)+'</li>').join("")+'</ul><button id="eatNextMeal" class="nutrition-save">Ate this meal</button><button id="openNextMeal" class="next-meal-details">View meal details</button>':'<p>'+(log.complete?"Today’s intake is saved.":"Review any changes below before finishing today’s intake.")+'</p>')+'<p class="meal-remainder">'+confirmed.length+' of '+meals.length+' meals recorded · ≈ '+(planned??0).toLocaleString()+' kcal from meals<br>≈ '+remaining.toLocaleString()+' kcal in the remaining plan</p>'+(target.adjustment?'<div class="nutrition-adjustment '+target.adjustment.level+'"><strong>'+target.adjustment.title+'</strong><span>'+target.adjustment.copy+'</span></div>':'')+'<details><summary>Daily targets & timing</summary><small>program kcal target</small><p>≈ '+target.cal.toLocaleString()+' kcal · '+target.protein+' g protein · '+target.carbs+' g carbohydrate · '+target.fat+' g fat</p><p>'+target.why+'</p><p>Spread protein meals through the day. Move the training snack before or after training as comfortable; no countdown is needed.</p><p>Meal calories are existing program estimates. Ingredient-level macros and equivalent substitutions are not yet verified.</p></details></div>';
+ $("nutritionToday").innerHTML='<div class="nutrition-dashboard"><small>'+(dayKey(dayDate())!==dayKey(new Date())?"RECORD THIS DAY’S MEALS":next?"NEXT TO EAT":"MEALS RECORDED")+'</small><h2>'+(next?nutritionText(next.name):"You’ve recorded every meal")+'</h2>'+(next?'<ul class="next-meal-ingredients">'+next.foods.map(f=>'<li>'+nutritionText(f)+'</li>').join("")+'</ul><button id="eatNextMeal" class="nutrition-save">Ate this meal</button><button id="openNextMeal" class="next-meal-details">View meal details</button>':'<p>'+(log.complete?"Today’s intake is saved.":"Review any changes below before finishing today’s intake.")+'</p>')+'<p class="meal-remainder">'+confirmed.length+' of '+meals.length+' meals recorded · ≈ '+(planned??0).toLocaleString()+' kcal from meals<br>≈ '+remaining.toLocaleString()+' kcal in the remaining plan</p>'+(target.adjustment?'<div class="nutrition-adjustment '+target.adjustment.level+'"><strong>'+target.adjustment.title+'</strong><span>'+target.adjustment.copy+'</span></div>':'')+'<details><summary>Daily targets & timing</summary><small>program kcal target</small><p>≈ '+target.cal.toLocaleString()+' kcal · '+target.protein+' g protein · '+target.carbs+' g carbohydrate · '+target.fat+' g fat</p><p>'+target.why+'</p><p>Spread protein meals through the day. Move the training snack before or after training as comfortable; no countdown is needed.</p><p>Meal calories are existing program estimates. Ingredient-level macros and equivalent substitutions are not yet verified.</p></details></div>';
 
  $("mealProgress").textContent=done.size+"/"+meals.length;
  $("nutritionMeals").innerHTML=meals.map(m=>'<div class="meal-card '+(done.has(m.id)?"done":"")+'"><button class="meal-check" aria-label="'+(done.has(m.id)?"Undo ":"Ate ")+nutritionText(m.name)+'" aria-pressed="'+done.has(m.id)+'" data-meal="'+nutritionText(m.id)+'">'+(done.has(m.id)?"✓":"○")+'</button><button class="meal-main" data-mealopen="'+nutritionText(m.id)+'"><div><small>≈ '+m.kcal+' KCAL PLANNED</small><strong>'+nutritionText(m.name)+'</strong>'+m.foods.map(f=>'<span>'+nutritionText(f)+'</span>').join("")+mealEntryLabel(log,m.id)+'</div><b>›</b></button></div>').join("");
@@ -924,7 +931,7 @@ function switchTab(t){
  back.textContent=t==="today"?"‹ Edit morning check-in":"‹ Back";
  back.onclick=()=>{if(t==="today"||t==="nutrition"&&!todayWorkoutRecord())openCheckin();else switchTab(t==="workout"?"today":"workout")};
  $("todayDate").textContent=["today","workout","nutrition"].includes(t)?(dayKey(dayDate())!==dayKey(new Date())?"Finishing ":"")+dayDate().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}):"";resetViewport();
- if(t==="settings"){setupTrainingTargets();
+ if(t==="settings"){setupTrainingTargets();renderNutritionProfile();
  const started=!!localStorage.programStart;renderJourneyArchives();
  $("settingsJourneyStatus").textContent=started?"Active":"Not started";
  $("settingsJourneyStart").textContent=started?new Date(localStorage.programStart).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"}):"Set Day 1 from Today";
@@ -993,7 +1000,7 @@ restoreSessionFeedback();
  const remember=()=>localStorage.setItem(key(),field.value);
  field.addEventListener("input",remember);field.addEventListener("change",remember);
 });
-const DB_NAME="AdaptiveLandPrepDB",STORE="kv";function openDB(){return new Promise((r,j)=>{const q=indexedDB.open(DB_NAME,1);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains(STORE))q.result.createObjectStore(STORE)};q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}async function dbSet(k,v){try{const d=await openDB();d.transaction(STORE,"readwrite").objectStore(STORE).put(v,k)}catch(e){}}async function requestPersistence(){let p=false;try{p=await navigator.storage?.persisted?.()||await navigator.storage?.persist?.()}catch(e){}$("persistBadge").textContent=p?"Persistent":"On device";$("dbStatus").textContent=p?"Persistent storage granted":"Local database active; keep periodic backups"}function countRecords(){$("recordCount").textContent=(logs().length+workouts().length)+" records";$("lastBackup").textContent=localStorage.lastBackupAt?new Date(localStorage.lastBackupAt).toLocaleString():"Never"}const APP_STORAGE_KEYS=new Set(["trainingLogs","workoutHistory","programStart","baselineDate","failedDays","benchmarks","input_focal","input_gait","journeyArchives","journeyEpoch","daySession"]);
+const DB_NAME="AdaptiveLandPrepDB",STORE="kv";function openDB(){return new Promise((r,j)=>{const q=indexedDB.open(DB_NAME,1);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains(STORE))q.result.createObjectStore(STORE)};q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}async function dbSet(k,v){try{const d=await openDB();d.transaction(STORE,"readwrite").objectStore(STORE).put(v,k)}catch(e){}}async function requestPersistence(){let p=false;try{p=await navigator.storage?.persisted?.()||await navigator.storage?.persist?.()}catch(e){}$("persistBadge").textContent=p?"Persistent":"On device";$("dbStatus").textContent=p?"Persistent storage granted":"Local database active; keep periodic backups"}function countRecords(){$("recordCount").textContent=(logs().length+workouts().length)+" records";$("lastBackup").textContent=localStorage.lastBackupAt?new Date(localStorage.lastBackupAt).toLocaleString():"Never"}const APP_STORAGE_KEYS=new Set(["trainingLogs","workoutHistory","programStart","baselineDate","failedDays","benchmarks","input_focal","input_gait","journeyArchives","journeyEpoch","daySession","athleteNutritionProfile"]);
 function isAppStorageKey(k){return APP_STORAGE_KEYS.has(k)||k.startsWith("input_")||k.startsWith("task_")||k.startsWith("nutrition_")}
 function collectBackupData(){const pending=localStorage.getItem("alp-journey-restart-pending");if(pending)return JSON.parse(pending);const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&isAppStorageKey(k))data[k]=localStorage.getItem(k)}return data}
 function recoverInterruptedJourneyRestart(){
@@ -1077,6 +1084,7 @@ function validateBackup(o){
     if(r.decision!=null){if(!object(r.decision)||!["GREEN","YELLOW","RED"].includes(r.decision.o))fail();for(const field of ["a","b","c"]){if(r.decision[field]!=null&&!["","GREEN","YELLOW","RED"].includes(r.decision[field]))fail()}}
    }
   }else if(k==="failedDays"){const days=JSON.parse(v);if(!Array.isArray(days)||!days.every(date))fail()}
+  else if(k==="athleteNutritionProfile"){if(!NutritionProfile.valid(JSON.parse(v)))fail()}
   else if(k==="benchmarks"||k.startsWith("nutrition_")){
    const record=JSON.parse(v);if(!object(record))fail();
    if(k.startsWith("nutrition_")){

@@ -166,6 +166,7 @@
 </section>
 
 <section id="settings" class="screen">
+  <details id="nutritionProfile" class="data-details"></details>
   <details class="data-details"><summary>Measured training heart-rate ranges</summary>
     <p>Use a current measured easy-training range for each activity. Leave blank if unknown; the session will use conversational effort. A percentage of an estimated maximum is not a measured Zone 2 boundary.</p>
     <div class="feedback-grid">
@@ -286,7 +287,11 @@
 <div id="daySheet" class="sheet-backdrop hidden"><div class="sheet day-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small id="daySheetKicker">DAY</small><h2 id="daySheetTitle">Day</h2></div><button id="daySheetClose">×</button></div><div class="day-tabs"><button class="day-tab active" data-daytab="training">Training</button><button class="day-tab" data-daytab="nutrition">Nutrition</button></div><div id="daySheetBody"></div></div></div>
 <div id="infoModal" class="sheet-backdrop hidden"><div class="sheet exercise-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small>GUIDANCE</small><h2 id="modalTitle">Exercise</h2></div><button id="modalClose">×</button></div><div id="modalContent"></div><button class="sheet-primary" id="modalDone">Got it</button></div></div>
 <script src="training-tools.js?v=75"></script>
+<script src="nutrition-core.js?v=75"></script>
+<script src="nutrition-data.js?v=75"></script>
+<script src="nutrition-profile.js?v=75"></script>
 <script src="nutrition-intake.js?v=75"></script>
+<script src="nutrition-ui.js?v=75"></script>
 <script src="app.js?v=75"></script>
 <script src="vendor/supabase.js"></script>
 <script src="vendor/firebase.js"></script>
