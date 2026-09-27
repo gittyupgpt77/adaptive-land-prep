@@ -1,5 +1,7 @@
 # Project state
 
+Reduced-dose correction: the existing yellow-day 30% reduction now resolves supported set/count and duration ranges into readable instructions (for example, 3 × 6–8 becomes 2 × 6–8). Repetitions, rest and load are not also multiplied. Weekly ceilings remain unchanged context, not invented daily prescriptions. Unsupported free-text doses remain explicitly unresolved. This is arithmetic implementation of the existing product heuristic, not a newly validated physiological threshold. GitHub connector writes are now available; use them instead of browser editing.
+
 Verified takeover production: c0fbf35ffaf3afc6150c1162811cb4c29ee6478a (PR #13), Consumer Audit and Pages successful; production app.js/index.html/styles.css/service-worker.js matched exactly.
 
 Current nutrition increment: next meal action, immediate saved meal progress, explicit completion separate from partial logging, and complete-day-only downstream fueling. Preserve existing four base meals through Week 24 and five afterward, plus adaptive additions.
