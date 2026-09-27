@@ -30,6 +30,14 @@ Inputs are prescription week, representative body mass, an explicitly establishe
 
 A date-dependent calorie table is not the final architecture. The same workload/energy inputs at Weeks 24 and 25 produce the same target. Future calendar previews must be labeled estimates and may not claim knowledge of future body mass, recovery, or earned workload.
 
+## Foundation priority and changing body composition
+
+Foundation prioritizes fat loss, with lean-tissue retention and basic health/recovery as constraints. Performance optimization is secondary in this phase. Do not silently substitute a maintenance/performance objective or default deficit for the agreed goal. Training demand and dietary feasibility must be reconciled explicitly, not by treating general athlete carbohydrate bands as mandatory clinical minima.
+
+`fatEnergyReference` computes fat mass × 31 kcal/lb/day from a paired body-mass/body-fat assessment. It recalculates with each supplied assessment; it is not a fixed initial allowance. The coefficient is a rounded historical model reference from Alpert (2005), not a measured individual rate, validated safe deficit, or prescribed intake. No automated calorie target is obtained by simply subtracting this value from RMR or maintenance. The eventual policy still needs to combine the agreed goal, energy estimate, intake feasibility and longitudinal response.
+
+A baseline DEXA assessment and a later scale weight are not interchangeable with a fresh composition assessment. Preserve assessment date, method and paired measurements privately during integration. Any projection assuming unchanged lean mass must be labeled a projection; never silently count every pound lost as fat or hold the initial body-fat percentage constant. Do not publish athlete measurements in repository data. Body-fat/weight endpoints remain goals, not evidence of physiological readiness.
+
 ## Ingredient data and calculations
 
 `data/nutrition/foods.json` contains 21 exact USDA SR Legacy records and two manufacturer-label whey records. Each row retains its source and gram basis. Weigh cooked meat, rice, lentils and potato; dry oats/chia; raw produce and egg ingredients. Never apply raw composition to cooked weights. The salmon record is **farmed Atlantic, cooked**, not wild salmon. A wild-salmon option needs its own source row.

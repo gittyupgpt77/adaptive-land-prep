@@ -118,3 +118,15 @@ test('Foundation requires explicit policy and never silently substitutes a defic
  const agreed=core.targets({...input,foundationDeficitFraction:.10});
  assert.equal(agreed.status,'estimate');assert.equal(agreed.foundationDeficitFraction,.10);
 });
+
+// Deferred until the final rescue verification gate, per user direction.
+test('fat-energy reference follows paired composition and is not a calorie prescription',()=>{
+ const before=core.fatEnergyReference({weightKg:90,bodyFatPercent:25});
+ const after=core.fatEnergyReference({weightKg:80,bodyFatPercent:20});
+ assert.equal(before.fatMassKg,22.5);assert.equal(after.fatMassKg,16);
+ assert.ok(after.modelEnergyKcal<before.modelEnergyKcal);
+ assert.equal(before.modelEnergyKcal,22.5/.45359237*31);
+ assert.equal(before.establishesSafeDeficit,false);assert.equal(before.cal,undefined);
+ assert.equal(core.fatEnergyReference({weightKg:80}).status,'needs-body-composition');
+ for(const value of [0,100,NaN])assert.equal(core.fatEnergyReference({weightKg:80,bodyFatPercent:value}).status,'needs-body-composition');
+});

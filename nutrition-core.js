@@ -17,6 +17,18 @@ const NutritionCore=(()=>{
   if(!Number.isInteger(week)||week<1||week>56)throw Error('Invalid prescription week');
   return {...phases.find(p=>week>=p.from&&week<=p.to)};
  }
+ // Historical model reference, not a prescribed deficit or measured daily capacity.
+ // Body mass and body-fat percentage must describe the same assessment.
+ function fatEnergyReference({weightKg,bodyFatPercent}){
+  if(!Number.isFinite(weightKg)||weightKg<=0)return {status:'needs-body-mass'};
+  if(!Number.isFinite(bodyFatPercent)||bodyFatPercent<=0||bodyFatPercent>=100)
+   return {status:'needs-body-composition'};
+  const fatMassKg=weightKg*bodyFatPercent/100,fatMassLb=fatMassKg/.45359237;
+  return {status:'model-reference',fatMassKg,fatMassLb,
+   modelEnergyKcal:fatMassLb*31,kcalPerLbFat:31,
+   source:'https://pubmed.ncbi.nlm.nih.gov/15615615/',
+   establishesSafeDeficit:false};
+ }
  function targets({week,weightKg,maintenanceKcal,workload,recovery=false,foundationDeficitFraction}){
   const phase=phaseForWeek(week);
   if(!Number.isFinite(weightKg)||weightKg<=0)return{status:'needs-body-mass',phase};
@@ -128,6 +140,6 @@ const NutritionCore=(()=>{
    totals,residual,matchesTarget:fits,nutritionAdequacy:'unassessed',
    exceededByConfirmed:keys.filter((k,j)=>eaten[j]>wanted[j])};
  }
- return {phaseForWeek,targets,totalIngredients,recipeSnapshot,remainingTargets,portionPlan};
+ return {phaseForWeek,fatEnergyReference,targets,totalIngredients,recipeSnapshot,remainingTargets,portionPlan};
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=NutritionCore;
