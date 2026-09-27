@@ -13,3 +13,5 @@ test('grip baseline converts explicit units and excludes unlabelled legacy value
  const ctx=vm.createContext({$:id=>fields[id],val:id=>fields[id].value,historicalDate:null,logs:()=>[{date:'2026-09-07',grip:100,gripUnit:'lb'},{date:'2026-09-06',grip:50,gripUnit:'kg'},{date:'2026-09-05',grip:999}]});
  vm.runInContext(app.slice(app.indexOf('function avg('),app.indexOf('function persistInputs(')),ctx);ctx.applyBaselines();assert.equal(fields.gripBase.value,'47.7');fields.gripUnit.value='lb';ctx.applyBaselines();assert.equal(fields.gripBase.value,'105.1');
 });
+
+test('general endurance work never borrows a rowing heart-rate range',()=>{const h=harness();h.storage.input_rowEasyLow='120';h.storage.input_rowEasyHigh='140';for(const type of ['Aerobic','Endurance']){const copy=h.ctx.aerobicGuidance({type,name:'Easy walking',cue:'Conversational effort.'});assert.ok(!copy.includes('120–140'));assert.match(copy,/No modality-specific/);assert.match(copy,/Conversational/);}});

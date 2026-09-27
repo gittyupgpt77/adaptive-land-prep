@@ -1,8 +1,8 @@
 # Project state
 
-## Release candidate
+## Verified release
 
-Branch `feat/nutrition-calculation-core`, assets v75. Not deployed yet. Latest verified production remains `fc66124a0506f15d6f4de7bad333d6785e779b1f` (PR #24, exact-main Consumer Audit and Pages passed).
+Production `0400188400123c864e3a8c4ba9ca34cca74c067e` (PR #25), assets v75. Exact-main Pages and Consumer Audit passed. Release receipt: https://github.com/gittyupgpt77/adaptive-land-prep/pull/25 .
 
 Implemented in this candidate:
 - Four ingredient-backed base meals, additional fueling capacity, exact weighed quantities, known macros and preparation guidance.
@@ -16,7 +16,7 @@ Foundation already shipped: persistent explicit day close; reopen resumes curren
 
 ## Verification
 
-Source suite: 183 passing after integration and bounded-storage checks. Final Consumer Audit pending; new browser acceptance covers measurements, ingredient correction, reopening and actual restore validation. Local WebKit cannot launch because system libraries are absent; use the permanent GitHub gate rather than repeat local installation investigations. Do not call this release deployed until exact-main Pages and Consumer Audit pass.
+Source suite: 183 passing after integration and bounded-storage checks. 213/213 iPhone-sized WebKit checks passed, including measurements, ingredient correction, reopening and actual restore validation. Firebase recovery and automatic-backup browser tests passed. Local WebKit cannot launch because system libraries are absent; use the permanent GitHub gate rather than repeat local installation investigations. Live production assets matched the exact merged commit; a synthetic meal correction survived reopening.
 
 ## Remaining limits / issue register
 
@@ -29,3 +29,7 @@ Source suite: 183 passing after integration and bounded-storage checks. Final Co
 ## Working discipline
 
 Use this register, focused changes and one coherent release gate. Do not restart repository-wide investigation or speculative cleanup. Firebase remains authoritative; Supabase stays dormant. Preserve user data, explicit Journey/day semantics, noisy-signal filtering and the established trend guardrails. See `docs/NUTRITION_MODEL.md` for provenance and model limits; earlier checkpoints remain in git history.
+
+## Prepared follow-up
+
+General aerobic/endurance labels no longer inherit rowing-specific heart-rate ranges. Explicit Run/Row exercises retain their own measured ranges. Assets v76 are prepared on a separate branch; this correction is not yet deployed.

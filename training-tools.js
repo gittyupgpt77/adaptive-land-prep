@@ -111,7 +111,8 @@ function renderTrainingRecords(steps){
 }
 function aerobicGuidance(e){
  if(!['Run','Row','Aerobic','Endurance'].includes(e.type))return '';
- const modality=e.type==='Run'?'run':'row';
+ const modality=e.type==='Run'?'run':e.type==='Row'?'row':null;
+ if(!modality)return (e.cue||'Keep the prescribed effort controlled.')+' No modality-specific heart-rate range is assigned to this general activity.';
  const low=Number(localStorage['input_'+modality+'EasyLow']),high=Number(localStorage['input_'+modality+'EasyHigh']);
  const calibrated=low>=40&&high>low&&high<=220;
  const quality=/quality|threshold/.test(e.name.toLowerCase());
