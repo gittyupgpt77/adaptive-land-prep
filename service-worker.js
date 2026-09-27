@@ -1,5 +1,5 @@
-const CACHE='land-prep-v74';
-const ASSETS=['./','./index.html','./styles.css?v=74','./app.js?v=74','./training-tools.js?v=74','./manifest.webmanifest','./vendor/supabase.js','./cloud-core.js?v=74','./autosave-core.js','./cloud.js?v=74','./vendor/firebase.js','./firestore-backup.js'];
+const CACHE='land-prep-v75';
+const ASSETS=['./','./index.html','./styles.css?v=75','./app.js?v=75','./nutrition-intake.js?v=75','./training-tools.js?v=75','./manifest.webmanifest','./vendor/supabase.js','./cloud-core.js?v=75','./autosave-core.js','./cloud.js?v=75','./vendor/firebase.js','./firestore-backup.js'];
 const scope=new URL(self.registration.scope);
 const shell=new Set(ASSETS.map(path=>new URL(path,scope).href));
 const exerciseImages='https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';

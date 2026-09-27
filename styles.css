@@ -448,3 +448,20 @@ body{min-height:100dvh}
 
 @media(max-width:370px){.tap-scale.choices{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .recorded-set>span{min-width:0;overflow-wrap:anywhere}.set-actions{display:flex;flex-shrink:0;gap:4px}.set-actions button{min-width:44px}.set-entry>button.set-secondary{background:#edf4fa;color:#1768bb}.set-entry>button[hidden]{display:none}
+
+/* Meal corrections share the daily flow's calm, readable surface. */
+.meal-correction{display:grid;gap:14px;padding-bottom:16px}
+.meal-correction label{display:grid;gap:6px;font-size:15px;font-weight:600}
+.meal-correction input,.meal-correction select{width:100%;box-sizing:border-box;min-height:48px;padding:12px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#172b3b;font:inherit}
+.meal-correction p{font-size:14px;line-height:1.5;color:#46586a}
+.meal-correction [hidden]{display:none}
+.meal-correction #mealCorrectionError{color:#a52b26}
+.meal-correction button{min-height:48px}
+.meal-entry-label{font-size:13px!important;line-height:1.5;margin:8px 0 0;color:#275940!important}
+.meal-card{background:#fff;color:#172b3b;border:1px solid #dce4eb;box-shadow:none}
+.meal-card.done{border-color:#9bc4aa}
+.meal-main{color:#172b3b;padding:14px 14px 14px 4px}
+.meal-main strong{font-size:16px}.meal-main small{font-size:11px;color:#486580}
+.meal-main span{font-size:14px;line-height:1.5;color:#526476}
+.meal-check{min-height:48px;color:#627589}.meal-card.done .meal-check{color:#267348}
+.actual-intake summary{min-height:44px;align-content:center;font-size:16px;font-weight:600;cursor:pointer}

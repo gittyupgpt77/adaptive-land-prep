@@ -1,6 +1,6 @@
 # Nutrition calculation milestone — not a live prescription
 
-Status: offline calculation core and traceable menu audit. The browser still uses the legacy plan. Do not connect this module to the daily loop until the release blockers below are closed. No personal health measurements or supplement-use history belong in this document or the food catalog.
+Status: offline calculation core and traceable menu audit; meal-level actual-intake UI is implemented on the development branch but not released. The browser still uses the legacy prescription plan. Do not connect this module to the daily loop until the release blockers below are closed. No personal health measurements or supplement-use history belong in this document or the food catalog.
 
 ## Confirmed failures in the live system
 
@@ -86,3 +86,11 @@ The previous 12-test checkpoint passed before the explicit-policy revision. Upda
 - National Academies DRI summary tables (2019): https://www.ncbi.nlm.nih.gov/books/NBK545442/
 - NIH nutrient references: https://ods.od.nih.gov/factsheets/list-VitaminsMinerals/
 - AIS collagen evidence category: https://www.ais.gov.au/nutrition/supplements/group_b
+
+## Meal-level actual intake (development branch)
+
+`nutrition-intake.js` separates the unchanged prescribed meal from a confirmed portion, replacement or explicit skip. Portion percentages require the same fraction of every ingredient; replacing individual foods uses a replacement meal record instead. Replacement calories are required and macros are optional. A skip is recorded zero intake, not missing logging. Empty/missing records never imply a completed day.
+
+The existing `nutrition_DATE` object gains optional `mealEntries`, each referencing a confirmed prescribed meal ID. Backup validation rejects duplicate/orphaned entries and invalid amounts. One-tap prescribed confirmations and corrections feed actual totals; template macros remain unknown. Ingredient-backed snapshots will contribute their known macros when integrated. Full-day entries override meal totals and leave unspecified macros unknown. Undo removes the corresponding correction. Existing historical records are not rewritten.
+
+The UI exposes corrections inside meal details, preserves changes in calendar history, and moves full-day overrides under disclosure. Save failure attempts restoration of the original nutrition, task and day-session values. Final release verification must exercise storage failure and cloud/archived Journey round trips; regression cases are prepared, not yet executed. Template energy remains approximate and this increment does not activate the draft target engine or automatically compensate for skipped meals.

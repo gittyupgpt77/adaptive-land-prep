@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Land Prep">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="styles.css?v=74">
+<link rel="stylesheet" href="styles.css?v=75">
 <title>Adaptive Land Prep</title>
 </head>
 <body>
@@ -138,16 +138,16 @@
   <div id="nutritionMeals" class="meal-list"></div>
   <div class="section-row"><h2>Hydration</h2><span id="hydrationTarget"></span></div>
   <div id="hydrationCard" class="nutrition-page-card"></div>
-  <div class="section-row"><h2>Deviations</h2><span>only if you ate differently</span></div>
-  <div class="nutrition-page-card actual-intake">
+  <details class="nutrition-page-card actual-intake"><summary>Full-day totals · optional</summary>
+  <p>To change one meal, open its details. These totals replace the sum of your meal records.</p>
     <div class="actual-grid">
       <label><span>Calories · kcal</span><input id="actualCalories" type="number" inputmode="numeric" placeholder="kcal"></label>
       <label><span>Protein · g</span><input id="actualProtein" type="number" inputmode="decimal" placeholder="g"></label>
       <label><span>Carbs · g</span><input id="actualCarbs" type="number" inputmode="decimal" placeholder="g"></label>
       <label><span>Fat · g</span><input id="actualFat" type="number" inputmode="decimal" placeholder="g"></label>
     </div>
-    <small class="actual-help">Meal taps save automatically. If you ate differently, enter full-day totals here, including everything eaten—not just the difference. Calories are needed before a different day can inform recovery. Save when you have finished eating.</small>
-  </div>
+    <small class="actual-help">Meal taps and meal corrections save automatically. Use these fields only to replace the entire day’s totals, including everything eaten—not just the difference. Calories are needed before a different day can inform recovery. Save when you have finished eating.</small>
+  </details>
   <div class="section-row"><h2>Intake & Recovery</h2></div>
   <div id="nutritionInfluence" class="nutrition-page-card"></div>
   <button id="saveNutritionDay" class="nutrition-save">Save Today’s Intake</button>
@@ -285,12 +285,13 @@
 
 <div id="daySheet" class="sheet-backdrop hidden"><div class="sheet day-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small id="daySheetKicker">DAY</small><h2 id="daySheetTitle">Day</h2></div><button id="daySheetClose">×</button></div><div class="day-tabs"><button class="day-tab active" data-daytab="training">Training</button><button class="day-tab" data-daytab="nutrition">Nutrition</button></div><div id="daySheetBody"></div></div></div>
 <div id="infoModal" class="sheet-backdrop hidden"><div class="sheet exercise-sheet"><div class="sheet-handle"></div><div class="sheet-head"><div><small>GUIDANCE</small><h2 id="modalTitle">Exercise</h2></div><button id="modalClose">×</button></div><div id="modalContent"></div><button class="sheet-primary" id="modalDone">Got it</button></div></div>
-<script src="training-tools.js?v=74"></script>
-<script src="app.js?v=74"></script>
+<script src="training-tools.js?v=75"></script>
+<script src="nutrition-intake.js?v=75"></script>
+<script src="app.js?v=75"></script>
 <script src="vendor/supabase.js"></script>
 <script src="vendor/firebase.js"></script>
 <script src="firestore-backup.js"></script>
-<script src="cloud-core.js?v=74"></script>
+<script src="cloud-core.js?v=75"></script>
 <script src="autosave-core.js"></script>
-<script src="cloud.js?v=74"></script>
+<script src="cloud.js?v=75"></script>
 </body></html>
