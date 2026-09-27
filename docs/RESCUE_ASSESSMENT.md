@@ -1,5 +1,7 @@
 # Rescue assessment
 
+Historical takeover assessment. Current implementation, verification status and remaining issues are maintained in `docs/PROJECT_STATE.md`; the percentage below is the original takeover estimate, not a current completion claim.
+
 Verified against production and `main` at `58796831e42ce626d1ecdba080badf31ca284e41` on 2026-09-26 Pacific time.
 
 ## Architecture and data flow
