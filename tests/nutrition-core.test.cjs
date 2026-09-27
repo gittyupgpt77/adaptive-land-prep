@@ -3,7 +3,7 @@ const core=require('../nutrition-core'),catalog=require('../data/nutrition/foods
 test('all 56 weeks have explicit goals, including maintenance during taper',()=>{
  for(let week=1;week<=56;week++){
   const p=core.phaseForWeek(week);assert.ok(week>=p.from&&week<=p.to);
-  const t=core.targets({week,weightKg:80,maintenanceKcal:2800,workload:'light'});
+  const t=core.targets({week,foundationDeficitFraction:.15,weightKg:80,maintenanceKcal:2800,workload:'light'});
   assert.equal(t.cal,t.protein*4+t.carbs*4+t.fat*9);assert.ok(Number.isFinite(t.cal));
  }
  assert.equal(core.phaseForWeek(17).id,'engine');assert.equal(core.phaseForWeek(33).id,'specificity');assert.equal(core.phaseForWeek(45).id,'peak');assert.equal(core.phaseForWeek(53).deficitFraction,0);
@@ -11,14 +11,14 @@ test('all 56 weeks have explicit goals, including maintenance during taper',()=>
 });
 test('missing energy or workload yields an explicit incomplete result, never a guessed prescription',()=>{
  assert.equal(core.targets({week:1,weightKg:80,workload:'light'}).status,'needs-energy-estimate');
- assert.equal(core.targets({week:1,weightKg:80,maintenanceKcal:2800,workload:'long'}).status,'needs-workload');
+ assert.equal(core.targets({week:1,foundationDeficitFraction:.15,weightKg:80,maintenanceKcal:2800,workload:'long'}).status,'needs-workload');
  assert.equal(core.targets({week:1,weightKg:NaN,maintenanceKcal:2800,workload:'light'}).status,'needs-body-mass');
 });
-test('workload and recovery protect fuel; calendar alone does not cause the old week-25 jump',()=>{
- const input={weightKg:80,maintenanceKcal:2800,workload:'light'};
+test('workload conflicts require discussion; calendar alone does not cause the old week-25 jump',()=>{
+ const input={foundationDeficitFraction:.15,weightKg:80,maintenanceKcal:2800,workload:'light'};
  const a=core.targets({...input,week:24}),b=core.targets({...input,week:25});assert.equal(a.cal,b.cal);
  const cut=core.targets({...input,week:1}),recovery=core.targets({...input,week:1,recovery:true}),hard=core.targets({...input,week:1,workload:'high'});
- assert.ok(recovery.cal>cut.cal);assert.ok(hard.cal>cut.cal);assert.equal(hard.deficitLimitedByFuel,true);
+ assert.ok(recovery.cal>cut.cal);assert.equal(hard.status,'needs-policy-review');assert.equal(hard.cal,undefined);assert.ok(hard.referenceEnergyKcal>hard.requestedEnergyKcal);
 });
 test('manufacturer label servings remain flavor-specific with vitamin D counted',()=>{
  const a=core.totalIngredients([{foodId:'wheyChocolate',grams:41}],catalog),b=core.totalIngredients([{foodId:'wheyVanilla',grams:36}],catalog);
@@ -48,7 +48,7 @@ test('portion planning preserves confirmed source snapshots and fixed foods',()=
  const meals=structuredClone(menus.days.salmon),foods=structuredClone(catalog);
  const breakfast=core.recipeSnapshot(meals[0],foods),before=JSON.stringify(breakfast),original=JSON.stringify(meals);
  foods.foods.egg.nutrients.protein=900; // Today's catalog must not rewrite yesterday's saved composition.
- const target=core.targets({week:1,weightKg:80,maintenanceKcal:2800,workload:'light'});
+ const target=core.targets({week:1,foundationDeficitFraction:.15,weightKg:80,maintenanceKcal:2800,workload:'light'});
  const plan=core.portionPlan({target,meals,confirmed:[breakfast]},foods);
  assert.equal(JSON.stringify(plan.confirmed[0]),before);assert.equal(JSON.stringify(meals),original);
  assert.equal(plan.planned.length,3);assert.ok(!plan.planned.some(m=>m.id==='breakfast'));
@@ -63,9 +63,10 @@ test('portion planning preserves confirmed source snapshots and fixed foods',()=
  assert.equal(plan.totals.protein,breakfast.nutrients.protein.known+plan.planned.reduce((s,m)=>s+m.nutrients.protein.known,0));
 });
 test('all-week portion matrix honestly reports fit or bounded shortfall',()=>{
- let candidates=0,shortfalls=0;
+ let candidates=0,reviews=0;
  for(let week=1;week<=56;week++)for(const workload of ['light','moderate','high','veryHigh'])for(const meals of Object.values(menus.days)){
-  const target=core.targets({week,weightKg:80,maintenanceKcal:2800,workload});
+  const target=core.targets({week,foundationDeficitFraction:.15,weightKg:80,maintenanceKcal:2800,workload});
+  if(target.status==='needs-policy-review'){reviews++;assert.equal(target.cal,undefined);continue;}
   const plan=core.portionPlan({target,meals},catalog);
   const actual=core.totalIngredients(plan.planned.flatMap(m=>m.ingredients),catalog);
   const mapping={kcal:'cal',protein:'protein',carbs:'carbs',fat:'fat'};
@@ -77,9 +78,11 @@ test('all-week portion matrix honestly reports fit or bounded shortfall',()=>{
   }
   assert.equal(plan.matchesTarget,fits);assert.equal(plan.status,fits?'candidate':'cannot-fit');
   assert.equal(plan.nutritionAdequacy,'unassessed');
-  if(fits)candidates++;else shortfalls++;
+  if(fits)candidates++;
  }
- assert.ok(candidates>0,'ordinary targets can fit');assert.ok(shortfalls>0,'demanding targets need additional menu design');
+ assert.ok(candidates>0,'ordinary targets can fit');assert.ok(reviews>0,'conflicting workload assumptions need discussion');
+ const bounded=core.portionPlan({target:{cal:6000,protein:200,carbs:900,fat:100},meals:menus.days.salmon},catalog);
+ assert.equal(bounded.status,'cannot-fit');
 });
 test('unknown legacy intake and missing food macros block recalculation',()=>{
  const target={cal:2400,protein:180,carbs:270,fat:65},meals=menus.days.salmon;
@@ -104,4 +107,14 @@ test('ambiguous meal identity, malformed bounds and invalid targets cannot gener
  assert.throws(()=>core.portionPlan({target:{...target,cal:NaN},meals},catalog));
  meals[0].ingredients[1].portion.stepGrams=0;
  assert.throws(()=>core.portionPlan({target,meals},catalog));
+});
+
+test('Foundation requires explicit policy and never silently substitutes a deficit',()=>{
+ const input={week:1,weightKg:80,maintenanceKcal:2800,workload:'light'};
+ assert.equal(core.targets(input).status,'needs-fat-loss-policy');
+ for(const fraction of [-1,1,NaN,Infinity])assert.equal(core.targets({...input,foundationDeficitFraction:fraction}).status,'needs-fat-loss-policy');
+ const conflict=core.targets({...input,foundationDeficitFraction:.40});
+ assert.equal(conflict.status,'needs-policy-review');assert.equal(conflict.requestedEnergyKcal,1680);assert.equal(conflict.cal,undefined);
+ const agreed=core.targets({...input,foundationDeficitFraction:.10});
+ assert.equal(agreed.status,'estimate');assert.equal(agreed.foundationDeficitFraction,.10);
 });

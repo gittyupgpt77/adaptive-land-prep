@@ -5,7 +5,7 @@
 'use strict';
 const NutritionCore=(()=>{
  const phases=[
-  {id:'foundation',from:1,to:16,goal:'Fat loss with recovery protected',deficitFraction:.15,proteinGKg:2.2},
+  {id:'foundation',from:1,to:16,goal:'Fat loss with recovery protected',deficitFraction:null,proteinGKg:2.2},
   {id:'engine',from:17,to:32,goal:'Fuel increasing training; end deliberate deficit',deficitFraction:0,proteinGKg:2},
   {id:'specificity',from:33,to:44,goal:'Support specific training and recovery',deficitFraction:0,proteinGKg:2},
   {id:'peak',from:45,to:52,goal:'Support completed and upcoming workload',deficitFraction:0,proteinGKg:2},
@@ -17,22 +17,31 @@ const NutritionCore=(()=>{
   if(!Number.isInteger(week)||week<1||week>56)throw Error('Invalid prescription week');
   return {...phases.find(p=>week>=p.from&&week<=p.to)};
  }
- function targets({week,weightKg,maintenanceKcal,workload,recovery=false}){
+ function targets({week,weightKg,maintenanceKcal,workload,recovery=false,foundationDeficitFraction}){
   const phase=phaseForWeek(week);
   if(!Number.isFinite(weightKg)||weightKg<=0)return{status:'needs-body-mass',phase};
   if(!Number.isFinite(maintenanceKcal)||maintenanceKcal<=0)return{status:'needs-energy-estimate',phase};
   const band=carbohydrateBands[workload];
   if(!band)return{status:'needs-workload',phase};
+  // No implicit replacement of the athlete's fat-loss goal with a default deficit.
+  const deficit=phase.id==='foundation'?foundationDeficitFraction:phase.deficitFraction;
+  if(phase.id==='foundation'&&(!Number.isFinite(deficit)||deficit<0||deficit>=1))
+   return {status:'needs-fat-loss-policy',phase};
   const protein=Math.round(weightKg*phase.proteinGKg),carbFloor=Math.ceil(weightKg*band[0]);
-  const requested=maintenanceKcal*(1-(recovery?0:phase.deficitFraction));
+  const requested=maintenanceKcal*(1-(recovery?0:deficit));
   const macroFloor=(protein*4+carbFloor*4)/.75;
-  const energy=Math.ceil(Math.max(requested,macroFloor)/25)*25;
+  // These draft reference bands are not clinical minima. Surface the conflict
+  // for discussion instead of silently raising calories or ignoring the conflict.
+  if(macroFloor>requested)return {status:'needs-policy-review',phase,
+   requestedEnergyKcal:requested,referenceEnergyKcal:macroFloor,
+   foundationDeficitFraction:phase.id==='foundation'?deficit:null,
+   reason:'Requested energy conflicts with the draft workload and macro assumptions'};
+  const energy=Math.ceil(requested/25)*25;
   const fat=Math.round(energy*.25/9),carbs=Math.max(carbFloor,Math.ceil((energy-protein*4-fat*9)/4));
   return {status:'estimate',phase,cal:protein*4+carbs*4+fat*9,protein,carbs,fat,
    maintenanceKcal,workload,carbohydrateBandGKg:[...band],
-   deficitLimitedByFuel:macroFloor>requested,
-   reasons:[recovery?'Deliberate deficit suspended for recovery':phase.goal,
-    ...(macroFloor>requested?['Workload fueling takes priority over the requested deficit']:[])]};
+   foundationDeficitFraction:phase.id==='foundation'?deficit:null,
+   reasons:[recovery?'Deliberate deficit suspended for recovery':phase.goal]};
  }
  function totalIngredients(ingredients,catalog){
   if(!Array.isArray(ingredients)||!ingredients.length)throw Error('Ingredients required');
