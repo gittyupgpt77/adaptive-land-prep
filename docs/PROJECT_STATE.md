@@ -1,5 +1,7 @@
 # Project state
 
+Nutrition calculation checkpoint (not deployed): `nutrition-core.js`, a 23-food source-backed catalog, two weighed menu candidates and an offline nutrient audit. Seven focused tests cover all 56 phase weeks, missing-input handling, macro reconciliation, flavor-specific whey, ingredient scaling, immutable snapshots and unknown nutrients. See `docs/NUTRITION_MODEL.md` for proposed policy assumptions and integration blockers. No private athlete profile values are stored. The live nutrition targets are unchanged; do not describe the prototype as integrated or the menu candidates as prescribed. Next work: private energy profile/workload inputs, bounded meal portions that satisfy targets, iodine/upper-limit checks, then live integration as one coherent release.
+
 Latest verified production: `6891101d8ca2bd0e943892db446e295082494e61` (PR #23; exact-main Consumer Audit and Pages passed). Live synthetic browser walkthrough confirmed reduced numerical doses. Browser access is working again; earlier blocked-browser notes below are historical.
 
 Workout-recording milestone: set editing and one-tap repeat preserve actual units/work; edits and removals update an already-saved session as well as its draft, retaining completion status, pain, effort and prescription. Failed history writes roll the draft back. Session-save failures retain the current screen and show a persistent error. No automatic progression is introduced.
