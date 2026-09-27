@@ -1,35 +1,33 @@
 # Project state
 
-## Verified release
+## Verified production
 
-Production `0400188400123c864e3a8c4ba9ca34cca74c067e` (PR #25), assets v75. Exact-main Pages and Consumer Audit passed. Release receipt: https://github.com/gittyupgpt77/adaptive-land-prep/pull/25 .
+Production `157a6670fc3b2bc0fd434ed128ab81cd132debd2` (PR #26), assets v76. Exact-main GitHub Pages and Consumer Audit passed.
 
-Implemented in this candidate:
-- Four ingredient-backed base meals, additional fueling capacity, exact weighed quantities, known macros and preparation guidance.
-- One-tap confirmation, portion/skip/manual deviations, and food-level edits; frozen receipts preserve quantities and sources. Only uneaten portions recalculate. Unknown intake stays unknown. Legacy started days finish their original plan.
-- Private dated/undated composition and RMR records, optional endpoints, explicit provisional energy estimates, phase transitions and existing recovery guardrails. No personal health values in source.
-- Food-only micronutrient reference comparisons; missing data and unlogged supplements remain explicit.
-- Strength repeat/build-within-range guidance from comparable recorded sets and pain feedback, never automatic load escalation.
-- Compressed food receipts with legacy compatibility and bounded import decompression, included in existing Firebase backups and Journey archives.
-
-Foundation already shipped: persistent explicit day close; reopen resumes current task; breakfast before training; safe corrections; persistent Journey epochs; latest two archives visible with older records retained; kg/lb grip; neutral no-workout response; corrected exercise imagery; set recording/edit/repeat; measured modality-specific HR guidance.
+Current verified functionality includes the 56-week local-first Journey, guided daily flow, recovery/readiness adaptation, exercise/set history and corrections, calculated ingredient-backed meals and meal corrections, private composition/RMR inputs, conservative history-informed strength guidance, Firebase per-user automatic backup/recovery, Journey archives and versioned PWA caching. General Aerobic/Endurance work no longer borrows a rowing-specific heart-rate range; explicit Run and Row prescriptions retain their own measured ranges.
 
 ## Verification
 
-Source suite: 183 passing after integration and bounded-storage checks. 213/213 iPhone-sized WebKit checks passed, including measurements, ingredient correction, reopening and actual restore validation. Firebase recovery and automatic-backup browser tests passed. Local WebKit cannot launch because system libraries are absent; use the permanent GitHub gate rather than repeat local installation investigations. Live production assets matched the exact merged commit; a synthetic meal correction survived reopening.
+- Source suite: 184/184 passing.
+- Consumer Audit: 213/213 iPhone-sized WebKit checks, 0 runtime errors.
+- Firebase emulator/recovery browser regression: passed.
+- Automatic cloud backup browser regression: passed.
+- Exact-main Pages deployment: passed.
+- Live production assets previously matched the merged release flow; physical-iPhone acceptance remains outstanding because WebKit simulation is not a physical iPhone.
+
+## In-progress QA
+
+- PR #27 adds a permanent real-browser PWA acceptance: install/control the service worker, remove the origin server, reload from cached shell with local state preserved, then reconnect. This is test infrastructure only until merged.
+- PR #28 addresses two defects found by visually reviewing exact-main audit artifacts: pale cloud/account text on white Settings cards, and missing session-feedback validation appearing behind the fixed tab bar and disappearing too quickly. Assets v77 are not production until exact-main release gates pass.
 
 ## Remaining limits / issue register
 
 1. Daily hard-work doses remain unresolved where curriculum lacks calibrated prescriptions. Show the existing easy fallback; do not invent intervals or escalate from weekly ceilings.
-2. Energy estimates, fat-transfer reference, performance gates and readiness cannot certify tissue adaptation or injury-free BUD/S readiness. Independent review of aggressive restriction and later peak workloads remains outstanding.
+2. Energy estimates, fat-transfer reference, performance gates and readiness cannot certify tissue adaptation or injury-free BUD/S readiness. The athlete-directed fat-loss/calorie policy is change-controlled: surface evidence or safety conflicts and discuss them with the user before changing encoded policy.
 3. Iodine and some nutrient data are absent; unlogged supplement doses and upper-limit interactions are not assessed. Food estimates do not certify nutritional adequacy.
 4. Multiple archived Journeys can exceed storage capacity; never silently delete history. Existing safe failures and export remain available.
-5. Physical-iPhone acceptance remains outstanding; iPhone-sized WebKit is simulation.
+5. Physical-iPhone acceptance remains outstanding.
 
 ## Working discipline
 
-Use this register, focused changes and one coherent release gate. Do not restart repository-wide investigation or speculative cleanup. Firebase remains authoritative; Supabase stays dormant. Preserve user data, explicit Journey/day semantics, noisy-signal filtering and the established trend guardrails. See `docs/NUTRITION_MODEL.md` for provenance and model limits; earlier checkpoints remain in git history.
-
-## Prepared follow-up
-
-General aerobic/endurance labels no longer inherit rowing-specific heart-rate ranges. Explicit Run/Row exercises retain their own measured ranges. Assets v76 are prepared on a separate branch; this correction is not yet deployed.
+Use this register, `AGENTS.md`, and `docs/WORK_HANDOFF.md` as durable project memory. Do not restart repository-wide investigation or speculative cleanup. Firebase remains authoritative; Supabase stays dormant. Preserve user data, explicit Journey/day semantics, noisy-signal filtering and the established trend guardrails. Standard Chat is the default for repository engineering; use Work only when the unresolved task materially requires interactive graphical browser/computer control. See `docs/NUTRITION_MODEL.md` for provenance and model limits; earlier checkpoints remain in git history.
