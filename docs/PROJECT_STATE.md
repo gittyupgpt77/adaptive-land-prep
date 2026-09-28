@@ -23,10 +23,10 @@ The last product changes reached assets v77 at main commit `b45403838d1fc9685cbe
 The ChatGPT-native system should:
 - use Project files, not Memory, as the exact curriculum/policy source;
 - use COROS as the primary training/recovery telemetry source;
-- use Cronometer as the authoritative nutrition ledger because micronutrient coverage matters; use Calorie Tracker only as a fallback after verifying the needed fields;
+- use Foodnoms+ as the preferred authoritative nutrition ledger because it combines micronutrient tracking with Apple Health export; use Cronometer as a reporting alternative and Calorie Tracker only as a fallback;
 - use Health/Apple Health only for assigned non-duplicative fields when available;
 - obtain subjective/mechanical data directly from the user;
-- treat micronutrients as a periodic Cronometer audit when full detail is not directly exposed through Health; missing nutrient fields remain unknown, never zero;
+- use Foodnoms+ → Apple Health → ChatGPT Health as the preferred nutrition transport, while verifying which fields actually arrive; use Foodnoms reports/exports for any missing micronutrient detail; missing nutrient fields remain unknown, never zero;
 - preserve the user's approved fat-loss/calorie policy as change-controlled and discuss conflicts before altering it;
 - never interpret missing nutrition logging as confirmed under-eating;
 - never invent hard-work doses or exceed weekly ceilings because recovery appears favorable.
