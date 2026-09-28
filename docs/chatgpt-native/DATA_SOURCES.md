@@ -39,19 +39,34 @@ Do not use COROS to infer:
 
 If COROS has no data, say so; do not manufacture a normal baseline.
 
-## 3. Calorie Tracker — authoritative chat-native intake ledger
-Use the connected Calorie Tracker for meals logged through ChatGPT. It stores:
+## 3. Cronometer — authoritative nutrition ledger
+Use Cronometer as the primary food and supplement ledger because this system cares about micronutrients as well as calories/macros.
+
+For daily adaptation, use:
 - calories
 - protein
 - carbohydrate
 - fat
 - fiber
-- sugar
-- meal name/date/notes
+- meal timing when available
+- whether the day is complete versus partially logged
 
-It does **not** provide a complete micronutrient profile. Meal values are only as accurate as the food quantities and nutrition data supplied.
+For periodic nutrient-quality audits, review when available:
+- calcium, iron, magnesium, phosphorus, potassium, sodium, zinc, copper, manganese, selenium
+- vitamins A, C, D, E, K, thiamin, riboflavin, niacin, B6, folate, B12 and choline
+- omega-3 / omega-6 and useful nutrient balances
+- iodine only when the underlying food/supplement records actually include it
 
-If the user logs food elsewhere, choose one primary ledger for that period rather than double-counting.
+Missing nutrient data is UNKNOWN, never zero. Database completeness varies by food record. Log supplements when practical so food-only and food-plus-supplement views can be separated and duplicated exposures / upper-limit issues can be reviewed.
+
+### ChatGPT access boundary
+There is currently no direct Cronometer plugin in the ChatGPT plugin directory. Cronometer can connect with Apple Health on iPhone, but do not assume its full nutrient report is exported into ChatGPT Health.
+- Use live Health nutrition fields only when they are actually exposed.
+- Use Cronometer itself as the authoritative ledger.
+- For full micronutrient review, use a Cronometer Daily/Nutrition Report screenshot, export or pasted report when direct access is unavailable.
+- Micronutrient audit may be periodic rather than gating every morning directive unless a specific deficiency/excess concern is active.
+
+Calorie Tracker is a fallback for low-friction direct-in-ChatGPT logging only after confirming that the fields needed for the current decision are retained and retrievable. AI-estimated entries are lower confidence than weighed/barcode/database entries. Do not maintain two co-equal food ledgers for the same day.
 
 ## 4. Health / Apple Health — secondary health-data bridge
 When ChatGPT Health is available and connected, use Apple Health primarily for data that COROS does not own cleanly, such as:
