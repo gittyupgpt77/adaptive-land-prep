@@ -1,4 +1,10 @@
-# Adaptive Land Prep
+# Adaptive Land Prep — archival instructions
+
+**Development is frozen by explicit user decision as of 2026-09-27.** Preserve this repository as an experiment and curriculum provenance. Do not resume feature development, architectural migration, cleanup, or deployment work unless the user explicitly reverses the freeze.
+
+The active successor is the ChatGPT-native operating model documented in `docs/chatgpt-native/`. For future BUD/S coaching, use those files plus live COROS/Health/nutrition data rather than treating the PWA as the primary interface.
+
+## Historical engineering rules
 
 Existing iPhone-first 56-week PWA; never replace it. Today answers what to do next from recovery, training, nutrition and history. Preserve local data, Firebase per-user backup isolation, deliberate Day 1 and scientific integrity. Swimming is excluded; prefer rowing when impact is unnecessary.
 
@@ -13,3 +19,4 @@ App is plain app.js/index.html/styles.css, with Firebase integration in cloud.js
 When shipping changed app.js/cloud.js/styles.css, advance their index.html query versions and matching service-worker ASSETS/cache version together. A live browser retained an old script with new HTML when assets were unversioned; verify the actual production action, not only HTTP source bytes.
 
 Nutrition preference policy: do not silently substitute a different fat-loss goal or calorie policy. Treat the athlete-directed fat-loss/calorie policy, its priority hierarchy and its established guardrails as change-controlled requirements: a model recommendation alone must not overwrite them. If new evidence or a safety concern conflicts with the current policy, surface the conflict and discuss it with the user before changing the prescription or encoded policy. Never treat agreement alone as proof of physiological safety. Keep personal measurements out of this public repository.
+
