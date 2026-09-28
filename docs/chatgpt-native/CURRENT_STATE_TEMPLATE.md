@@ -39,8 +39,8 @@ Keep private values here only when they are not already retrievable from a conne
 - measured RMR if being used:
 
 ## Nutrition policy state
-- Authoritative nutrition ledger: Cronometer unless explicitly changed
-- Full micronutrient access path: [Health exposure / Cronometer report / export]
+- Authoritative nutrition ledger: Foodnoms+ unless explicitly changed
+- Full micronutrient access path: [ChatGPT Health via Apple Health / Foodnoms report / export]
 - Current user-approved fat-loss/calorie policy: [link or concise description]
 - Policy last explicitly confirmed:
 - Current bodyweight-trend status:

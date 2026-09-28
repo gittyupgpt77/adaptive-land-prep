@@ -21,7 +21,7 @@ When the user says any equivalent of **“What should I do today?”**, **“Dai
    - latest recovery/training-load context
    - last night's sleep/HRV and recent baseline when present
    - resting HR trend when relevant
-4. Pull today's/yesterday's authoritative nutrition data when fueling matters. Prefer Cronometer; use Health transport only for fields actually exposed. If direct Cronometer access is unavailable, ask for the minimum report/screenshot/export needed rather than pretending micronutrient data is live.
+4. Pull today's/yesterday's authoritative nutrition data when fueling matters. Prefer Foodnoms+ through ChatGPT Health/Apple Health for fields actually exposed. If a required field is not available through Health, ask for the minimum Foodnoms summary/export needed rather than pretending it is live.
 5. Pull Health data only for fields assigned to Health in DATA_SOURCES and only if connected.
 6. Do not ask the user for information already available.
 7. Ask only the minimum missing subjective/mechanical items needed to make the decision, ideally in one compact prompt.
@@ -76,7 +76,7 @@ Once per week:
 ## Periodic nutrition review
 At least every few weeks or when diet composition materially changes:
 - audit calories/macros/fiber from the primary ledger
-- audit micronutrient coverage from Cronometer (or an equivalently complete source) using direct data when available, otherwise a report/export/screenshot
+- audit micronutrient coverage from Foodnoms+ (or an equivalently complete source) using Health data when available, otherwise a Foodnoms report/export
 - include supplement doses only when explicitly logged
 - flag uncertainty instead of inventing nutrient values
 
