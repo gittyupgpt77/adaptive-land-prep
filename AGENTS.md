@@ -1,6 +1,8 @@
-# Adaptive Land Prep
+# Adaptive Land Prep — archived implementation experiment
 
-Existing iPhone-first 56-week PWA; never replace it. Today answers what to do next from recovery, training, nutrition and history. Preserve local data, Firebase per-user backup isolation, deliberate Day 1 and scientific integrity. Swimming is excluded; prefer rowing when impact is unnecessary.
+Product development stopped by user decision on 2026-09-27. Preserve the repository as an implementation/provenance archive; do not resume feature development unless the user explicitly reverses that decision. The operational system has moved to ChatGPT-native coaching using compact durable specifications derived from this repository.
+
+Existing iPhone-first 56-week PWA; preserve it rather than replacing it. Today answers what to do next from recovery, training, nutrition and history. Preserve local data, Firebase per-user backup isolation, deliberate Day 1 and scientific integrity. Swimming is excluded; prefer rowing when impact is unnecessary.
 
 Work on branches. Keep PRs coherent. Latest user direction: defer routine audits/tests until all five rescue phases are implemented; before then, check only likely failures that would be difficult to reverse. Keep regression coverage updated for the final gate. Before publishing completed work, run the Consumer Audit release gate, then verify Pages and Consumer Audit against exact merged SHA. WebKit simulation is not physical-iPhone testing. Do not invent training doses or ingredient macros. Distinguish incomplete nutrition logging from confirmed low intake. Preserve noisy-signal filtering and established 14-day trend guardrails.
 
@@ -13,3 +15,6 @@ App is plain app.js/index.html/styles.css, with Firebase integration in cloud.js
 When shipping changed app.js/cloud.js/styles.css, advance their index.html query versions and matching service-worker ASSETS/cache version together. A live browser retained an old script with new HTML when assets were unversioned; verify the actual production action, not only HTTP source bytes.
 
 Nutrition preference policy: do not silently substitute a different fat-loss goal or calorie policy. Treat the athlete-directed fat-loss/calorie policy, its priority hierarchy and its established guardrails as change-controlled requirements: a model recommendation alone must not overwrite them. If new evidence or a safety concern conflicts with the current policy, surface the conflict and discuss it with the user before changing the prescription or encoded policy. Never treat agreement alone as proof of physiological safety. Keep personal measurements out of this public repository.
+
+
+ChatGPT-native handoff: the compact operational source of truth is under `docs/chatgpt-native/`. Those files intentionally separate curriculum doctrine from private athlete state. The public repository must never contain private health measurements, live daily nutrition logs, or connected-account data.
