@@ -1,5 +1,7 @@
 # Adaptive Land Prep
 
+> **Archived implementation experiment — product development stopped 2026-09-27.** The operational coaching system moved to ChatGPT using the durable specifications in `docs/chatgpt-native/`. Preserve this repository as provenance; do not resume feature development unless the user explicitly reverses that decision.
+
 Mobile-first 56-week adaptive land-preparation PWA.
 
 Training data stays on-device until the athlete enables automatic private backup for their signed-in account. JSON export/restore remains available offline. No athlete data or secret keys belong in this repository.
