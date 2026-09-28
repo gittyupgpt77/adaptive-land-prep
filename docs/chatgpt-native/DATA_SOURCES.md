@@ -39,8 +39,8 @@ Do not use COROS to infer:
 
 If COROS has no data, say so; do not manufacture a normal baseline.
 
-## 3. Cronometer — authoritative nutrition ledger
-Use Cronometer as the primary food and supplement ledger because this system cares about micronutrients as well as calories/macros.
+## 3. Foodnoms+ — authoritative nutrition ledger
+Use Foodnoms+ as the primary food and supplement ledger because it combines detailed nutrient tracking with native Apple Health export.
 
 For daily adaptation, use:
 - calories
@@ -51,7 +51,7 @@ For daily adaptation, use:
 - meal timing when available
 - whether the day is complete versus partially logged
 
-For periodic nutrient-quality audits, review when available:
+For nutrient-quality auditing, review when available:
 - calcium, iron, magnesium, phosphorus, potassium, sodium, zinc, copper, manganese, selenium
 - vitamins A, C, D, E, K, thiamin, riboflavin, niacin, B6, folate, B12 and choline
 - omega-3 / omega-6 and useful nutrient balances
@@ -59,14 +59,17 @@ For periodic nutrient-quality audits, review when available:
 
 Missing nutrient data is UNKNOWN, never zero. Database completeness varies by food record. Log supplements when practical so food-only and food-plus-supplement views can be separated and duplicated exposures / upper-limit issues can be reviewed.
 
-### ChatGPT access boundary
-There is currently no direct Cronometer plugin in the ChatGPT plugin directory. Cronometer can connect with Apple Health on iPhone, but do not assume its full nutrient report is exported into ChatGPT Health.
-- Use live Health nutrition fields only when they are actually exposed.
-- Use Cronometer itself as the authoritative ledger.
-- For full micronutrient review, use a Cronometer Daily/Nutrition Report screenshot, export or pasted report when direct access is unavailable.
-- Micronutrient audit may be periodic rather than gating every morning directive unless a specific deficiency/excess concern is active.
+### ChatGPT access path
+Foodnoms can write nutrition data to Apple Health. ChatGPT Health can use data that connected nutrition apps make available through Apple Health when the user authorizes it. This is the preferred low-friction path:
+**Foodnoms+ → Apple Health → ChatGPT Health**.
 
-Calorie Tracker is a fallback for low-friction direct-in-ChatGPT logging only after confirming that the fields needed for the current decision are retained and retrievable. AI-estimated entries are lower confidence than weighed/barcode/database entries. Do not maintain two co-equal food ledgers for the same day.
+Do not assume every nutrient always survives that transport. Verify actual field availability after setup. If a required nutrient is not visible through Health, use a Foodnoms daily summary, CSV/export, or other Foodnoms report as the authoritative fallback.
+
+Foodnoms also supports remote MCP for compatible AI clients, but it is not currently listed as a direct ChatGPT plugin; do not depend on an unavailable direct connector.
+
+### Alternatives
+Cronometer is a strong nutrient-analysis alternative but has a less certain automatic path into ChatGPT on iPhone. Prefer it only if the user values its reporting over the frictionless Apple Health bridge.
+Calorie Tracker is a fallback for direct-in-ChatGPT logging only after confirming the needed fields are retained/retrievable. Do not maintain two co-equal food ledgers.
 
 ## 4. Health / Apple Health — secondary health-data bridge
 When ChatGPT Health is available and connected, use Apple Health primarily for data that COROS does not own cleanly, such as:
